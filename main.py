@@ -63,6 +63,9 @@ class DeviceType(Enum):
     COUNTER = "COUNTER"      # カウンター
     WIRE_H = "WIRE_H"        # 横配線
     WIRE_V = "WIRE_V"        # 縦配線
+    LINK_UP = "LINK_UP"      # 上方向結線点
+    LINK_DOWN = "LINK_DOWN"  # 下方向結線点
+    DEL = "DEL"              # 削除デバイス
 
 # バスバー接続方向
 class BusbarDirection(Enum):
@@ -105,9 +108,15 @@ class GridDevice:
         elif self.device_type == DeviceType.COIL:
             return "LAMP_ON" if self.coil_energized else "LAMP_OFF"
         elif self.device_type == DeviceType.TIMER:
-            return "TYPE_A_ON" if self.active else "TYPE_A_OFF"  # 仮のスプライト
+            return "TIMER_ON" if self.active else "TIMER_OFF"
         elif self.device_type == DeviceType.COUNTER:
             return "TYPE_A_ON" if self.active else "TYPE_A_OFF"  # 仮のスプライト
+        elif self.device_type == DeviceType.LINK_UP:
+            return "LINK_UP"
+        elif self.device_type == DeviceType.LINK_DOWN:
+            return "LINK_DOWN"
+        elif self.device_type == DeviceType.DEL:
+            return "DEL"
         return None
     
     def update_state(self, device_manager):
@@ -213,6 +222,39 @@ class LadderRung:
         
         return segments
 
+class VerticalConnection:
+    """縦方向結線を管理するクラス"""
+    def __init__(self, grid_x: int):
+        self.grid_x = grid_x
+        self.connection_points = []  # (grid_y, DeviceType) のリスト
+        self.is_energized = False
+    
+    def add_connection_point(self, grid_y: int, device_type: DeviceType):
+        """結線点を追加"""
+        if (grid_y, device_type) not in self.connection_points:
+            self.connection_points.append((grid_y, device_type))
+            self.connection_points.sort()  # Y座標でソート
+    
+    def remove_connection_point(self, grid_y: int):
+        """結線点を削除"""
+        self.connection_points = [(y, t) for y, t in self.connection_points if y != grid_y]
+    
+    def get_connected_pairs(self) -> List[Tuple[int, int]]:
+        """LINK_UPとLINK_DOWNのペアを取得"""
+        pairs = []
+        link_ups = [y for y, t in self.connection_points if t == DeviceType.LINK_UP]
+        link_downs = [y for y, t in self.connection_points if t == DeviceType.LINK_DOWN]
+        
+        # 最も近いペアを作成
+        for up_y in link_ups:
+            # up_yより下にあるLINK_DOWNを探す
+            compatible_downs = [down_y for down_y in link_downs if down_y > up_y]
+            if compatible_downs:
+                closest_down = min(compatible_downs)
+                pairs.append((up_y, closest_down))
+        
+        return pairs
+
 class ElectricalSystem:
     """ラダー図全体の電気系統を管理"""
     def __init__(self, grid_device_manager: 'GridDeviceManager'):
@@ -221,8 +263,8 @@ class ElectricalSystem:
         self.left_bus_energized = True   # 左バスバー通電状態
         self.right_bus_energized = False # 右バスバー通電状態
         
-        # 縦バスバー用（将来拡張）
-        self.vertical_buses = {}  # grid_x -> VerticalBus（将来実装）
+        # 縦方向結線管理
+        self.vertical_connections: Dict[int, VerticalConnection] = {}  # grid_x -> VerticalConnection
         
     def get_or_create_rung(self, grid_y: int) -> LadderRung:
         """指定行のラングを取得（なければ作成）"""
@@ -236,12 +278,21 @@ class ElectricalSystem:
         for rung in self.rungs.values():
             rung.devices.clear()
         
-        # 各ラングにデバイス情報を同期
+        # 縦方向結線情報をクリア
+        self.vertical_connections.clear()
+        
+        # 各ラングにデバイス情報を同期 & 縦方向結線を検出
         for row in self.grid_manager.grid:
             for device in row:
                 if device.device_type != DeviceType.EMPTY:
                     rung = self.get_or_create_rung(device.grid_y)
                     rung.add_device_at_position(device.grid_x, device)
+                    
+                    # 縦方向結線点を登録
+                    if device.device_type in [DeviceType.LINK_UP, DeviceType.LINK_DOWN]:
+                        if device.grid_x not in self.vertical_connections:
+                            self.vertical_connections[device.grid_x] = VerticalConnection(device.grid_x)
+                        self.vertical_connections[device.grid_x].add_connection_point(device.grid_y, device.device_type)
         
         # 左バスバーを通電
         for rung in self.rungs.values():
@@ -250,6 +301,9 @@ class ElectricalSystem:
         # 各ラングの電力フロー計算
         for rung in self.rungs.values():
             rung.calculate_power_flow()
+        
+        # 縦方向結線の電力伝達を処理
+        self._process_vertical_connections()
     
     def get_wire_color(self, grid_x: int, grid_y: int) -> int:
         """指定位置の配線色を取得"""
@@ -262,6 +316,50 @@ class ElectricalSystem:
                     return Colors.WIRE_ON if is_energized else Colors.WIRE_OFF
         
         return Colors.WIRE_OFF
+    
+    def _process_vertical_connections(self):
+        """縦方向結線による電力伝達を処理"""
+        for connection in self.vertical_connections.values():
+            pairs = connection.get_connected_pairs()
+            
+            for up_y, down_y in pairs:
+                # LINK_UPがあるラングの電力状態を取得
+                if up_y in self.rungs:
+                    up_rung = self.rungs[up_y]
+                    # LINK_UPの位置での電力状態を計算
+                    up_power = self._get_power_at_position(up_rung, connection.grid_x)
+                    
+                    # LINK_DOWNがあるラングに電力を伝達
+                    if down_y in self.rungs and up_power:
+                        down_rung = self.rungs[down_y]
+                        # LINK_DOWN位置から左バスバーに電力を注入
+                        down_rung.left_bus_connection.is_energized = True
+                        # ラング全体を再計算
+                        down_rung.calculate_power_flow()
+    
+    def _get_power_at_position(self, rung: LadderRung, grid_x: int) -> bool:
+        """指定位置での電力状態を取得"""
+        segments = rung.get_power_segments()
+        for start_x, end_x, is_energized in segments:
+            if start_x <= grid_x <= end_x:
+                return is_energized
+        return False
+    
+    def get_vertical_wire_segments(self) -> List[Tuple[int, int, int, bool]]:
+        """縦方向配線セグメントを取得（描画用）"""
+        segments = []
+        for connection in self.vertical_connections.values():
+            pairs = connection.get_connected_pairs()
+            for up_y, down_y in pairs:
+                # 電力状態を判定
+                is_energized = False
+                if up_y in self.rungs:
+                    up_rung = self.rungs[up_y]
+                    is_energized = self._get_power_at_position(up_rung, connection.grid_x)
+                
+                segments.append((connection.grid_x, up_y, down_y, is_energized))
+        
+        return segments
 
 class GridDeviceManager:
     """グリッド上のデバイス配置を管理するクラス"""
@@ -503,6 +601,7 @@ class PLCSimulator:
     """PLCシミュレーターのメインクラス"""
     def __init__(self):
         pyxel.init(WIDTH, HEIGHT, title="PLC Ladder Simulator")
+        pyxel.mouse(True)  # マウスカーソルを有効化
         pyxel.load("my_resource.pyxres")
         
         self.device_manager = DeviceManager()
@@ -521,20 +620,25 @@ class PLCSimulator:
             "TYPE_B_ON": sprite_manager.get_sprite_by_name_and_tag("TYPE_B_ON"),
             "TYPE_B_OFF": sprite_manager.get_sprite_by_name_and_tag("TYPE_B_OFF"),
             "LAMP_ON": sprite_manager.get_sprite_by_name_and_tag("LAMP_ON"),
-            "LAMP_OFF": sprite_manager.get_sprite_by_name_and_tag("LAMP_OFF")
+            "LAMP_OFF": sprite_manager.get_sprite_by_name_and_tag("LAMP_OFF"),
+            "TIMER_ON": sprite_manager.get_sprite_by_name_and_tag("TIMER_ON"),
+            "TIMER_OFF": sprite_manager.get_sprite_by_name_and_tag("TIMER_OFF"),
+            "LINK_UP": sprite_manager.get_sprite_by_name_and_tag("LINK_UP"),
+            "LINK_DOWN": sprite_manager.get_sprite_by_name_and_tag("LINK_DOWN"),
+            "DEL": sprite_manager.get_sprite_by_name_and_tag("DEL")
         }
         
         # デバイス選択システム
         self.selected_device_type = DeviceType.TYPE_A  # 現在選択中のデバイスタイプ
         self.device_palette = [
-            {"type": DeviceType.BUSBAR, "name": "バスバー", "sprite": None},
             {"type": DeviceType.TYPE_A, "name": "A接点", "sprite": "TYPE_A_OFF"},
             {"type": DeviceType.TYPE_B, "name": "B接点", "sprite": "TYPE_B_OFF"},
             {"type": DeviceType.COIL, "name": "コイル", "sprite": "LAMP_OFF"},
-            {"type": DeviceType.TIMER, "name": "タイマー", "sprite": "TYPE_A_OFF"},
-            {"type": DeviceType.COUNTER, "name": "カウンタ", "sprite": "TYPE_A_OFF"},
-            {"type": DeviceType.WIRE_H, "name": "横線", "sprite": None},
-            {"type": DeviceType.WIRE_V, "name": "縦線", "sprite": None}
+            {"type": DeviceType.TIMER, "name": "タイマー", "sprite": "TIMER_OFF"},
+            {"type": DeviceType.BUSBAR, "name": "バスバー", "sprite": None},
+            {"type": DeviceType.LINK_UP, "name": "上結線", "sprite": "LINK_UP"},
+            {"type": DeviceType.LINK_DOWN, "name": "下結線", "sprite": "LINK_DOWN"},
+            {"type": DeviceType.DEL, "name": "削除", "sprite": "DEL"}
         ]
         
         # テスト用にグリッドにデバイスを配置
@@ -583,6 +687,9 @@ class PLCSimulator:
         if pyxel.btnp(pyxel.KEY_Q) or pyxel.btnp(pyxel.KEY_ESCAPE):
             pyxel.quit()
             
+        # マウス操作処理
+        self._handle_mouse_input()
+            
         # デバイスパレット選択（1-8キー）
         device_keys = [pyxel.KEY_1, pyxel.KEY_2, pyxel.KEY_3, pyxel.KEY_4, 
                       pyxel.KEY_5, pyxel.KEY_6, pyxel.KEY_7, pyxel.KEY_8]
@@ -630,7 +737,7 @@ class PLCSimulator:
         self._draw_device_grid()
         
         # スプライトテスト表示（画面上部）
-        self._draw_sprite_test()
+        # self._draw_sprite_test()
         
         # ラダー図描画
         y_pos = 50
@@ -683,28 +790,28 @@ class PLCSimulator:
             y_pos += 20
             
         # デバイス状態表示
-        pyxel.text(Layout.DEVICE_STATUS_X, Layout.DEVICE_STATUS_Y, "Device Status:", Colors.TEXT)
+        # pyxel.text(Layout.DEVICE_STATUS_X, Layout.DEVICE_STATUS_Y, "Device Status:", Colors.TEXT)
         y_offset = Layout.DEVICE_STATUS_Y + 10
         
         # 入力デバイス
-        for i, addr in enumerate(['X001', 'X002', 'X003', 'X004']):
-            device = self.device_manager.get_device(addr)
-            pyxel.text(Layout.DEVICE_STATUS_X, y_offset + i * Layout.DEVICE_STATUS_SPACING, f"{addr}: {'ON' if device.value else 'OFF'}", Colors.TEXT)
+        # for i, addr in enumerate(['X001', 'X002', 'X003', 'X004']):
+        #     device = self.device_manager.get_device(addr)
+        #     pyxel.text(Layout.DEVICE_STATUS_X, y_offset + i * Layout.DEVICE_STATUS_SPACING, f"{addr}: {'ON' if device.value else 'OFF'}", Colors.TEXT)
             
         # 出力デバイス
-        for i, addr in enumerate(['Y001', 'Y002', 'Y003']):
-            device = self.device_manager.get_device(addr)
-            pyxel.text(Layout.DEVICE_STATUS_X2, y_offset + i * Layout.DEVICE_STATUS_SPACING, f"{addr}: {'ON' if device.value else 'OFF'}", Colors.TEXT)
+        # for i, addr in enumerate(['Y001', 'Y002', 'Y003']):
+        #     device = self.device_manager.get_device(addr)
+        #     pyxel.text(Layout.DEVICE_STATUS_X2, y_offset + i * Layout.DEVICE_STATUS_SPACING, f"{addr}: {'ON' if device.value else 'OFF'}", Colors.TEXT)
             
         # タイマー・カウンター状態
-        timer_device = self.device_manager.get_device('T001')
-        counter_device = self.device_manager.get_device('C001')
-        
-        pyxel.text(Layout.TIMER_COUNTER_X, y_offset, f"T001: {timer_device.current_value:.1f}s/{timer_device.preset_value:.1f}s", Colors.TEXT)
-        pyxel.text(Layout.TIMER_COUNTER_X, y_offset + Layout.DEVICE_STATUS_SPACING, f"C001: {counter_device.current_value}/{counter_device.preset_value}", Colors.TEXT)
+        # timer_device = self.device_manager.get_device('T001')
+        # counter_device = self.device_manager.get_device('C001')
+        # 
+        # pyxel.text(Layout.TIMER_COUNTER_X, y_offset, f"T001: {timer_device.current_value:.1f}s/{timer_device.preset_value:.1f}s", Colors.TEXT)
+        # pyxel.text(Layout.TIMER_COUNTER_X, y_offset + Layout.DEVICE_STATUS_SPACING, f"C001: {counter_device.current_value}/{counter_device.preset_value}", Colors.TEXT)
         
         # 操作説明
-        pyxel.text(Layout.CONTROLS_X, Layout.CONTROLS_Y, "1-8:Select Device  Shift+1-4:Toggle X001-X004  Q:Exit", Colors.TEXT)
+        # pyxel.text(Layout.CONTROLS_X, Layout.CONTROLS_Y, "1-8:Select Device  Shift+1-4:Toggle X001-X004  Q:Exit", Colors.TEXT)
         
     def _draw_sprite_test(self):
         """スプライトテスト表示"""
@@ -715,7 +822,7 @@ class PLCSimulator:
         # TYPE_A ON/OFF スプライト
         sprite_a_on = self.sprites["TYPE_A_ON"]
         sprite_a_off = self.sprites["TYPE_A_OFF"]
-        pyxel.blt(start_x, start_y, 0, sprite_a_on.x, sprite_a_on.y, 8, 8, 0)
+        pyxel.blt(start_x, start_y, 0, sprite_a_on.x, sprite_a_on.y, 8,  8, 0)
         pyxel.blt(start_x + 15, start_y, 0, sprite_a_off.x, sprite_a_off.y, 8, 8, 0)
         pyxel.text(start_x - 2, start_y + 10, "A_ON", Colors.TEXT)
         pyxel.text(start_x + 13, start_y + 10, "A_OFF", Colors.TEXT)
@@ -764,6 +871,14 @@ class PLCSimulator:
                     elif device.device_type == DeviceType.WIRE_V:
                         color = Colors.WIRE_ON if device.wire_energized else Colors.WIRE_OFF
                         pyxel.line(px, py - 8, px, py + 8, color)
+                    elif device.device_type == DeviceType.LINK_UP:
+                        # LINK_UPスプライトを表示
+                        sprite = self.sprites["LINK_UP"]
+                        pyxel.blt(px - 4, py - 4, 0, sprite.x, sprite.y, 8, 8, 0)
+                    elif device.device_type == DeviceType.LINK_DOWN:
+                        # LINK_DOWNスプライトを表示
+                        sprite = self.sprites["LINK_DOWN"] 
+                        pyxel.blt(px - 4, py - 4, 0, sprite.x, sprite.y, 8, 8, 0)
 
     def _draw_electrical_wiring(self):
         """電気的配線（横ライン）を描画"""
@@ -788,15 +903,95 @@ class PLCSimulator:
                 # 横配線を描画
                 pyxel.line(x1, y_wire, x2, y_wire, wire_color)
 
+    def _draw_vertical_wiring(self):
+        """縦方向配線（LINK_UP/LINK_DOWN接続）を描画"""
+        vertical_segments = self.electrical_system.get_vertical_wire_segments()
+        
+        for grid_x, up_y, down_y, is_energized in vertical_segments:
+            wire_color = Colors.WIRE_ON if is_energized else Colors.WIRE_OFF
+            
+            # ピクセル座標に変換
+            x_pos = self.grid_start_x + grid_x * self.grid_size
+            y1 = self.grid_start_y + up_y * self.grid_size
+            y2 = self.grid_start_y + down_y * self.grid_size
+            
+            # 縦配線を描画
+            pyxel.line(x_pos, y1, x_pos, y2, wire_color)
+
+    def _handle_mouse_input(self):
+        """マウス入力処理"""
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+            
+            # デバイスパレット選択判定
+            if Layout.PALETTE_Y - 2 <= mouse_y <= Layout.PALETTE_Y + 10:
+                for i, device in enumerate(self.device_palette):
+                    x_pos = Layout.PALETTE_START_X + i * Layout.PALETTE_DEVICE_WIDTH
+                    if x_pos - 2 <= mouse_x <= x_pos + 18:
+                        # デバイスタイプを選択
+                        self.selected_device_type = device["type"]
+                        break
+            else:
+                # グリッド上でのデバイス配置処理
+                self._handle_grid_placement()
+    
+    def _handle_grid_placement(self):
+        """グリッド上でのデバイス配置処理"""
+        # 有効なデバイスが選択されているかチェック
+        if self.selected_device_type == DeviceType.EMPTY:
+            return
+        
+        # マウス位置からグリッド座標を取得
+        grid_x, grid_y = self._get_grid_position_from_mouse()
+        
+        # グリッド範囲外の場合は何もしない
+        if grid_x == -1 or grid_y == -1:
+            return
+        
+        # DELデバイスの場合は削除処理
+        if self.selected_device_type == DeviceType.DEL:
+            self.grid_device_manager.remove_device(grid_x, grid_y)
+            return
+        
+        # デバイス配置処理
+        device_address = self._generate_device_address(self.selected_device_type, grid_x, grid_y)
+        self.grid_device_manager.place_device(grid_x, grid_y, self.selected_device_type, device_address)
+    
+    def _generate_device_address(self, device_type: DeviceType, grid_x: int, grid_y: int) -> str:
+        """デバイスタイプと位置からデバイスアドレスを生成"""
+        if device_type == DeviceType.TYPE_A:
+            return f"X{grid_x:03d}"
+        elif device_type == DeviceType.TYPE_B:
+            return f"X{grid_x:03d}"
+        elif device_type == DeviceType.COIL:
+            return f"Y{grid_x:03d}"
+        elif device_type == DeviceType.TIMER:
+            return f"T{grid_x:03d}"
+        elif device_type == DeviceType.COUNTER:
+            return f"C{grid_x:03d}"
+        else:
+            return None
+
     def _draw_device_palette(self):
         """Y=16ラインにPLCデバイスパレットを表示"""
         
         for i, device in enumerate(self.device_palette):
             x_pos = Layout.PALETTE_START_X + i * Layout.PALETTE_DEVICE_WIDTH
             
-            # 選択中のデバイスは背景を明るく
+            # マウスオーバー時の視覚的フィードバック
+            mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+            is_mouse_over = (x_pos - 2 <= mouse_x <= x_pos + 18 and 
+                           Layout.PALETTE_Y - 2 <= mouse_y <= Layout.PALETTE_Y + 10)
+            
+            # 選択中のデバイスは明確に表示
             if device["type"] == self.selected_device_type:
+                # 選択中は黄色の背景 + 白い枠線
                 pyxel.rect(x_pos - 2, Layout.PALETTE_Y - 2, 20, 12, Colors.SELECTED_BG)
+                pyxel.rectb(x_pos - 2, Layout.PALETTE_Y - 2, 20, 12, Colors.TEXT)
+            elif is_mouse_over:
+                # マウスオーバー時は薄い背景 + 白い枠線
+                pyxel.rect(x_pos - 2, Layout.PALETTE_Y - 2, 20, 12, 5)  # ダークグレー背景
+                pyxel.rectb(x_pos - 2, Layout.PALETTE_Y - 2, 20, 12, Colors.TEXT)
             
             # デバイススプライト表示
             if device["sprite"]:
@@ -842,7 +1037,71 @@ class PLCSimulator:
         
         # 電気的配線描画
         self._draw_electrical_wiring()
+        
+        # 縦方向配線描画
+        self._draw_vertical_wiring()
+        
+        # デバイス配置プレビュー描画
+        self._draw_device_placement_preview()
     
+    def _get_grid_position_from_mouse(self) -> tuple[int, int]:
+        """マウス座標からグリッド座標を計算"""
+        mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+        
+        # グリッド範囲内かチェック
+        if (self.grid_start_x <= mouse_x <= self.grid_start_x + self.grid_cols * self.grid_size and
+            self.grid_start_y <= mouse_y <= self.grid_start_y + self.grid_rows * self.grid_size):
+            
+            # 最も近いグリッド交点を計算
+            grid_x = round((mouse_x - self.grid_start_x) / self.grid_size)
+            grid_y = round((mouse_y - self.grid_start_y) / self.grid_size)
+            
+            # 範囲チェック
+            if 0 <= grid_x < self.grid_cols and 0 <= grid_y < self.grid_rows:
+                return grid_x, grid_y
+        
+        return -1, -1  # グリッド外
+
+    def _draw_device_placement_preview(self):
+        """デバイス配置プレビューを描画"""
+        # 有効なデバイスが選択されているかチェック
+        if self.selected_device_type == DeviceType.EMPTY:
+            return
+            
+        # マウス位置からグリッド座標を取得
+        grid_x, grid_y = self._get_grid_position_from_mouse()
+        
+        # グリッド範囲外の場合は何も表示しない
+        if grid_x == -1 or grid_y == -1:
+            return
+            
+        # グリッド交点のピクセル座標を計算
+        pixel_x = self.grid_start_x + grid_x * self.grid_size
+        pixel_y = self.grid_start_y + grid_y * self.grid_size
+        
+        # 既存デバイスがある場合は赤いプレビュー（置換警告）
+        existing_device = self.grid_device_manager.get_device(grid_x, grid_y)
+        if existing_device and existing_device.device_type != DeviceType.EMPTY:
+            preview_color = 8  # 赤色（警告）
+        else:
+            preview_color = 10  # 黄色（配置可能）
+        
+        # プレビューRECTを描画（デバイスタイプに応じてサイズ調整）
+        if self.selected_device_type == DeviceType.BUSBAR:
+            # バスバーは縦長のプレビュー
+            pyxel.rectb(pixel_x - 3, pixel_y - 8, 6, 16, preview_color)
+        elif self.selected_device_type == DeviceType.WIRE_H:
+            # 横線は横長のプレビュー
+            pyxel.rectb(pixel_x - 8, pixel_y - 2, 16, 4, preview_color)
+        elif self.selected_device_type == DeviceType.WIRE_V:
+            # 縦線は縦長のプレビュー
+            pyxel.rectb(pixel_x - 2, pixel_y - 8, 4, 16, preview_color)
+        else:
+            # その他のデバイスは正方形のプレビュー
+            pyxel.rectb(pixel_x - 6, pixel_y - 6, 12, 12, preview_color)
+        
+        # プレビュー中央に小さなドット
+        pyxel.pset(pixel_x, pixel_y, preview_color)
 
 
 if __name__ == "__main__":

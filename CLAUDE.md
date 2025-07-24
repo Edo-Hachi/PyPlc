@@ -39,7 +39,25 @@ PyPlc/
 - [x] スプライトテスト表示
 
 ### Phase 4: Grid-Based Electrical System ✅ COMPLETED
-- [x] 16x16ピクセルグリッド（10x10）実装
+- [x] 16x16ピクセルグリッドシステム (10x10セル)
+- [x] グリッド交点でのデバイス配置システム
+- [x] 電気的継続性システムの実装
+- [x] リアルタイム電力フロー可視化
+- [x] マウスインターフェース統合
+
+### Phase 5: Vertical Connection System ✅ COMPLETED
+- [x] LINK_UP/LINK_DOWNスプライト統合
+- [x] 縦方向電気接続システム実装
+- [x] 上下ラング間での電力伝送機能
+- [x] クリック配置とDEL削除機能実装
+
+### Phase 6: Interactive Device Placement System ✅ COMPLETED
+- [x] マウスクリック式デバイス配置システム実装
+- [x] グリッド交点での正確な位置決め機能
+- [x] リアルタイムプレビュー表示（配置可能性表示）
+- [x] LINK_UP/LINK_DOWNスプライトのグリッド表示
+- [x] DEL機能による削除システム完成
+- [x] 自動デバイスアドレス生成システム
 - [x] GridDeviceManagerによる交点ベースデバイス配置
 - [x] デバイスパレット選択システム（1-8キー）
 - [x] 電気的継続性システム（LadderRung）実装
@@ -146,6 +164,10 @@ self.sprites = {
 - **TYPE_A_ON/OFF**: A接点の通電/非通電状態
 - **TYPE_B_ON/OFF**: B接点の通電/非通電状態  
 - **LAMP_ON/OFF**: 出力ランプの点灯/消灯状態
+- **TIMER_ON/OFF**: タイマーの動作/停止状態
+- **LINK_UP**: 上方向電気接続ポイント
+- **LINK_DOWN**: 下方向電気接続ポイント
+- **DEL**: デバイス削除用アイコン
 
 ### Performance Benefits
 - **初期化時読み込み**: JSON検索は起動時のみ
@@ -156,8 +178,10 @@ self.sprites = {
 
 ### Device Selection & Placement
 - **1-8 keys**: デバイスタイプ選択（パレットから）
-  - 1: バスバー, 2: A接点, 3: B接点, 4: コイル
-  - 5: タイマー, 6: カウンター, 7: 横線, 8: 縦線
+  - 1: A接点, 2: B接点, 3: コイル, 4: タイマー
+  - 5: バスバー, 6: 上結線, 7: 下結線, 8: 削除
+- **Mouse Click**: グリッド交点でのデバイス配置・削除
+- **Visual Preview**: マウス位置でのデバイス配置プレビュー（黄色=配置可、赤色=上書き警告）
 - **選択状態**: 黄色背景で現在選択デバイスを表示
 
 ### Device Operation
@@ -182,9 +206,26 @@ self.sprites = {
 - **Grid-Based Display**: 16x16ピクセルグリッドでの交点配置表示
 - **Real-time Power Flow**: セグメント単位の電力フロー可視化
 - **Color-Coded Wiring**: 緑=通電、グレー=非通電の動的色変化
+- **Vertical Connections**: LINK_UP/LINK_DOWNペアによる上下ラング間接続
+- **Interactive Device Placement**: マウスクリックによる直感的デバイス配置
+- **Visual Placement Preview**: 黄色=配置可、赤色=上書き警告の配置プレビュー
 - **Device Palette**: 8種類のデバイスタイプ選択インターフェース
 - **Device Status Panel**: リアルタイムデバイス状態表示
 - **Sprite Integration**: 状態依存スプライト切り替え
+
+### Interactive Placement System
+- **Click-to-Place**: デバイスパレット選択後のワンクリック配置
+- **Grid Intersection Targeting**: 16x16ピクセルグリッドの交点自動吸着
+- **Visual Device Preview**: マウスホバー時のリアルタイム配置プレビュー
+- **Automatic Address Generation**: 配置位置に基づく自動デバイスアドレス生成
+- **DEL Device Functionality**: 削除デバイス選択による配置済みデバイス除去
+
+### Vertical Connection System
+- **LINK_UP/LINK_DOWN Pairing**: 同じX座標での上下デバイスペア形成
+- **Multi-Rung Power Transfer**: 異なるラング間での電力伝送
+- **Automatic Connection Detection**: 最も近い下方LINK_DOWNとの自動ペアリング
+- **Visual Sprite Display**: グリッド交点でのLINK_UP/DOWNスプライト表示
+- **Visual Wire Rendering**: 縦方向配線の色付き可視化
 
 ### Technical Excellence
 - **Grid-Based Architecture**: 交点配置による直感的回路構築
@@ -208,23 +249,23 @@ self.sprites = {
 
 ## Next Development Phase (Pending)
 
-### Phase 5: Interactive Device Placement
-- [ ] マウスクリックによるグリッド配置機能
-- [ ] デバイス削除・移動機能
-- [ ] 複数ライン回路の構築
-- [ ] デバイスアドレス入力システム
-
-### Phase 6: Advanced Electrical System
-- [ ] 縦バスバー（ジャンプ線）実装
-- [ ] 分岐・合流回路対応
-- [ ] 自己保持回路システム
+### Phase 7: Advanced Circuit Functionality
+- [ ] 自己保持回路システム（SET/RST命令）
 - [ ] 並列回路の電気的管理
+- [ ] 分岐・合流回路対応
+- [ ] カウンター/タイマーのグリッド統合
 
-### Phase 7: Circuit Construction Enhancement
+### Phase 8: Circuit Construction Enhancement
 - [ ] 回路保存・読み込み機能
-- [ ] ラダー図エクスポート
-- [ ] 複雑な論理回路パターン
-- [ ] エラー検証システム
+- [ ] ラダー図エクスポート機能
+- [ ] 複雑な論理回路パターン対応
+- [ ] エラー検証システム実装
+
+### Phase 9: User Experience Improvements
+- [ ] デバイス移動機能（ドラッグ&ドロップ）
+- [ ] 回路コピー&ペースト機能
+- [ ] アンドゥ・リドゥ機能
+- [ ] デバイスアドレス編集システム
 
 ## Technical Debt & Future Improvements
 
@@ -386,5 +427,5 @@ pip install pyxel
 
 *Project Status: Active Development*  
 *Last Updated: 2025-01-24*  
-*Latest Achievement: Grid-based electrical system with real-time power flow visualization*  
-*Next Session: Interactive device placement with mouse operation*
+*Latest Achievement: Complete interactive device placement system with visual vertical connections*  
+*Next Session: Advanced circuit functionality (SET/RST, parallel circuits)*
