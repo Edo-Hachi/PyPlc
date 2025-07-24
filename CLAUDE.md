@@ -38,6 +38,14 @@ PyPlc/
 - [x] 初期化時キャッシュパターン実装
 - [x] スプライトテスト表示
 
+### Phase 4: Grid-Based Electrical System ✅ COMPLETED
+- [x] 16x16ピクセルグリッド（10x10）実装
+- [x] GridDeviceManagerによる交点ベースデバイス配置
+- [x] デバイスパレット選択システム（1-8キー）
+- [x] 電気的継続性システム（LadderRung）実装
+- [x] リアルタイム電力フロー可視化
+- [x] セグメント単位の配線色管理
+
 ## Screen Layout & Display (Updated for 256x256)
 
 ### Current Screen Layout
@@ -45,14 +53,18 @@ PyPlc/
 ┌─────────────────────────────────────────────────────────────┐
 │ PLC Ladder Simulator                    │ Sprite Test Area   │
 │                                         │ [A_ON][A_OFF]      │
-│                                         │ [B_ON][B_OFF]      │
-│                                         │ [LAMP_ON][LAMP_OFF]│
-├─────────────────────────────────────────┴───────────────────┤
-│ Ladder Diagram Display Area                                 │
-│ ├─[X001]─[M001]─(Y001) (AND Circuit)                      │
-│ ├─[X003]─[T001]─(Y002) (Timer Circuit)                    │
-│ ├─[X004]─[C001]─(Y003) (Counter Circuit)                  │
-│                                                             │
+│ Device Palette: [BUS][A][B][COIL][TMR][CNT][H][V]          │
+│                 1   2  3  4    5   6   7  8               │
+├─────────────────────────────────────────────────────────────┤
+│ Grid-Based Ladder Display (16x16 Grid, 10x10 cells)       │
+│ ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐                 │
+│ │   │   │   │   │   │   │   │   │   │   │                 │
+│ ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤                 │
+│ │ L │   │ X │   │ X │   │   │   │ Y │   │ ← Real-time     │
+│ │   │───│001│───│002│───│───│───│001│   │   power flow    │
+│ ├───┼───┼───┼───┼───┼───┼───┼───┼───┼───┤                 │
+│ │   │   │   │   │   │   │   │   │   │   │                 │
+│ └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘                 │
 ├─────────────────────────────────────────────────────────────┤
 │ Device Status Monitor                                       │
 │ X001: ON/OFF    Y001: ON/OFF    T001: 2.5s/3.0s           │
@@ -60,38 +72,38 @@ PyPlc/
 │ X003: ON/OFF    Y003: ON/OFF                               │
 │ X004: ON/OFF                                               │
 ├─────────────────────────────────────────────────────────────┤
-│ Controls: 1:X001 2:X002 3:X003(Timer) 4:X004(Counter) Q:Exit│
+│ Controls: 1-8:Select Device  Shift+1-4:Toggle X001-X004  Q:Exit│
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### Display Specifications
 - **Screen Size**: 256x256 pixels (upgraded from 160x120)
-- **Title Position**: (10, 5)
-- **Ladder Diagram Area**: Y position starts at 50
+- **Device Palette**: Y=16, 8 device types with 1-8 key selection
+- **Grid System**: 16x16 pixel cells, 10x10 grid for device placement
+- **Electrical Visualization**: Real-time power flow with color-coded segments
 - **Device Status Area**: Y position starts at 160
 - **Control Info**: Bottom at Y position 240
-- **Sprite Test Area**: Right side starting at (160, 10)
 
 ## Technical Architecture
 
 ### Core Classes
 ```python
-# デバイス管理
+# グリッドベースデバイス管理
+class GridDevice:          # グリッド交点配置デバイス
+class GridDeviceManager:   # 10x10グリッド管理システム
+class DeviceType(Enum):    # デバイスタイプ定義
+
+# 電気的継続性システム
+class LadderRung:          # 横ライン電気的管理
+class BusConnection:       # バスバー接続点管理
+class ElectricalSystem:    # 全体電気系統管理
+
+# 従来システム（互換性維持）
 class PLCDevice:           # PLCデバイス（X, Y, M, T, C）
 class DeviceManager:       # デバイス管理システム
-
-# 論理素子  
 class LogicElement:        # 論理素子基底クラス
-class ContactA:            # A接点（ノーマルオープン）
-class ContactB:            # B接点（ノーマルクローズ）
-class Coil:               # 出力コイル
-class Timer:              # タイマー（TON）
-class Counter:            # カウンター（CTU）
-
-# ラダープログラム
-class LadderLine:         # ラダー図の1行
-class LadderProgram:      # プログラム全体管理
-class PLCSimulator:       # メインシミュレーター
+class LadderProgram:       # プログラム全体管理
+class PLCSimulator:        # メインシミュレーター
 ```
 
 ### Device Types & Implementation Status
@@ -103,9 +115,15 @@ class PLCSimulator:       # メインシミュレーター
 - **D**: データレジスタ (未実装) - 範囲: D0-D7999
 
 ### Test Circuits Implemented
-1. **AND Circuit**: X001 AND X002 → Y001
-2. **Timer Circuit**: X003 → T001(3秒) → Y002  
-3. **Counter Circuit**: X004 → C001(3回) → Y003
+1. **Grid AND Circuit**: グリッド配置 - バスバー(0,2) → X001(2,2) → X002(4,2) → Y001(8,2)
+2. **Traditional Timer Circuit**: X003 → T001(3秒) → Y002  
+3. **Traditional Counter Circuit**: X004 → C001(3回) → Y003
+
+### Grid-Based Electrical System
+- **Real-time Power Flow**: セグメント単位の電力フロー可視化
+- **Color-Coded Wiring**: 緑=通電、グレー=非通電の動的色変化
+- **Intersection Placement**: 16x16ピクセルグリッドの交点配置
+- **Electrical Continuity**: 左バスバー → デバイス → 右バスバーの連続性管理
 
 ## Sprite Management System
 
@@ -135,30 +153,46 @@ self.sprites = {
 - **メモリ効率**: 必要最小限のスプライトキャッシュ
 
 ## Controls
-- **1 key**: Toggle X001 (AND回路入力1)
-- **2 key**: Toggle X002 (AND回路入力2)  
-- **3 key**: Toggle X003 (タイマー起動)
-- **4 key**: Toggle X004 (カウンター入力)
+
+### Device Selection & Placement
+- **1-8 keys**: デバイスタイプ選択（パレットから）
+  - 1: バスバー, 2: A接点, 3: B接点, 4: コイル
+  - 5: タイマー, 6: カウンター, 7: 横線, 8: 縦線
+- **選択状態**: 黄色背景で現在選択デバイスを表示
+
+### Device Operation
+- **Shift+1**: Toggle X001 (グリッドAND回路入力1)
+- **Shift+2**: Toggle X002 (グリッドAND回路入力2)  
+- **Shift+3**: Toggle X003 (従来タイマー起動)
+- **Shift+4**: Toggle X004 (従来カウンター入力)
+
+### System Control
 - **Q/ESC**: 終了
 
 ## Features Demonstrated
 
 ### Logic Operations
-- **AND Logic**: 2入力AND回路の動作
-- **Timer Operation**: 3秒遅延タイマー
-- **Counter Operation**: 3回カウントアップ
+- **Grid-Based AND Logic**: グリッド交点配置での2入力AND回路
+- **Electrical Continuity**: 左バスバーから右バスバーへの電気的連続性
+- **Power Segment Management**: デバイス間配線の個別通電管理
+- **Timer Operation**: 3秒遅延タイマー（従来システム）
+- **Counter Operation**: 3回カウントアップ（従来システム）
 
 ### Visual Feedback
-- **Real-time Ladder Display**: ラダー図の動的表示
-- **Current Flow Visualization**: 通電状態の色表示（緑=ON, 灰=OFF）
+- **Grid-Based Display**: 16x16ピクセルグリッドでの交点配置表示
+- **Real-time Power Flow**: セグメント単位の電力フロー可視化
+- **Color-Coded Wiring**: 緑=通電、グレー=非通電の動的色変化
+- **Device Palette**: 8種類のデバイスタイプ選択インターフェース
 - **Device Status Panel**: リアルタイムデバイス状態表示
-- **Sprite Test Display**: 画面上部のスプライト表示テスト
+- **Sprite Integration**: 状態依存スプライト切り替え
 
 ### Technical Excellence
-- **Scan Cycle**: 左→右、上→下の忠実なPLCスキャン再現
-- **Object-Oriented Design**: クリーンなクラス設計
-- **Type Safety**: 型ヒント付きPythonコード
-- **Modular Architecture**: 機能別モジュール分離
+- **Grid-Based Architecture**: 交点配置による直感的回路構築
+- **Electrical System Modeling**: 実際のPLC電気的動作の忠実な再現
+- **Dual System Integration**: グリッドシステムと従来システムの並行動作
+- **Real-time Processing**: 60FPSでのリアルタイム状態更新
+- **Object-Oriented Design**: クリーンなクラス設計と型安全性
+- **Modular Architecture**: 機能別モジュール分離と拡張性
 
 ## Development Methodology
 
@@ -174,23 +208,23 @@ self.sprites = {
 
 ## Next Development Phase (Pending)
 
-### Phase 4: Sprite-Based Ladder Display
-- [ ] ラダー図の素子をスプライト表示に置き換え
-- [ ] ContactA/ContactBの状態依存スプライト切り替え
-- [ ] Coilのアニメーション表示
-- [ ] Timer/Counterの専用スプライト追加
+### Phase 5: Interactive Device Placement
+- [ ] マウスクリックによるグリッド配置機能
+- [ ] デバイス削除・移動機能
+- [ ] 複数ライン回路の構築
+- [ ] デバイスアドレス入力システム
 
-### Phase 5: Advanced Visualization  
-- [ ] 電流フローアニメーション
-- [ ] スキャン順序の可視化
-- [ ] より複雑な回路パターン対応
-- [ ] デバッグ情報表示の拡充
+### Phase 6: Advanced Electrical System
+- [ ] 縦バスバー（ジャンプ線）実装
+- [ ] 分岐・合流回路対応
+- [ ] 自己保持回路システム
+- [ ] 並列回路の電気的管理
 
-### Phase 6: User Interaction Enhancement
-- [ ] マウス操作対応
-- [ ] 入力デバイス操作UI
-- [ ] 設定保存/読み込み機能
-- [ ] ラダー図ローダー実装
+### Phase 7: Circuit Construction Enhancement
+- [ ] 回路保存・読み込み機能
+- [ ] ラダー図エクスポート
+- [ ] 複雑な論理回路パターン
+- [ ] エラー検証システム
 
 ## Technical Debt & Future Improvements
 
@@ -352,4 +386,5 @@ pip install pyxel
 
 *Project Status: Active Development*  
 *Last Updated: 2025-01-24*  
-*Next Session: Sprite-based ladder display implementation*
+*Latest Achievement: Grid-based electrical system with real-time power flow visualization*  
+*Next Session: Interactive device placement with mouse operation*
