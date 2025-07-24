@@ -60,6 +60,16 @@
       "x": 8,
       "y": 16,
       "NAME": "DEL"
+    },
+    "72_0": {
+      "x": 72,
+      "y": 0,
+      "NAME": "COUNTER_DARK"
+    },
+    "80_0": {
+      "x": 80,
+      "y": 0,
+      "NAME": "COUNTER_LIGHT"
     }
   }
 }

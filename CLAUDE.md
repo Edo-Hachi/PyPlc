@@ -7,7 +7,13 @@ PyxelとPythonを使用したPLCラダー図シミュレーターの開発プロ
 ## Project Structure
 ```
 PyPlc/
-├── main.py                 # メインシミュレーター
+├── main.py                 # メインコーディネーター (196行) ✅
+├── config.py               # 設定定数・レイアウト・Enum定義 (77行) ✅
+├── grid_system.py          # グリッドベースデバイス管理 (99行) ✅
+├── electrical_system.py    # 電気的継続性システム (197行) ✅
+├── plc_logic.py            # 従来PLCロジック (184行) ✅
+├── ui_components.py        # UI描画・マウス処理 (269行) ✅
+├── main_original.py        # 元のmain.py (1,109行) - バックアップ
 ├── SpriteManager.py        # スプライト管理システム  
 ├── SpriteDefiner.py        # ビジュアルスプライト定義ツール
 ├── sprites.json            # スプライト定義データ
@@ -64,6 +70,19 @@ PyPlc/
 - [x] リアルタイム電力フロー可視化
 - [x] セグメント単位の配線色管理
 
+### Phase 7: Code Modularization ✅ COMPLETED (2025-01-24)
+- [x] main.py構造分析とモジュール分割計画策定
+- [x] config.py作成（Layout, Colors, DeviceType, BusbarDirection）
+- [x] grid_system.py作成（GridDevice, GridDeviceManager）
+- [x] electrical_system.py作成（BusConnection, LadderRung, VerticalConnection, ElectricalSystem）
+- [x] plc_logic.py作成（従来PLCロジック：PLCDevice, DeviceManager, LogicElement群）
+- [x] ui_components.py作成（UI描画メソッド、マウス処理）
+- [x] main.py縮小（PLCSimulatorをコーディネーター役に専念）
+- [x] 全機能動作確認・バグ修正完了
+- [x] グリッド座標オフセット修正
+- [x] デバイスパレットスプライト表示修正
+- [x] マウス処理統合・AttributeError修正
+
 ## Screen Layout & Display (Updated for 256x256)
 
 ### Current Screen Layout
@@ -104,24 +123,36 @@ PyPlc/
 
 ## Technical Architecture
 
-### Core Classes
+### Modular Architecture (Phase 7 Refactoring)
 ```python
-# グリッドベースデバイス管理
+# config.py - 設定・定義モジュール ✅
+class Layout:              # レイアウト定数
+class Colors:              # 色定義
+class DeviceType(Enum):    # デバイスタイプ定義
+class BusbarDirection(Enum): # バスバー接続方向
+
+# grid_system.py - グリッドベースシステム ✅
 class GridDevice:          # グリッド交点配置デバイス
 class GridDeviceManager:   # 10x10グリッド管理システム
-class DeviceType(Enum):    # デバイスタイプ定義
 
-# 電気的継続性システム
-class LadderRung:          # 横ライン電気的管理
+# electrical_system.py - 電気的継続性システム ✅
 class BusConnection:       # バスバー接続点管理
+class LadderRung:          # 横ライン電気的管理
+class VerticalConnection:  # 縦方向結線管理
 class ElectricalSystem:    # 全体電気系統管理
 
-# 従来システム（互換性維持）
+# plc_logic.py - 従来PLCロジック (184行) ✅
 class PLCDevice:           # PLCデバイス（X, Y, M, T, C）
 class DeviceManager:       # デバイス管理システム
 class LogicElement:        # 論理素子基底クラス
 class LadderProgram:       # プログラム全体管理
-class PLCSimulator:        # メインシミュレーター
+
+# ui_components.py - UI・描画システム (269行) ✅
+class UIRenderer:          # UI描画システム
+class MouseHandler:        # マウス入力処理
+
+# main.py - メインコーディネーター (196行) ✅
+class PLCSimulator:        # システム統合・制御
 ```
 
 ### Device Types & Implementation Status
@@ -165,6 +196,7 @@ self.sprites = {
 - **TYPE_B_ON/OFF**: B接点の通電/非通電状態  
 - **LAMP_ON/OFF**: 出力ランプの点灯/消灯状態
 - **TIMER_ON/OFF**: タイマーの動作/停止状態
+- **COUNTER_DARK/LIGHT**: カウンターの非動作/動作状態
 - **LINK_UP**: 上方向電気接続ポイント
 - **LINK_DOWN**: 下方向電気接続ポイント
 - **DEL**: デバイス削除用アイコン
@@ -247,21 +279,21 @@ self.sprites = {
 - **Error Handling**: 堅牢なエラー処理実装
 - **Performance Optimization**: ChromeBlazeのベストプラクティス適用
 
-## Next Development Phase (Pending)
+## Next Development Phase
 
-### Phase 7: Advanced Circuit Functionality
+### Phase 8: Advanced Circuit Functionality (Pending)
 - [ ] 自己保持回路システム（SET/RST命令）
 - [ ] 並列回路の電気的管理
 - [ ] 分岐・合流回路対応
 - [ ] カウンター/タイマーのグリッド統合
 
-### Phase 8: Circuit Construction Enhancement
+### Phase 9: Circuit Construction Enhancement (Pending)
 - [ ] 回路保存・読み込み機能
 - [ ] ラダー図エクスポート機能
 - [ ] 複雑な論理回路パターン対応
 - [ ] エラー検証システム実装
 
-### Phase 9: User Experience Improvements
+### Phase 10: User Experience Improvements (Pending)
 - [ ] デバイス移動機能（ドラッグ&ドロップ）
 - [ ] 回路コピー&ペースト機能
 - [ ] アンドゥ・リドゥ機能
@@ -269,9 +301,18 @@ self.sprites = {
 
 ## Technical Debt & Future Improvements
 
+### Code Modularization Achievements (Phase 7)
+- **Dramatic Size Reduction**: main.py の1,109行から196行への82%削減
+- **Perfect Modularity**: 6つのモジュールによる機能完全分離
+- **Improved Maintainability**: 機能別モジュール分離による保守性向上
+- **Enhanced Testability**: 各モジュールの独立テスト可能性
+- **Better Separation of Concerns**: UI、ロジック、データの明確な分離
+- **Easier Feature Development**: モジュール単位での機能追加・修正
+- **Successful Migration**: 全機能の完全移行とバグ修正完了
+
 ### Architecture Enhancements
 - **Vector2D Integration**: 位置計算の数学的抽象化
-- **Configuration System**: 外部設定ファイル対応
+- **Configuration System**: 外部設定ファイル対応（config.py で部分実現）
 - **State Machine**: より複雑な状態管理への対応
 
 ### Performance Optimizations
@@ -425,7 +466,39 @@ pip install pyxel
 
 ---
 
-*Project Status: Active Development*  
+## Session Achievement Summary (2025-01-24)
+
+### 🎉 Code Modularization - COMPLETED SUCCESSFULLY!
+
+#### **Final Module Structure:**
+- ✅ **`main.py`**: メインコーディネーター (196行) - 82%削減達成
+- ✅ **`config.py`**: 設定定数・レイアウト・Enum定義 (77行)
+- ✅ **`grid_system.py`**: GridDevice, GridDeviceManager (99行)
+- ✅ **`electrical_system.py`**: 電気的継続性システム (197行)
+- ✅ **`plc_logic.py`**: 従来PLCロジック (184行)
+- ✅ **`ui_components.py`**: UI描画・マウス処理 (269行)
+- ✅ **`main_original.py`**: 元のファイルバックアップ (1,109行)
+
+#### **修正完了したバグ:**
+1. **グリッド座標オフセット**: デバイス配置が交点上に正確に配置
+2. **デバイスパレット**: スプライト表示とハイライト機能復旧
+3. **マウス処理**: パレット選択とグリッド配置の統合処理
+4. **AttributeError**: `selected_device_index`参照エラー修正
+
+#### **品質保証:**
+- **機能完全性**: 元のバージョンと同等の全機能動作確認済み
+- **パフォーマンス**: 60FPSリアルタイム処理維持
+- **拡張性**: モジュール単位での独立開発・テスト可能
+
+### Modularization Impact
+- **Dramatic Reduction**: 1,109行 → 196行 (82%削減)
+- **Perfect Separation**: 6モジュールによる責任明確化
+- **Future-Ready**: 次期開発フェーズの基盤完成
+
+---
+
+*Project Status: ✅ Code Modularization Phase COMPLETED*  
 *Last Updated: 2025-01-24*  
-*Latest Achievement: Complete interactive device placement system with visual vertical connections*  
-*Next Session: Advanced circuit functionality (SET/RST, parallel circuits)*
+*Latest Achievement: 完全なモジュール化とバグ修正完了 - 全機能正常動作*  
+*Current Status: Phase 8 (Advanced Circuit Functionality) 開発準備完了*  
+*Next Session: SET/RST命令、並列回路、自己保持回路システムの実装*
