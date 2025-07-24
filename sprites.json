@@ -1,0 +1,50 @@
+{
+  "meta": {
+    "sprite_size": 8,
+    "resource_file": "./my_resource.pyxres",
+    "created_by": "SpriteDefiner",
+    "version": "3.0"
+  },
+  "sprites": {
+    "16_0": {
+      "x": 16,
+      "y": 0,
+      "NAME": "TYPE_A_OFF"
+    },
+    "8_0": {
+      "x": 8,
+      "y": 0,
+      "NAME": "TYPE_A_ON"
+    },
+    "24_0": {
+      "x": 24,
+      "y": 0,
+      "NAME": "TYPE_B_ON"
+    },
+    "32_0": {
+      "x": 32,
+      "y": 0,
+      "NAME": "TYPE_B_OFF"
+    },
+    "40_0": {
+      "x": 40,
+      "y": 0,
+      "NAME": "LAMP_OFF"
+    },
+    "48_0": {
+      "x": 48,
+      "y": 0,
+      "NAME": "LAMP_ON"
+    },
+    "56_0": {
+      "x": 56,
+      "y": 0,
+      "NAME": "TIMER_OFF"
+    },
+    "64_0": {
+      "x": 64,
+      "y": 0,
+      "NAME": "TIMER_ON"
+    }
+  }
+}
