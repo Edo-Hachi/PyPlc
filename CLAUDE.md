@@ -497,8 +497,71 @@ pip install pyxel
 
 ---
 
+---
+
+## Phase 8: EDIT/RUN Mode System (Planned - 2025-01-24 Afternoon)
+
+### 🎯 **設計概要**
+EDITモードと実行モードの分離により、より実用的なPLCシミュレーターを実現。
+
+### **EDITモード機能**
+- デバイス配置・削除・編集
+- 回路構築・修正
+- **デバイス番号入力システム** (M001, T001, X010等)
+- グリッド編集機能
+
+### **実行モード機能**  
+- デバイス配置不可（編集ロック）
+- 入力デバイス（X接点）のON/OFF操作
+- リアルタイム回路シミュレーション
+- 出力デバイス状態表示
+
+### **SpriteDefiner参考実装要素**
+**テキスト入力システム (322-347行)**:
+```python
+def _handle_text_input_common(self, input_text):
+    # A-Z文字入力（SHIFT対応）
+    for i in range(26):
+        if pyxel.btnp(pyxel.KEY_A + i):
+            if pyxel.btn(pyxel.KEY_SHIFT):
+                input_text += chr(ord('A') + i)
+            else:
+                input_text += chr(ord('a') + i)
+    # 0-9数字入力・バックスペース処理
+```
+
+**状態管理システム**:
+```python
+class AppState(Enum):
+    VIEW = "view"
+    EDIT = "edit" 
+    COMMAND_INPUT = "command_input"
+    LEGACY_INPUT = "legacy_input"
+```
+
+### **実装計画**
+1. **モード管理システム**: `SimulatorMode(Enum)` 
+2. **キー操作**: TABキーでモード切り替え
+3. **デバイス番号入力**: ENTERキーで入力モード開始
+4. **UI表示**: 画面上部にモード表示
+5. **機能制限**: モード別の操作制限
+
+### **PyPlc用実装仕様**
+- **デバイス配置後番号入力**: デバイス配置→ENTER→番号入力モード
+- **入力フォーマット**: "X001", "M100", "T050", "C020"等
+- **バリデーション**: デバイスタイプと番号範囲チェック
+- **UI表示**: 画面下部に入力プロンプト表示
+
+### **開発優先順序**
+1. モード切り替えシステム (TABキー)
+2. デバイス番号入力システム
+3. 実行モードでの操作システム  
+4. UI表示統合
+
+---
+
 *Project Status: ✅ Code Modularization Phase COMPLETED*  
 *Last Updated: 2025-01-24*  
-*Latest Achievement: 完全なモジュール化とバグ修正完了 - 全機能正常動作*  
-*Current Status: Phase 8 (Advanced Circuit Functionality) 開発準備完了*  
-*Next Session: SET/RST命令、並列回路、自己保持回路システムの実装*
+*Latest Achievement: 完全なモジュール化とバグ修正完了 + EDIT/RUN Mode設計完了*  
+*Current Status: Phase 8 (EDIT/RUN Mode System) 実装待機中*  
+*Next Session: EDITモード拡張・実行モード・デバイス番号入力システムの実装*

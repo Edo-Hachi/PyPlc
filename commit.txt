@@ -1,127 +1,39 @@
-Complete code modularization with full functionality preservation
+Add Phase 8 EDIT/RUN Mode System design and UI improvements
 
-## Major Achievement
+## Major Updates
 
-### Code Modularization Success
-- Successfully refactored main.py from 1,109 lines to 196 lines (82% reduction)
-- Created 6 well-structured modules with clear separation of concerns
-- Preserved all original functionality with zero feature loss
-- Achieved perfect module independence for future development
+### Phase 8 Design Planning
+- Add comprehensive EDIT/RUN mode system design to CLAUDE.md
+- Plan device number input system (M001, T001, X010 format)
+- Design SpriteDefiner-inspired text input system
+- Define mode switching and state management architecture
 
-## Module Structure Created
+### UI Component Improvements
+- Fix device palette click selection functionality
+- Optimize palette icon click detection to 8x8 sprite size
+- Correct LINK_UP/DOWN sprite display (visual direction fix)
+- Add white thick line background for vertical connections
+- Enhance left grid line as hot-side visual indicator
+- Remove BUSBAR device from palette (simplified to 7 devices)
 
-### Core Modules (6 files)
-1. **`main.py`** (196 lines) - Main coordinator and system integration
-2. **`config.py`** (77 lines) - Configuration constants, layouts, and enum definitions
-3. **`grid_system.py`** (99 lines) - Grid-based device management system
-4. **`electrical_system.py`** (197 lines) - Electrical continuity and power flow system
-5. **`plc_logic.py`** (184 lines) - Traditional PLC logic components
-6. **`ui_components.py`** (269 lines) - UI rendering and mouse interaction system
+### Technical Achievements
+- Modular mouse handler with proper device selection return
+- Improved visual feedback for vertical electrical connections
+- Better grid-based electrical system visualization
+- Enhanced user interaction precision
 
-### Support Files
-- **`main_original.py`** - Complete backup of original implementation
-- Updated **`CLAUDE.md`** - Comprehensive documentation of modularization
+### Development Methodology
+- Complete SpriteDefiner legacy input system analysis
+- Document comprehensive implementation plan for afternoon session
+- Maintain TodoWrite-driven development approach
 
-## Technical Implementation
+## Next Phase Ready
+Phase 8 (EDIT/RUN Mode System) implementation prepared with:
+- TAB key mode switching design
+- ENTER key device number input system
+- Runtime device operation planning
+- UI integration specifications
 
-### Module Responsibilities
-- **config.py**: Centralized constants (Layout, Colors, DeviceType, BusbarDirection)
-- **grid_system.py**: GridDevice class and GridDeviceManager for intersection-based placement
-- **electrical_system.py**: BusConnection, LadderRung, VerticalConnection, ElectricalSystem
-- **plc_logic.py**: PLCDevice, DeviceManager, LogicElement hierarchy, traditional ladder logic
-- **ui_components.py**: UIRenderer for drawing, MouseHandler for input processing
-- **main.py**: PLCSimulator as lightweight coordinator integrating all systems
-
-### Architecture Benefits
-- **Clean Separation**: Each module has single, well-defined responsibility
-- **Independence**: Modules can be developed and tested separately
-- **Maintainability**: Bug fixes and feature additions isolated to specific modules
-- **Extensibility**: New features can be added with minimal cross-module impact
-- **Testability**: Each module can be unit tested independently
-
-## Bug Fixes Completed
-
-### Critical Issues Resolved
-1. **Grid Coordinate Offset Correction**
-   - Fixed device placement to snap precisely to grid intersections
-   - Corrected coordinate calculations in all drawing methods
-   - Restored original pixel-perfect positioning behavior
-
-2. **Device Palette Sprite Display**
-   - Restored sprite icons in device selection palette
-   - Fixed device palette data structure (tuple → dictionary format)
-   - Implemented proper sprite existence checking and fallback rendering
-
-3. **Mouse Input Integration**
-   - Unified palette selection and grid placement in single handler
-   - Fixed device selection state management (`selected_device_type`)
-   - Restored visual feedback (highlighting, preview) functionality
-
-4. **AttributeError Resolution**
-   - Eliminated all references to deprecated `selected_device_index`
-   - Updated preview system to use `selected_device_type` consistently
-   - Fixed device name lookup in mouse preview system
-
-## Quality Assurance
-
-### Functionality Verification
-- **Grid System**: Device placement on intersections works perfectly
-- **Device Palette**: All sprites display correctly with selection highlighting
-- **Mouse Interaction**: Palette selection and grid placement fully functional
-- **Keyboard Controls**: 1-8 device selection, Shift+1-4 device operation
-- **Electrical System**: Real-time power flow visualization maintained
-- **Performance**: 60FPS real-time processing preserved
-
-### Code Quality
-- **Type Safety**: Proper type hints throughout all modules
-- **Documentation**: Comprehensive docstrings for all classes and methods
-- **Error Handling**: Robust error checking and boundary validation
-- **Consistency**: Uniform coding style and naming conventions
-
-## Development Methodology
-
-### Systematic Approach
-- **Phase-by-Phase**: Methodical module creation with incremental testing
-- **Backup Strategy**: Original code preserved before any modifications
-- **Issue Tracking**: TodoWrite tool used for systematic progress tracking
-- **Testing**: Each module verified independently before integration
-
-### Risk Mitigation
-- **Incremental Migration**: One module at a time to minimize breakage risk
-- **Functionality Preservation**: Continuous verification of feature parity
-- **Rollback Capability**: Complete original backup maintained
-- **Bug Isolation**: Issues addressed immediately upon detection
-
-## Future Development Ready
-
-### Enhanced Architecture
-- **Modular Development**: New features can be added module-specifically
-- **Team Collaboration**: Multiple developers can work on different modules
-- **Testing Strategy**: Unit tests can be implemented per module
-- **Maintenance**: Bug fixes and updates isolated to relevant modules
-
-### Next Phase Preparation
-- **Phase 8 Ready**: Advanced circuit functionality (SET/RST, parallel circuits)
-- **Expansion Capable**: Self-holding circuits, complex logic patterns
-- **UI Enhancement**: Easy to extend with new device types and interactions
-- **Performance Optimization**: Modular structure enables targeted optimizations
-
-## Technical Excellence
-
-### Software Engineering Best Practices
-- **Single Responsibility Principle**: Each module has one clear purpose
-- **Dependency Injection**: Clean interfaces between modules
-- **Separation of Concerns**: UI, logic, and data clearly separated
-- **Object-Oriented Design**: Well-structured class hierarchies maintained
-
-### Code Metrics Achievement
-- **Lines of Code**: Reduced from 1,109 to 196 (82% reduction)
-- **Cyclomatic Complexity**: Significantly reduced through modularization
-- **Module Cohesion**: High cohesion within modules, low coupling between
-- **Maintainability Index**: Dramatically improved through clear structure
-
-This modularization represents a complete architectural transformation while maintaining 100% functional compatibility. The codebase is now well-positioned for advanced feature development, easier maintenance, and collaborative development.
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
+Generated with [Claude Code](https://claude.ai/code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>

@@ -64,7 +64,7 @@ class PLCSimulator:
             {"type": DeviceType.TYPE_B, "name": "B接点", "sprite": "TYPE_B_OFF"},
             {"type": DeviceType.COIL, "name": "コイル", "sprite": "LAMP_OFF"},
             {"type": DeviceType.TIMER, "name": "タイマー", "sprite": "TIMER_OFF"},
-            {"type": DeviceType.BUSBAR, "name": "バスバー", "sprite": None},
+            #{"type": DeviceType.BUSBAR, "name": "バスバー", "sprite": None},
             {"type": DeviceType.LINK_UP, "name": "上結線", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "下結線", "sprite": "LINK_DOWN"},
             {"type": DeviceType.DEL, "name": "削除", "sprite": "DEL"}
@@ -83,9 +83,10 @@ class PLCSimulator:
         self._setup_test_grid_devices()
         
         # テスト用従来ラダー回路作成
-        self._setup_test_ladder_circuits()
+        #self._setup_test_ladder_circuits()
     
     def _setup_test_grid_devices(self):
+        
         """テスト用グリッドデバイス配置"""
         # グリッドAND回路: バスバー → X001 → X002 → Y001
         self.grid_device_manager.place_device(0, 2, DeviceType.BUSBAR)
@@ -98,6 +99,7 @@ class PLCSimulator:
         self.device_manager.set_device_value("X002", False)
     
     def _setup_test_ladder_circuits(self):
+        return
         """テスト用従来ラダー回路作成"""
         # テスト用AND回路: X001 AND X002 -> Y001
         line1 = LadderLine()
@@ -126,7 +128,9 @@ class PLCSimulator:
         self._handle_keyboard_input()
         
         # マウス入力処理
-        self.mouse_handler.handle_mouse_input(self.grid_device_manager, self.device_manager)
+        selected_device = self.mouse_handler.handle_mouse_input(self.grid_device_manager, self.device_manager)
+        if selected_device is not None:
+            self.selected_device_type = selected_device
         
         # システム状態更新
         self._update_systems()

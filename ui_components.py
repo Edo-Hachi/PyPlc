@@ -30,20 +30,20 @@ class UIRenderer:
         for i, device in enumerate(self.device_palette):
             x_pos = Layout.PALETTE_START_X + i * Layout.PALETTE_DEVICE_WIDTH
             
-            # マウスオーバー時の視覚的フィードバック
+            # マウスオーバー時の視覚的フィードバック（8x8スプライトに合わせて縮小）
             mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
-            is_mouse_over = (x_pos - 2 <= mouse_x <= x_pos + 18 and 
-                           Layout.PALETTE_Y - 2 <= mouse_y <= Layout.PALETTE_Y + 10)
+            is_mouse_over = (x_pos <= mouse_x <= x_pos + 8 and 
+                           Layout.PALETTE_Y <= mouse_y <= Layout.PALETTE_Y + 8)
             
             # 選択中のデバイスは明確に表示
             if device["type"] == selected_device_type:
-                # 選択中は黄色の背景 + 白い枠線
-                pyxel.rect(x_pos - 2, Layout.PALETTE_Y - 2, 20, 12, Colors.SELECTED_BG)
-                pyxel.rectb(x_pos - 2, Layout.PALETTE_Y - 2, 20, 12, Colors.TEXT)
+                # 選択中は黄色の背景 + 白い枠線（8x8サイズ）
+                pyxel.rect(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.SELECTED_BG)
+                pyxel.rectb(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.TEXT)
             elif is_mouse_over:
-                # マウスオーバー時は薄い背景 + 白い枠線
-                pyxel.rect(x_pos - 2, Layout.PALETTE_Y - 2, 20, 12, 5)  # ダークグレー背景
-                pyxel.rectb(x_pos - 2, Layout.PALETTE_Y - 2, 20, 12, Colors.TEXT)
+                # マウスオーバー時は薄い背景 + 白い枠線（8x8サイズ）
+                pyxel.rect(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, 5)  # ダークグレー背景
+                pyxel.rectb(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.TEXT)
             
             # デバイススプライト表示
             if device["sprite"]:
@@ -66,7 +66,12 @@ class UIRenderer:
         
         for col in range(Layout.GRID_COLS + 1):
             x = Layout.GRID_START_X + col * Layout.GRID_SIZE
-            pyxel.line(x, Layout.GRID_START_Y, x, Layout.GRID_START_Y + Layout.GRID_ROWS * Layout.GRID_SIZE, Colors.GRID_LINE)
+            if col == 0:
+                # 左端の縦線（ホット側）は白い太線で表示
+                pyxel.rect(x - 1, Layout.GRID_START_Y, 3, Layout.GRID_ROWS * Layout.GRID_SIZE + 1, Colors.TEXT)
+            else:
+                # その他の縦線は通常のグリッド線
+                pyxel.line(x, Layout.GRID_START_Y, x, Layout.GRID_START_Y + Layout.GRID_ROWS * Layout.GRID_SIZE, Colors.GRID_LINE)
         
         # 配置済みデバイス描画
         self._draw_grid_devices(grid_manager)
@@ -96,10 +101,10 @@ class UIRenderer:
                         # バスバーは白い縦線で表示
                         pyxel.line(px, py - 6, px, py + 6, Colors.BUSBAR)
                     elif device.device_type == DeviceType.LINK_UP:
-                        sprite = self.sprites["LINK_UP"]
+                        sprite = self.sprites["LINK_DOWN"]  # LINK_UPは下向きの絵（LINK_DOWNスプライト）を使用
                         pyxel.blt(px - 4, py - 4, 0, sprite.x, sprite.y, 8, 8, 0)
                     elif device.device_type == DeviceType.LINK_DOWN:
-                        sprite = self.sprites["LINK_DOWN"]
+                        sprite = self.sprites["LINK_UP"]    # LINK_DOWNは上向きの絵（LINK_UPスプライト）を使用
                         pyxel.blt(px - 4, py - 4, 0, sprite.x, sprite.y, 8, 8, 0)
                     
                     # デバイスアドレス表示
@@ -135,7 +140,10 @@ class UIRenderer:
             start_py = Layout.GRID_START_Y + up_y * Layout.GRID_SIZE
             end_py = Layout.GRID_START_Y + down_y * Layout.GRID_SIZE
             
-            # 縦線描画
+            # 白い太線のBG表示（RECTで実装）
+            pyxel.rect(x - 1, start_py, 3, end_py - start_py + 1, Colors.TEXT)  # 白い背景（3ピクセル幅）
+            
+            # 縦線描画（中央に細線）
             pyxel.line(x, start_py, x, end_py, color)
     
     def _draw_device_placement_preview(self, mouse_handler):
@@ -265,17 +273,19 @@ class MouseHandler:
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
             mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
             
-            # デバイスパレット選択判定
-            if Layout.PALETTE_Y - 2 <= mouse_y <= Layout.PALETTE_Y + 10:
+            # デバイスパレット選択判定（8x8スプライトサイズに合わせて縮小）
+            if Layout.PALETTE_Y <= mouse_y <= Layout.PALETTE_Y + 8:
                 for i, device in enumerate(self.device_palette):
                     x_pos = Layout.PALETTE_START_X + i * Layout.PALETTE_DEVICE_WIDTH
-                    if x_pos - 2 <= mouse_x <= x_pos + 18:
+                    if x_pos <= mouse_x <= x_pos + 8:
                         # デバイスタイプを選択
                         self.selected_device_type = device["type"]
-                        break
+                        return device["type"]  # メインクラスに選択されたデバイスタイプを返す
             else:
                 # グリッド上でのデバイス配置処理
                 self._handle_grid_placement(grid_manager, device_manager)
+        
+        return None  # 何も選択されなかった場合
     
     def _update_preview(self, grid_manager):
         """マウスプレビュー更新"""
