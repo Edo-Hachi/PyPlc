@@ -125,6 +125,144 @@ class GridDevice:
             self.coil_energized = plc_device.value
             self.active = self.coil_energized
 
+class BusConnection:
+    """バスバー接続点の管理（縦バスバー対応準備）"""
+    def __init__(self, grid_x: int, grid_y: int):
+        self.grid_x = grid_x
+        self.grid_y = grid_y
+        self.is_energized = False
+        self.connected_rungs = []  # 接続されているラング
+        self.bus_type = "LEFT"     # LEFT/RIGHT/MIDDLE（将来の縦バス用）
+
+class LadderRung:
+    """ラダー図の1ライン（ラング）を電気的に管理"""
+    def __init__(self, grid_y: int, grid_cols: int = 10):
+        self.grid_y = grid_y
+        self.grid_cols = grid_cols
+        self.devices = []           # このライン上のデバイス（左→右順）
+        self.power_segments = []    # 電力セグメント
+        self.left_bus_connection = BusConnection(0, grid_y)   # 左バスバー接続
+        self.right_bus_connection = BusConnection(grid_cols-1, grid_y)  # 右バスバー接続
+        self.is_energized = False   # ライン全体の通電状態
+        
+    def add_device_at_position(self, grid_x: int, device: 'GridDevice'):
+        """指定位置にデバイスを追加"""
+        # デバイスを位置順でソート挿入
+        inserted = False
+        for i, (pos, dev) in enumerate(self.devices):
+            if grid_x < pos:
+                self.devices.insert(i, (grid_x, device))
+                inserted = True
+                break
+        if not inserted:
+            self.devices.append((grid_x, device))
+    
+    def calculate_power_flow(self) -> bool:
+        """左から右への電力フロー計算"""
+        if not self.left_bus_connection.is_energized:
+            return False
+            
+        # 左バスバーからスタート
+        power_state = True
+        
+        # 各デバイスの論理演算（左→右）
+        for grid_x, device in self.devices:
+            if device.device_type == DeviceType.TYPE_A:
+                # A接点：デバイスがONの時に通電継続
+                power_state = power_state and device.active
+            elif device.device_type == DeviceType.TYPE_B:
+                # B接点：デバイスがOFFの時に通電継続
+                power_state = power_state and (not device.contact_state)
+            elif device.device_type == DeviceType.COIL:
+                # コイル：電力状態を受け取って励磁
+                device.coil_energized = power_state
+                device.active = power_state
+            # 他のデバイスタイプも必要に応じて追加
+        
+        self.is_energized = power_state
+        self.right_bus_connection.is_energized = power_state
+        return power_state
+    
+    def get_power_segments(self) -> List[Tuple[int, int, bool]]:
+        """電力セグメント情報を取得（描画用）"""
+        segments = []
+        if not self.devices:
+            return segments
+            
+        # 左バスバーから最初のデバイスまで
+        if self.devices:
+            first_x = self.devices[0][0]
+            segments.append((0, first_x, self.left_bus_connection.is_energized))
+        
+        # デバイス間のセグメント
+        current_power = self.left_bus_connection.is_energized
+        for i, (grid_x, device) in enumerate(self.devices):
+            # デバイス通過後の電力状態を計算
+            if device.device_type == DeviceType.TYPE_A:
+                current_power = current_power and device.active
+            elif device.device_type == DeviceType.TYPE_B:
+                current_power = current_power and (not device.contact_state)
+            
+            # 次のデバイスまでのセグメント
+            if i < len(self.devices) - 1:
+                next_x = self.devices[i + 1][0]
+                segments.append((grid_x, next_x, current_power))
+            else:
+                # 最後のデバイスから右バスバーまで
+                segments.append((grid_x, self.grid_cols - 1, current_power))
+        
+        return segments
+
+class ElectricalSystem:
+    """ラダー図全体の電気系統を管理"""
+    def __init__(self, grid_device_manager: 'GridDeviceManager'):
+        self.grid_manager = grid_device_manager
+        self.rungs: Dict[int, LadderRung] = {}  # grid_y -> LadderRung
+        self.left_bus_energized = True   # 左バスバー通電状態
+        self.right_bus_energized = False # 右バスバー通電状態
+        
+        # 縦バスバー用（将来拡張）
+        self.vertical_buses = {}  # grid_x -> VerticalBus（将来実装）
+        
+    def get_or_create_rung(self, grid_y: int) -> LadderRung:
+        """指定行のラングを取得（なければ作成）"""
+        if grid_y not in self.rungs:
+            self.rungs[grid_y] = LadderRung(grid_y, self.grid_manager.grid_cols)
+        return self.rungs[grid_y]
+    
+    def update_electrical_state(self):
+        """全体の電気状態を更新"""
+        # 既存のラングデバイス情報をクリア
+        for rung in self.rungs.values():
+            rung.devices.clear()
+        
+        # 各ラングにデバイス情報を同期
+        for row in self.grid_manager.grid:
+            for device in row:
+                if device.device_type != DeviceType.EMPTY:
+                    rung = self.get_or_create_rung(device.grid_y)
+                    rung.add_device_at_position(device.grid_x, device)
+        
+        # 左バスバーを通電
+        for rung in self.rungs.values():
+            rung.left_bus_connection.is_energized = self.left_bus_energized
+        
+        # 各ラングの電力フロー計算
+        for rung in self.rungs.values():
+            rung.calculate_power_flow()
+    
+    def get_wire_color(self, grid_x: int, grid_y: int) -> int:
+        """指定位置の配線色を取得"""
+        if grid_y in self.rungs:
+            rung = self.rungs[grid_y]
+            segments = rung.get_power_segments()
+            
+            for start_x, end_x, is_energized in segments:
+                if start_x <= grid_x <= end_x:
+                    return Colors.WIRE_ON if is_energized else Colors.WIRE_OFF
+        
+        return Colors.WIRE_OFF
+
 class GridDeviceManager:
     """グリッド上のデバイス配置を管理するクラス"""
     def __init__(self, grid_cols: int = 10, grid_rows: int = 10):
@@ -373,6 +511,9 @@ class PLCSimulator:
         # グリッドデバイス管理システム
         self.grid_device_manager = GridDeviceManager(Layout.GRID_COLS, Layout.GRID_ROWS)
         
+        # 電気系統管理システム
+        self.electrical_system = ElectricalSystem(self.grid_device_manager)
+        
         # スプライトキャッシュ（初期化時に一括取得）
         self.sprites = {
             "TYPE_A_ON": sprite_manager.get_sprite_by_name_and_tag("TYPE_A_ON"),
@@ -471,6 +612,9 @@ class PLCSimulator:
         
         # グリッドデバイス状態更新
         self.grid_device_manager.update_all_devices(self.device_manager)
+        
+        # 電気系統状態更新
+        self.electrical_system.update_electrical_state()
         
     def draw(self):
         """画面描画処理"""
@@ -621,6 +765,29 @@ class PLCSimulator:
                         color = Colors.WIRE_ON if device.wire_energized else Colors.WIRE_OFF
                         pyxel.line(px, py - 8, px, py + 8, color)
 
+    def _draw_electrical_wiring(self):
+        """電気的配線（横ライン）を描画"""
+        for grid_y, rung in self.electrical_system.rungs.items():
+            y_wire = self.grid_start_y + grid_y * self.grid_size
+            
+            # 電力セグメントを取得して描画
+            segments = rung.get_power_segments()
+            for start_x, end_x, is_energized in segments:
+                wire_color = Colors.WIRE_ON if is_energized else Colors.WIRE_OFF
+                
+                # セグメントの開始・終了ピクセル座標
+                x1 = self.grid_start_x + start_x * self.grid_size
+                x2 = self.grid_start_x + end_x * self.grid_size
+                
+                # デバイス位置を考慮した配線描画
+                if start_x == 0:  # 左バスバーから
+                    x1 += 2  # バスバー幅分オフセット
+                if end_x == self.grid_cols - 1:  # 右バスバーまで
+                    x2 -= 2  # バスバー幅分オフセット
+                
+                # 横配線を描画
+                pyxel.line(x1, y_wire, x2, y_wire, wire_color)
+
     def _draw_device_palette(self):
         """Y=16ラインにPLCデバイスパレットを表示"""
         
@@ -672,63 +839,10 @@ class PLCSimulator:
         
         # グリッドデバイス描画
         self._draw_grid_devices()
+        
+        # 電気的配線描画
+        self._draw_electrical_wiring()
     
-    def _draw_grid_intersection_demo(self):
-        """グリッド交点でのデバイス配置デモ"""
-        # 交点座標を計算
-        def get_intersection_pos(grid_x, grid_y):
-            pixel_x = self.grid_start_x + grid_x * self.grid_size
-            pixel_y = self.grid_start_y + grid_y * self.grid_size
-            return pixel_x, pixel_y
-        
-        # デモ配置: ラダー図的なレイアウト
-        # ライン1: 左バスバー -> X001 -> X002 -> Y001
-        positions = [
-            (0, 2),  # 左バスバー
-            (2, 2),  # X001 (A接点)
-            (4, 2),  # X002 (A接点) 
-            (8, 2),  # Y001 (コイル)
-        ]
-        
-        # デバイスを交点に配置
-        for i, (gx, gy) in enumerate(positions):
-            px, py = get_intersection_pos(gx, gy)
-            
-            if i == 0:  # 左バスバー
-                pyxel.rect(px-2, py-6, 4, 12, Colors.BUSBAR)
-                pyxel.text(px-8, py+8, "L", Colors.TEXT)
-            elif i == 1:  # X001
-                sprite = self.sprites["TYPE_A_ON"] if self.device_manager.get_device("X001").value else self.sprites["TYPE_A_OFF"]
-                pyxel.blt(px-4, py-4, 0, sprite.x, sprite.y, 8, 8, 0)
-                pyxel.text(px-8, py+8, "X001", Colors.TEXT)
-            elif i == 2:  # X002
-                sprite = self.sprites["TYPE_A_ON"] if self.device_manager.get_device("X002").value else self.sprites["TYPE_A_OFF"]
-                pyxel.blt(px-4, py-4, 0, sprite.x, sprite.y, 8, 8, 0)
-                pyxel.text(px-8, py+8, "X002", Colors.TEXT)
-            elif i == 3:  # Y001
-                sprite = self.sprites["LAMP_ON"] if self.device_manager.get_device("Y001").value else self.sprites["LAMP_OFF"]
-                pyxel.blt(px-4, py-4, 0, sprite.x, sprite.y, 8, 8, 0)
-                pyxel.text(px-8, py+8, "Y001", Colors.TEXT)
-        
-        # 横配線を描画（デバイス間接続）
-        y_wire = self.grid_start_y + 2 * self.grid_size
-        wire_color = Colors.WIRE_ON if (self.device_manager.get_device("X001").value and 
-                          self.device_manager.get_device("X002").value) else Colors.WIRE_OFF
-        
-        # 左バスバー -> X001
-        x1 = self.grid_start_x + 0 * self.grid_size + 2
-        x2 = self.grid_start_x + 2 * self.grid_size - 4
-        pyxel.line(x1, y_wire, x2, y_wire, wire_color)
-        
-        # X001 -> X002
-        x1 = self.grid_start_x + 2 * self.grid_size + 4
-        x2 = self.grid_start_x + 4 * self.grid_size - 4
-        pyxel.line(x1, y_wire, x2, y_wire, wire_color)
-        
-        # X002 -> Y001
-        x1 = self.grid_start_x + 4 * self.grid_size + 4
-        x2 = self.grid_start_x + 8 * self.grid_size - 4
-        pyxel.line(x1, y_wire, x2, y_wire, wire_color)
 
 
 if __name__ == "__main__":
