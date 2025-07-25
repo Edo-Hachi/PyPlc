@@ -187,6 +187,9 @@ class ElectricalSystem:
         
         # 縦方向結線の電力伝達を処理
         self._process_vertical_connections()
+        
+        # コイル状態とY接点デバイスの自動連動処理
+        self._update_coil_device_synchronization()
     
     def get_wire_color(self, grid_x: int, grid_y: int) -> int:
         """指定位置の配線色を取得"""
@@ -243,3 +246,55 @@ class ElectricalSystem:
                 segments.append((connection.grid_x, down_y, up_y, is_energized))
         
         return segments
+    
+    def _update_coil_device_synchronization(self):
+        """コイル状態とY接点デバイスの自動連動処理
+        
+        コイルが通電状態になった場合、対応するY接点デバイスを自動的にON状態にする。
+        PLC動作の基本原理：出力コイル励磁 → 対応する出力接点導通
+        """
+        # デバイスマネージャーへの参照を取得する必要があるため、
+        # 実際の連動処理はmain.pyから呼び出される専用メソッドで実行
+        pass
+    
+    def synchronize_coil_to_device(self, device_manager):
+        """コイル状態をデバイスマネージャーのY接点と同期
+        
+        Args:
+            device_manager: PLCデバイスマネージャー（plc_logic.py）
+        """
+        # 全グリッドデバイスをスキャンしてコイルを検出
+        for row in self.grid_manager.grid:
+            for device in row:
+                if device.device_type == DeviceType.COIL and device.device_address:
+                    # コイルのデバイスアドレス（例: Y001）からY接点デバイスを更新
+                    plc_device = device_manager.get_device(device.device_address)
+                    if plc_device:
+                        # コイルの励磁状態をY接点デバイスに反映
+                        plc_device.value = device.coil_energized
+                        
+                        # グリッド上の他のY接点（TYPE_A/TYPE_B）も同期
+                        self._synchronize_y_contacts(device.device_address, device.coil_energized)
+    
+    def _synchronize_y_contacts(self, y_address: str, energized_state: bool):
+        """指定Yアドレスに対応するグリッド上のY接点を同期
+        
+        Args:
+            y_address: Yデバイスアドレス（例: "Y001"）
+            energized_state: コイルの励磁状態
+        """
+        # 全グリッドデバイスをスキャンして同じYアドレスのTYPE_A/TYPE_B接点を更新
+        for row in self.grid_manager.grid:
+            for device in row:
+                if (device.device_address == y_address and 
+                    device.device_type in [DeviceType.TYPE_A, DeviceType.TYPE_B]):
+                    
+                    # Y接点の状態を更新
+                    if device.device_type == DeviceType.TYPE_A:
+                        # A接点：コイル励磁時にON
+                        device.contact_state = energized_state
+                        device.active = energized_state
+                    elif device.device_type == DeviceType.TYPE_B:
+                        # B接点：コイル励磁時にOFF（反転動作）
+                        device.contact_state = energized_state
+                        device.active = not energized_state

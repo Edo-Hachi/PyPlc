@@ -65,9 +65,9 @@ class PLCSimulator:
         """UIシステム初期化"""
         # デバイスパレット定義（元のコード形式）
         self.device_palette = [
-            {"type": DeviceType.TYPE_A, "name": "Contact A", "sprite": "TYPE_A_OFF"},
-            {"type": DeviceType.TYPE_B, "name": "Contact B", "sprite": "TYPE_B_OFF"},
-            {"type": DeviceType.COIL, "name": "Coil", "sprite": "LAMP_OFF"},
+            {"type": DeviceType.TYPE_A, "name": "A Contact", "sprite": "TYPE_A_OFF"},
+            {"type": DeviceType.TYPE_B, "name": "B Contact", "sprite": "TYPE_B_OFF"},
+            {"type": DeviceType.COIL, "name": "Output Coil", "sprite": "CDEV_NML_OFF"},
             {"type": DeviceType.TIMER, "name": "Timer", "sprite": "TIMER_OFF"},
             {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "Link Down", "sprite": "LINK_DOWN"},
@@ -220,11 +220,16 @@ class PLCSimulator:
             # 電気系統状態更新
             self.electrical_system.update_electrical_state()
             
+            # コイル状態とY接点デバイスの自動連動
+            self.electrical_system.synchronize_coil_to_device(self.device_manager)
+            
             # 従来ラダープログラム実行
             self.ladder_program.scan_cycle(self.device_manager)
         else:
             # 停止中でも電気系統の表示は更新（入力変更の反映のため）
             self.electrical_system.update_electrical_state()
+            # 停止中でもコイル→Y接点連動は実行（表示更新のため）
+            self.electrical_system.synchronize_coil_to_device(self.device_manager)
     
     def _show_device_config_dialog(self, device):
         """デバイス設定ダイアログを表示"""

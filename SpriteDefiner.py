@@ -28,8 +28,8 @@ class AppState(Enum):
 class SpriteDefiner:
     def __init__(self):
         # ウィンドウ設定
-        self.WIDTH = 620  # 256 (sprite area) + 12*2 (margins) + 320 (right panel) = 620
-        self.HEIGHT = 400  # ステータスエリア用に高さを増加
+        self.WIDTH = 450  # 256 (sprite area) + 12*2 (margins) + 320 (right panel) = 620
+        self.HEIGHT = 200  # ステータスエリア用に高さを増加
         
         # リソース設定
         self.RESOURCE_FILE = "./my_resource.pyxres"
