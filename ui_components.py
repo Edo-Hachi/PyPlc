@@ -325,6 +325,19 @@ class MouseHandler:
         
         return None  # 何も選択されなかった場合
     
+    def handle_run_mode_input(self, grid_manager, device_manager):
+        """RUNモード用マウス入力処理"""
+        # 右クリック処理（グリッド上のデバイス操作）
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
+            grid_pos = self.get_grid_position_from_mouse()
+            if grid_pos:
+                grid_x, grid_y = grid_pos
+                device = grid_manager.get_device(grid_x, grid_y)
+                if device and device.device_type != DeviceType.EMPTY:
+                    return ("DEVICE_OPERATION", device)  # デバイス操作要求を返す
+        
+        return None  # 何も操作されなかった場合
+    
     def _update_preview(self, grid_manager):
         """マウスプレビュー更新"""
         grid_pos = self.get_grid_position_from_mouse()

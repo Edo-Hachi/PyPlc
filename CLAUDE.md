@@ -741,8 +741,129 @@ result, values = pyxdlg.JsonDialogBuilder.show_json_dialog("dialogs/device_setti
 
 ---
 
-*Project Status: ✅ Dialog System Implementation COMPLETED*  
+## Phase 8: EDIT/RUN/STOP Mode System Implementation Plan (2025-01-25)
+
+### 🎯 **Next Development Phase Analysis**
+
+#### **Current Challenge Analysis**
+Based on `todo_plan.md` requirements:
+
+1. **Mode State Management Issue**
+   - TAB切り替え後、デフォルトでRUN状態になる問題
+   - **Required**: EDIT → STOP (デフォルト) → F5でRUN開始
+
+2. **Output Coil Sprite Gap**
+   - コイル `<Y01>` に対する出力表示 `|Y01|` スプライト未実装
+   - Y接点の視覚的状態表示不足
+
+#### **Technical Implementation Strategy**
+
+### **Phase 8a: Mode Management System**
+```python
+# config.py 拡張
+class SimulatorMode(Enum):
+    EDIT = "EDIT"      # デバイス配置・編集可能
+    STOP = "STOP"      # 実行停止中（デフォルト状態）
+    RUN = "RUN"        # 回路実行中
+    
+# main.py 統合
+class PLCSimulator:
+    def __init__(self):
+        self.mode = SimulatorMode.EDIT  # 起動時はEDITモード
+        self.execution_state = SimulatorMode.STOP  # RUNモード時の実行状態
+```
+
+### **Key Operation Mapping**
+- **TAB**: EDIT ↔ STOP モード切り替え
+- **F5**: STOP → RUN (実行開始)
+- **F6/ESC**: RUN → STOP (実行停止)
+- **ENTER**: EDITモードでデバイス設定ダイアログ表示
+
+### **Phase 8b: Output Coil Visual System**
+
+#### **Missing Sprite Implementation**
+```python
+# sprites.json 追加予定
+"COIL_ON": {        # |Y01| 通電時表示
+    "x": pos_x, "y": pos_y,
+    "desc": "Energized output coil display"
+},
+"COIL_OFF": {       # |Y01| 非通電時表示  
+    "x": pos_x, "y": pos_y,
+    "desc": "De-energized output coil display"
+}
+```
+
+#### **PLC Logic Enhancement**
+1. **コイル→Y接点連動**: コイル通電時、対応するY接点をON状態に
+2. **視覚的フィードバック**: グリッド上でのコイル状態リアルタイム表示
+3. **デバイス状態パネル**: Y接点状態の詳細表示強化
+
+### **Implementation Priority & Dependencies**
+
+#### **Priority 1: Mode State Management**
+- TAB切り替え時のデフォルト動作修正
+- F5実行開始機能の実装
+- モード表示UI追加（画面上部）
+
+#### **Priority 2: Coil Sprite System**
+- SpriteDefiner.pyでCOIL_ON/OFF作成
+- sprites.json更新
+- GridDeviceManagerでのコイル表示統合
+- 電気的継続性システムとの連携
+
+#### **Priority 3: Dialog Integration**
+- pyxdlg.py統合
+- ENTERキーでのデバイス設定ダイアログ
+- タイマー/カウンター値設定機能
+
+### **Expected User Workflow**
+```
+1. 起動 → EDITモード
+2. デバイス配置・回路構築
+3. TAB → STOPモード（編集ロック）
+4. F5 → RUN開始（回路シミュレーション）
+5. Shift+1-4 → X接点操作でテスト
+6. F6 → STOP（シミュレーション停止）
+7. TAB → EDIT（回路編集に戻る）
+```
+
+### **Technical Challenges & Solutions**
+
+#### **Challenge 1: Mode State Persistence**
+- **Solution**: config.pyでのモード状態管理
+- モード変更時の状態保存・復元機能
+
+#### **Challenge 2: Coil-Contact Synchronization**
+- **Solution**: electrical_system.pyでのコイル→Y接点自動連動
+- リアルタイム状態同期システム
+
+#### **Challenge 3: UI Space Constraints**
+- **Solution**: 既存256x256レイアウトでのモード表示最適化
+- 右上エリア活用によるモード状態表示
+
+### **Development Session Structure**
+```python
+# Session 1: Mode Management
+1. SimulatorMode enum追加
+2. TAB/F5/F6キー処理実装
+3. UI表示システム統合
+
+# Session 2: Coil Sprite System  
+1. SpriteDefiner.pyでスプライト作成
+2. GridDeviceManager統合
+3. 電気系統連動テスト
+
+# Session 3: Dialog Integration
+1. pyxdlg.py統合
+2. デバイス設定機能実装
+3. 全体動作テスト・品質保証
+```
+
+---
+
+*Project Status: 📋 Phase 8 Implementation Plan DOCUMENTED*  
 *Last Updated: 2025-01-25*  
-*Latest Achievement: モーダルダイアログシステム + JSONリソースファイル実装完了*  
-*Current Status: Phase 8 (EDIT/RUN Mode System) 実装待機中*  
-*Next Session: pyxdlg.pyをPyPlc main.pyに統合・EDITモード拡張*
+*Latest Achievement: Phase 8実装計画・技術分析完了*  
+*Current Status: Phase 8 (EDIT/RUN/STOP Mode System) 実装準備完了*  
+*Next Session: SimulatorMode enum実装・TAB/F5キー処理開始*

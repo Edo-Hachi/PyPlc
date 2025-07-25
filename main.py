@@ -54,7 +54,11 @@ class PLCSimulator:
             "TIMER_OFF": sprite_manager.get_sprite_by_name_and_tag("TIMER_OFF"),
             "LINK_UP": sprite_manager.get_sprite_by_name_and_tag("LINK_UP"),
             "LINK_DOWN": sprite_manager.get_sprite_by_name_and_tag("LINK_DOWN"),
-            "DEL": sprite_manager.get_sprite_by_name_and_tag("DEL")
+            "DEL": sprite_manager.get_sprite_by_name_and_tag("DEL"),
+            "CDEV_NML_ON": sprite_manager.get_sprite_by_name_and_tag("CDEV_NML_ON"),
+            "CDEV_NML_OFF": sprite_manager.get_sprite_by_name_and_tag("CDEV_NML_OFF"),
+            "CDEV_REV_ON": sprite_manager.get_sprite_by_name_and_tag("CDEV_REV_ON"),
+            "CDEV_REV_OFF": sprite_manager.get_sprite_by_name_and_tag("CDEV_REV_OFF")
         }
     
     def _initialize_ui_systems(self):
@@ -81,6 +85,9 @@ class PLCSimulator:
         
         # ダイアログシステム初期化
         self.dialog = PyxDialog()
+        
+        # ステータスメッセージ管理
+        self.status_message_timer = 0
         
         # UI コンポーネント初期化
         self.ui_renderer = UIRenderer(self.sprites, self.device_palette)
@@ -135,7 +142,7 @@ class PLCSimulator:
         # キーボード入力処理
         self._handle_keyboard_input()
         
-        # マウス入力処理（EDITモードのみ）
+        # マウス入力処理
         if self.current_mode == SimulatorMode.EDIT:
             mouse_result = self.mouse_handler.handle_mouse_input(self.grid_device_manager, self.device_manager)
             if mouse_result is not None:
@@ -146,7 +153,14 @@ class PLCSimulator:
                 else:
                     # デバイスタイプ選択
                     self.selected_device_type = mouse_result
-        else:
+        elif self.current_mode == SimulatorMode.RUN:
+            # RUNモードでは右クリックでデバイス操作
+            mouse_result = self.mouse_handler.handle_run_mode_input(self.grid_device_manager, self.device_manager)
+            if mouse_result is not None:
+                if isinstance(mouse_result, tuple) and mouse_result[0] == "DEVICE_OPERATION":
+                    # デバイス操作処理
+                    _, device = mouse_result
+                    self._handle_run_mode_device_operation(device)
             # RUNモードではマウスプレビューをクリア
             self.mouse_handler.show_preview = False
         
@@ -239,12 +253,41 @@ class PLCSimulator:
                 # 古いアドレスの削除は他で使用されている可能性があるため慎重に行う
                 pass
     
+    def _handle_run_mode_device_operation(self, device):
+        """RUNモードでのデバイス操作処理"""
+        if device.device_type == DeviceType.TYPE_A:
+            # A接点：ON/OFF切り替え
+            if device.device_address:
+                plc_device = self.device_manager.get_device(device.device_address)
+                if plc_device:
+                    plc_device.value = not plc_device.value
+                    # ステータスメッセージで状態を表示
+                    state = "ON" if plc_device.value else "OFF"
+                    self.ui_renderer.status_message = f"{device.device_address}: {state}"
+                    self.status_message_timer = 120  # 2秒間表示（60FPS想定）
+        
+        elif device.device_type == DeviceType.TYPE_B:
+            # B接点：PLCブレイク（実行停止）
+            if self.plc_run_state == PLCRunState.RUNNING:
+                self.plc_run_state = PLCRunState.STOPPED
+                self.ui_renderer.status_message = f"PLC BREAK at {device.device_address or 'B Contact'}"
+                self.status_message_timer = 180  # 3秒間表示
+            else:
+                # 停止中の場合は再開
+                self.plc_run_state = PLCRunState.RUNNING
+                self.ui_renderer.status_message = f"PLC RESUME from {device.device_address or 'B Contact'}"
+                self.status_message_timer = 180  # 3秒間表示
+    
     def draw(self):
         """描画処理"""
         pyxel.cls(Colors.BLACK)
         
-        # ステータスメッセージのクリア（フレーム開始時）
-        self.ui_renderer.clear_status_message()
+        # ステータスメッセージ管理
+        if self.status_message_timer > 0:
+            self.status_message_timer -= 1
+        else:
+            # タイマー終了時にメッセージをクリア
+            self.ui_renderer.clear_status_message()
         
         # UI描画
         #self.ui_renderer.draw_title()
