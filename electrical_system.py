@@ -69,6 +69,9 @@ class LadderRung:
                 # 入力コイル：電力状態を受け取って励磁（内部処理用）
                 device.coil_energized = power_state
                 device.active = power_state
+            elif device.device_type == DeviceType.TIMER:
+                # タイマー：電力状態に応じて状態遷移とタイマー動作
+                self._process_timer_logic(device, power_state)
             # 他のデバイスタイプも必要に応じて追加
         
         self.is_energized = power_state
@@ -303,3 +306,39 @@ class ElectricalSystem:
                         # B接点：コイル励磁時にOFF（反転動作）
                         device.contact_state = energized_state
                         device.active = not energized_state
+    
+    def _process_timer_logic(self, timer_device, power_input: bool):
+        """タイマーデバイスの状態遷移処理
+        
+        Args:
+            timer_device: タイマーデバイス
+            power_input: 入力電力状態
+        """
+        # プリセット値がない場合はデフォルト値を設定
+        if timer_device.timer_preset <= 0:
+            timer_device.timer_preset = 3.0  # デフォルト3秒
+        
+        if power_input:
+            # 電力入力あり：タイマー開始または継続
+            if timer_device.timer_state == "STANBY":
+                # 待機中 → カウントアップ開始
+                timer_device.timer_state = "CNTUP"
+                timer_device.timer_current = 0.0
+                timer_device.active = False  # カウント中は出力OFF
+            elif timer_device.timer_state == "CNTUP":
+                # カウントアップ中：時間進行
+                timer_device.timer_current += 1.0/60.0  # 60FPS想定で1/60秒進行
+                if timer_device.timer_current >= timer_device.timer_preset:
+                    # プリセット時間到達 → 出力ON
+                    timer_device.timer_state = "ON"
+                    timer_device.active = True
+                else:
+                    timer_device.active = False
+            elif timer_device.timer_state == "ON":
+                # 出力中：継続
+                timer_device.active = True
+        else:
+            # 電力入力なし：リセット
+            timer_device.timer_state = "STANBY"
+            timer_device.timer_current = 0.0
+            timer_device.active = False

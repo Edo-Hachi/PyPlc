@@ -24,6 +24,7 @@ class GridDevice:
         # デバイス固有の状態
         self.timer_preset = 0.0      # タイマープリセット値
         self.timer_current = 0.0     # タイマー現在値
+        self.timer_state = "STANBY"  # タイマー状態（STANBY/CNTUP/ON）
         self.counter_preset = 0      # カウンタープリセット値
         self.counter_current = 0     # カウンター現在値
         self.contact_state = False   # 接点状態（A/B接点用）
@@ -48,7 +49,15 @@ class GridDevice:
             # 入力コイルスプライト（内部処理用）
             return "INCOIL_ON" if self.coil_energized else "INCOIL_OFF"
         elif self.device_type == DeviceType.TIMER:
-            return "TIMER_ON" if self.active else "TIMER_OFF"
+            # 3状態スプライト切り替え
+            if self.timer_state == "STANBY":
+                return "TIMER_STANBY"
+            elif self.timer_state == "CNTUP":
+                return "TIMER_CNTUP"
+            elif self.timer_state == "ON":
+                return "TIMER_ON"
+            else:
+                return "TIMER_STANBY"  # デフォルト
         elif self.device_type == DeviceType.COUNTER:
             return "TYPE_A_ON" if self.active else "TYPE_A_OFF"  # 仮のスプライト
         elif self.device_type == DeviceType.LINK_UP:
