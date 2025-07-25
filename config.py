@@ -46,6 +46,9 @@ class Layout:
     SPRITE_TEST_Y = 10
 
 # 色定数
+
+#>> to Claude
+#色番号がハードコーディングされてるので、pyxel.COLOR_XXXXX で置き換えてください
 class Colors:
     GRID_LINE = 1        # ダークグレイ
     WIRE_OFF = 1         # グレイ（通電なし）
@@ -66,8 +69,8 @@ class DeviceType(Enum):
     COUNTER = "COUNTER"      # カウンター
     WIRE_H = "WIRE_H"        # 横配線
     WIRE_V = "WIRE_V"        # 縦配線
-    LINK_UP = "LINK_UP"      # 上方向結線点
-    LINK_DOWN = "LINK_DOWN"  # 下方向結線点
+    LINK_UP = "LINK_UP"      # 上方向結線点(ラインから上方向に接続を作成する分岐)
+    LINK_DOWN = "LINK_DOWN"  # 下方向結線点（ラインから舌方向に接続を作成する分岐）
     DEL = "DEL"              # 削除デバイス
 
 # バスバー接続方向

@@ -101,10 +101,10 @@ class UIRenderer:
                         # バスバーは白い縦線で表示
                         pyxel.line(px, py - 6, px, py + 6, Colors.BUSBAR)
                     elif device.device_type == DeviceType.LINK_UP:
-                        sprite = self.sprites["LINK_DOWN"]  # LINK_UPは下向きの絵（LINK_DOWNスプライト）を使用
+                        sprite = self.sprites["LINK_UP"]  # LINK_UP（↑）スプライト - 下のラインに配置
                         pyxel.blt(px - 4, py - 4, 0, sprite.x, sprite.y, 8, 8, 0)
                     elif device.device_type == DeviceType.LINK_DOWN:
-                        sprite = self.sprites["LINK_UP"]    # LINK_DOWNは上向きの絵（LINK_UPスプライト）を使用
+                        sprite = self.sprites["LINK_DOWN"]  # LINK_DOWN（↓）スプライト - 上のラインに配置
                         pyxel.blt(px - 4, py - 4, 0, sprite.x, sprite.y, 8, 8, 0)
                     
                     # デバイスアドレス表示
@@ -140,11 +140,10 @@ class UIRenderer:
             start_py = Layout.GRID_START_Y + up_y * Layout.GRID_SIZE
             end_py = Layout.GRID_START_Y + down_y * Layout.GRID_SIZE
             
-            # 白い太線のBG表示（RECTで実装）
-            pyxel.rect(x - 1, start_py, 3, end_py - start_py + 1, Colors.TEXT)  # 白い背景（3ピクセル幅）
-            
-            # 縦線描画（中央に細線）
-            pyxel.line(x, start_py, x, end_py, color)
+            # 縦方向バスライン描画（太線で視認性向上）
+            line_width = 2  # 2ピクセル幅の太線
+            for i in range(line_width):
+                pyxel.line(x - line_width//2 + i, start_py, x - line_width//2 + i, end_py, color)
     
     def _draw_device_placement_preview(self, mouse_handler):
         """デバイス配置プレビュー描画"""

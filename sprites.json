@@ -49,12 +49,15 @@
     "8_8": {
       "x": 8,
       "y": 8,
-      "NAME": "LINK_UP"
+      "NAME": "LINK_UP",
+      "desc": "Upward connection point"
+
     },
     "16_8": {
       "x": 16,
       "y": 8,
-      "NAME": "LINK_DOWN"
+      "NAME": "LINK_DOWN",
+      "desc": "Downward connection point"
     },
     "8_16": {
       "x": 8,

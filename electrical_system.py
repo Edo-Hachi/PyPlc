@@ -120,18 +120,20 @@ class VerticalConnection:
         self.connection_points = [(y, t) for y, t in self.connection_points if y != grid_y]
     
     def get_connected_pairs(self) -> List[Tuple[int, int]]:
-        """LINK_UPとLINK_DOWNのペアを取得"""
+        """縦方向接続ペアを取得
+        上のラインにLINK_DOWN（↓）、下のラインにLINK_UP（↑）が配置されたときに接続
+        """
         pairs = []
         link_ups = [y for y, t in self.connection_points if t == DeviceType.LINK_UP]
         link_downs = [y for y, t in self.connection_points if t == DeviceType.LINK_DOWN]
         
-        # 最も近いペアを作成
-        for up_y in link_ups:
-            # up_yより下にあるLINK_DOWNを探す
-            compatible_downs = [down_y for down_y in link_downs if down_y > up_y]
-            if compatible_downs:
-                closest_down = min(compatible_downs)
-                pairs.append((up_y, closest_down))
+        # LINK_DOWN（上のラインの↓）とLINK_UP（下のラインの↑）のペアを作成
+        for down_y in link_downs:
+            # down_yより下にあるLINK_UPを探す
+            compatible_ups = [up_y for up_y in link_ups if up_y > down_y]
+            if compatible_ups:
+                closest_up = min(compatible_ups)
+                pairs.append((down_y, closest_up))  # (LINK_DOWNのY, LINK_UPのY)
         
         return pairs
 
@@ -203,20 +205,20 @@ class ElectricalSystem:
         for connection in self.vertical_connections.values():
             pairs = connection.get_connected_pairs()
             
-            for up_y, down_y in pairs:
-                # LINK_UPがあるラングの電力状態を取得
-                if up_y in self.rungs:
-                    up_rung = self.rungs[up_y]
-                    # LINK_UPの位置での電力状態を計算
-                    up_power = self._get_power_at_position(up_rung, connection.grid_x)
+            for down_y, up_y in pairs:
+                # LINK_DOWNがあるラング（上のライン）の電力状態を取得
+                if down_y in self.rungs:
+                    down_rung = self.rungs[down_y]
+                    # LINK_DOWNの位置での電力状態を計算
+                    down_power = self._get_power_at_position(down_rung, connection.grid_x)
                     
-                    # LINK_DOWNがあるラングに電力を伝達
-                    if down_y in self.rungs and up_power:
-                        down_rung = self.rungs[down_y]
-                        # LINK_DOWN位置から左バスバーに電力を注入
-                        down_rung.left_bus_connection.is_energized = True
+                    # LINK_UPがあるラング（下のライン）に電力を伝達
+                    if up_y in self.rungs and down_power:
+                        up_rung = self.rungs[up_y]
+                        # LINK_UP位置から左バスバーに電力を注入
+                        up_rung.left_bus_connection.is_energized = True
                         # ラング全体を再計算
-                        down_rung.calculate_power_flow()
+                        up_rung.calculate_power_flow()
     
     def _get_power_at_position(self, rung: LadderRung, grid_x: int) -> bool:
         """指定位置での電力状態を取得"""
@@ -231,13 +233,13 @@ class ElectricalSystem:
         segments = []
         for connection in self.vertical_connections.values():
             pairs = connection.get_connected_pairs()
-            for up_y, down_y in pairs:
-                # 電力状態を判定
+            for down_y, up_y in pairs:
+                # 電力状態を判定（LINK_DOWNがあるラングの電力状態）
                 is_energized = False
-                if up_y in self.rungs:
-                    up_rung = self.rungs[up_y]
-                    is_energized = self._get_power_at_position(up_rung, connection.grid_x)
+                if down_y in self.rungs:
+                    down_rung = self.rungs[down_y]
+                    is_energized = self._get_power_at_position(down_rung, connection.grid_x)
                 
-                segments.append((connection.grid_x, up_y, down_y, is_energized))
+                segments.append((connection.grid_x, down_y, up_y, is_energized))
         
         return segments

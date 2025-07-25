@@ -64,7 +64,7 @@ class PLCSimulator:
             {"type": DeviceType.TYPE_B, "name": "B接点", "sprite": "TYPE_B_OFF"},
             {"type": DeviceType.COIL, "name": "コイル", "sprite": "LAMP_OFF"},
             {"type": DeviceType.TIMER, "name": "タイマー", "sprite": "TIMER_OFF"},
-            #{"type": DeviceType.BUSBAR, "name": "バスバー", "sprite": None},
+            {"type": DeviceType.BUSBAR, "name": "バスバー", "sprite": None},
             {"type": DeviceType.LINK_UP, "name": "上結線", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "下結線", "sprite": "LINK_DOWN"},
             {"type": DeviceType.DEL, "name": "削除", "sprite": "DEL"}

@@ -560,8 +560,105 @@ class AppState(Enum):
 
 ---
 
-*Project Status: ✅ Code Modularization Phase COMPLETED*  
-*Last Updated: 2025-01-24*  
-*Latest Achievement: 完全なモジュール化とバグ修正完了 + EDIT/RUN Mode設計完了*  
+## Vertical Bus Line Implementation Fix (2025-01-25)
+
+### 🔧 **Issue Resolution: Vertical Bus Line Connection Logic**
+
+#### **Problem Identified**
+- **Sprite Display vs Logic Mismatch**: Visual sprites and connection logic were reversed
+- **Expected Behavior**: Upper line with LINK_DOWN (↓), lower line with LINK_UP (↑) should connect
+- **Actual Behavior**: Connection logic was looking for opposite configuration
+
+#### **Root Cause Analysis**
+- `electrical_system.py`: Connection pair logic searched for LINK_UP followed by LINK_DOWN
+- **Correct Logic**: Should search for LINK_DOWN (upper line) followed by LINK_UP (lower line)
+
+#### **Implementation Fix**
+1. **electrical_system.py**:
+   - Modified `get_connected_pairs()`: Search LINK_DOWN → LINK_UP pairs
+   - Updated `_process_vertical_connections()`: Power flows from LINK_DOWN to LINK_UP
+   - Fixed `get_vertical_wire_segments()`: Correct drawing coordinates
+
+2. **ui_components.py**:
+   - Added clarifying comments for sprite placement logic
+   - LINK_UP (↑): Place on lower line for upward connection
+   - LINK_DOWN (↓): Place on upper line for downward connection
+
+3. **main.py**:
+   - Re-enabled BUSBAR in device palette (key 5)
+
+#### **Visual Logic Clarification**
+```
+Upper Line: [DEVICE] ------ LINK_DOWN(↓) ------
+                               |
+                               | (Vertical Connection)
+                               |
+Lower Line: [DEVICE] ------ LINK_UP(↑) --------
+```
+
+### 📝 **Sprite Information Communication Methods**
+
+#### **Challenge**: Communicating Visual Sprite Information to AI Assistant
+
+#### **Effective Methods Discovered**
+
+**1. Functional Description (Most Effective)**
+- Describe **how sprites should behave** rather than how they look
+- Example: "Upper line with ↓, lower line with ↑ should connect"
+- More reliable than visual descriptions
+
+**2. JSON Comment Enhancement**
+```json
+{
+  "8_8": {
+    "x": 8, "y": 8,
+    "NAME": "LINK_UP",
+    "desc": "Upward connection point"
+  },
+  "16_8": {
+    "x": 16, "y": 8,
+    "NAME": "LINK_DOWN", 
+    "desc": "Downward connection point"
+  }
+}
+```
+- **Safe Implementation**: English comments avoid SpriteDefiner.py encoding issues
+- **SpriteManager.py Compatibility**: `sprite.get("desc")` for safe retrieval
+- **Consistent Naming**: `desc` field with capitalized descriptions
+
+**3. ASCII Art + Context**
+```
+LINK_UP (8x8):     LINK_DOWN (8x8):
+    ^^                 ||
+    ||                 ||
+    ||                 vv
+```
+
+**4. CLAUDE.md Documentation**
+- Record sprite meaning and placement rules
+- Visual behavior specifications
+- Connection logic documentation
+
+**5. Screenshot Reference**
+- AI can read images using Read tool
+- Most accurate for complex visual information
+
+#### **Best Practice Guidelines**
+1. **Primary**: Use functional/behavioral descriptions
+2. **Secondary**: Add JSON `desc` fields in English
+3. **Documentation**: Record in CLAUDE.md for future reference
+4. **Validation**: Test SpriteDefiner.py compatibility before deployment
+
+#### **Implementation Results**
+- ✅ Vertical bus line connections working correctly
+- ✅ Sprite display matches expected behavior  
+- ✅ JSON comment system established
+- ✅ Documentation methodology defined
+
+---
+
+*Project Status: ✅ Vertical Bus Line Fix COMPLETED*  
+*Last Updated: 2025-01-25*  
+*Latest Achievement: 縦方向バスライン接続ロジック修正完了 + スプライト情報共有方法確立*  
 *Current Status: Phase 8 (EDIT/RUN Mode System) 実装待機中*  
 *Next Session: EDITモード拡張・実行モード・デバイス番号入力システムの実装*

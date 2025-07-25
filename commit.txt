@@ -1,38 +1,35 @@
-Add Phase 8 EDIT/RUN Mode System design and UI improvements
+Fix vertical bus line connection logic and establish sprite communication methods
 
-## Major Updates
+## Issue Resolution
+- Fixed LINK_UP/LINK_DOWN connection logic in electrical_system.py
+- Corrected sprite display vs connection behavior mismatch
+- Upper line LINK_DOWN (↓) now properly connects to lower line LINK_UP (↑)
 
-### Phase 8 Design Planning
-- Add comprehensive EDIT/RUN mode system design to CLAUDE.md
-- Plan device number input system (M001, T001, X010 format)
-- Design SpriteDefiner-inspired text input system
-- Define mode switching and state management architecture
+## Technical Changes
+- electrical_system.py: Modified get_connected_pairs() to search LINK_DOWN → LINK_UP pairs
+- electrical_system.py: Updated _process_vertical_connections() for correct power flow direction
+- electrical_system.py: Fixed get_vertical_wire_segments() drawing coordinates
+- ui_components.py: Enhanced sprite display comments for clarity
+- ui_components.py: Improved vertical wire drawing with 2-pixel width lines
+- main.py: Re-enabled BUSBAR device in palette (key 5)
 
-### UI Component Improvements
-- Fix device palette click selection functionality
-- Optimize palette icon click detection to 8x8 sprite size
-- Correct LINK_UP/DOWN sprite display (visual direction fix)
-- Add white thick line background for vertical connections
-- Enhance left grid line as hot-side visual indicator
-- Remove BUSBAR device from palette (simplified to 7 devices)
+## Sprite Communication Enhancement
+- Added English 'desc' field to sprites.json for LINK_UP/LINK_DOWN
+- Established JSON comment system compatible with SpriteDefiner.py
+- Documented sprite information communication methods in CLAUDE.md
 
-### Technical Achievements
-- Modular mouse handler with proper device selection return
-- Improved visual feedback for vertical electrical connections
-- Better grid-based electrical system visualization
-- Enhanced user interaction precision
+## Files Modified
+- electrical_system.py: Connection logic fixes
+- ui_components.py: Visual improvements and comments  
+- main.py: Device palette restoration
+- sprites.json: Added description fields
+- CLAUDE.md: Documentation updates
 
-### Development Methodology
-- Complete SpriteDefiner legacy input system analysis
-- Document comprehensive implementation plan for afternoon session
-- Maintain TodoWrite-driven development approach
-
-## Next Phase Ready
-Phase 8 (EDIT/RUN Mode System) implementation prepared with:
-- TAB key mode switching design
-- ENTER key device number input system
-- Runtime device operation planning
-- UI integration specifications
+## Testing Results
+- Vertical bus line connections working correctly
+- Sprite display matches expected behavior
+- All device palette functions operational
+- JSON compatibility with SpriteDefiner.py maintained
 
 Generated with [Claude Code](https://claude.ai/code)
 
