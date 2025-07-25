@@ -8,7 +8,7 @@ UIの描画処理とマウス入力処理を管理するモジュール。
 
 import pyxel
 from typing import Dict, Optional, Tuple
-from config import Layout, Colors, DeviceType, SimulatorMode
+from config import Layout, Colors, DeviceType, SimulatorMode, PLCRunState
 from plc_logic import ContactA, ContactB, Coil, Timer, Counter
 
 
@@ -70,8 +70,8 @@ class UIRenderer:
         for col in range(Layout.GRID_COLS + 1):
             x = Layout.GRID_START_X + col * Layout.GRID_SIZE
             if col == 0:
-                # 左端の縦線（ホット側）は白い太線で表示
-                pyxel.rect(x - 1, Layout.GRID_START_Y, 3, Layout.GRID_ROWS * Layout.GRID_SIZE + 1, Colors.TEXT)
+                # 左端の縦線（ホット側）はオレンジの太線で表示
+                pyxel.rect(x - 1, Layout.GRID_START_Y, 3, Layout.GRID_ROWS * Layout.GRID_SIZE + 1, Colors.BUSBAR)
             else:
                 # その他の縦線は通常のグリッド線
                 pyxel.line(x, Layout.GRID_START_Y, x, Layout.GRID_START_Y + Layout.GRID_ROWS * Layout.GRID_SIZE, Colors.GRID_LINE)
@@ -232,7 +232,7 @@ class UIRenderer:
                 
             y_pos += 20
     
-    def draw_status_bar(self, current_mode: SimulatorMode = SimulatorMode.EDIT):
+    def draw_status_bar(self, current_mode: SimulatorMode = SimulatorMode.EDIT, plc_run_state: PLCRunState = PLCRunState.STOPPED):
         """ステータスバー描画（画面下部）"""
         # ステータスバー背景
         pyxel.rect(Layout.STATUS_BAR_X, Layout.STATUS_BAR_Y, Layout.STATUS_BAR_WIDTH, Layout.STATUS_BAR_HEIGHT, Colors.STATUS_BAR_BG)
@@ -240,6 +240,18 @@ class UIRenderer:
         # ステータスメッセージ表示（左側）
         if self.status_message:
             pyxel.text(Layout.STATUS_BAR_X + 2, Layout.STATUS_BAR_Y + 1, self.status_message, Colors.TEXT)
+        
+        # PLC実行状態表示（中央）
+        if current_mode == SimulatorMode.RUN:
+            plc_text = f"PLC: {plc_run_state.value}"
+            plc_color = Colors.PLC_RUNNING if plc_run_state == PLCRunState.RUNNING else Colors.PLC_STOPPED
+            pyxel.text(Layout.STATUS_BAR_X + 100, Layout.STATUS_BAR_Y + 1, plc_text, plc_color)
+            
+            # F5キーヒント表示
+            if plc_run_state == PLCRunState.STOPPED:
+                pyxel.text(Layout.STATUS_BAR_X + 150, Layout.STATUS_BAR_Y + 1, "F5:Start", Colors.TEXT)
+            else:
+                pyxel.text(Layout.STATUS_BAR_X + 150, Layout.STATUS_BAR_Y + 1, "F5:Stop", Colors.TEXT)
         
         # モード表示（右端）
         mode_text = current_mode.value

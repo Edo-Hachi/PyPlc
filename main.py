@@ -9,7 +9,7 @@ import pyxel
 from SpriteManager import sprite_manager
 
 # モジュール化された各コンポーネントをインポート
-from config import WIDTH, HEIGHT, Layout, Colors, DeviceType, SimulatorMode
+from config import WIDTH, HEIGHT, Layout, Colors, DeviceType, SimulatorMode, PLCRunState
 from grid_system import GridDeviceManager
 from electrical_system import ElectricalSystem
 from plc_logic import DeviceManager, LadderProgram, LadderLine, ContactA, ContactB, Coil, Timer, Counter
@@ -60,13 +60,13 @@ class PLCSimulator:
         """UIシステム初期化"""
         # デバイスパレット定義（元のコード形式）
         self.device_palette = [
-            {"type": DeviceType.TYPE_A, "name": "A接点", "sprite": "TYPE_A_OFF"},
-            {"type": DeviceType.TYPE_B, "name": "B接点", "sprite": "TYPE_B_OFF"},
-            {"type": DeviceType.COIL, "name": "コイル", "sprite": "LAMP_OFF"},
-            {"type": DeviceType.TIMER, "name": "タイマー", "sprite": "TIMER_OFF"},
-            {"type": DeviceType.LINK_UP, "name": "上結線", "sprite": "LINK_UP"},
-            {"type": DeviceType.LINK_DOWN, "name": "下結線", "sprite": "LINK_DOWN"},
-            {"type": DeviceType.DEL, "name": "削除", "sprite": "DEL"}
+            {"type": DeviceType.TYPE_A, "name": "Contact A", "sprite": "TYPE_A_OFF"},
+            {"type": DeviceType.TYPE_B, "name": "Contact B", "sprite": "TYPE_B_OFF"},
+            {"type": DeviceType.COIL, "name": "Coil", "sprite": "LAMP_OFF"},
+            {"type": DeviceType.TIMER, "name": "Timer", "sprite": "TIMER_OFF"},
+            {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
+            {"type": DeviceType.LINK_DOWN, "name": "Link Down", "sprite": "LINK_DOWN"},
+            {"type": DeviceType.DEL, "name": "Delete", "sprite": "DEL"}
         ]
         
         # 選択状態管理（元のコード形式）
@@ -74,6 +74,9 @@ class PLCSimulator:
         
         # モード管理
         self.current_mode = SimulatorMode.EDIT
+        
+        # PLC実行状態管理
+        self.plc_run_state = PLCRunState.STOPPED
         
         # UI コンポーネント初期化
         self.ui_renderer = UIRenderer(self.sprites, self.device_palette)
@@ -153,6 +156,13 @@ class PLCSimulator:
             elif self.current_mode == SimulatorMode.RUN:
                 self.current_mode = SimulatorMode.EDIT
         
+        # PLC実行制御（F5キー - RUNモードのみ）
+        if pyxel.btnp(pyxel.KEY_F5) and self.current_mode == SimulatorMode.RUN:
+            if self.plc_run_state == PLCRunState.STOPPED:
+                self.plc_run_state = PLCRunState.RUNNING
+            else:
+                self.plc_run_state = PLCRunState.STOPPED
+        
         # EDITモードでのデバイス選択（1-7キー）
         if self.current_mode == SimulatorMode.EDIT:
             for i in range(1, 8):
@@ -178,14 +188,19 @@ class PLCSimulator:
     
     def _update_systems(self):
         """システム状態更新"""
-        # グリッドデバイス状態更新
-        self.grid_device_manager.update_all_devices(self.device_manager)
-        
-        # 電気系統状態更新
-        self.electrical_system.update_electrical_state()
-        
-        # 従来ラダープログラム実行
-        self.ladder_program.scan_cycle(self.device_manager)
+        # PLC実行中の場合のみ論理処理を実行
+        if self.plc_run_state == PLCRunState.RUNNING:
+            # グリッドデバイス状態更新
+            self.grid_device_manager.update_all_devices(self.device_manager)
+            
+            # 電気系統状態更新
+            self.electrical_system.update_electrical_state()
+            
+            # 従来ラダープログラム実行
+            self.ladder_program.scan_cycle(self.device_manager)
+        else:
+            # 停止中でも電気系統の表示は更新（入力変更の反映のため）
+            self.electrical_system.update_electrical_state()
     
     def draw(self):
         """描画処理"""
@@ -207,7 +222,7 @@ class PLCSimulator:
         self.ui_renderer.draw_traditional_ladder(self.ladder_program)
         
         # ステータスバー描画（最後に描画）
-        self.ui_renderer.draw_status_bar(self.current_mode)
+        self.ui_renderer.draw_status_bar(self.current_mode, self.plc_run_state)
     
     def run(self):
         """メインループ実行"""

@@ -57,14 +57,16 @@ class Layout:
 class Colors:
     GRID_LINE = pyxel.COLOR_DARK_BLUE      # グリッド線
     WIRE_OFF = pyxel.COLOR_GRAY            # グレイ（通電なし）
-    WIRE_ON = pyxel.COLOR_LIME             # 緑（通電中）
+    WIRE_ON = pyxel.COLOR_ORANGE           # オレンジ（通電中）
     SELECTED_BG = pyxel.COLOR_YELLOW       # 黄色（選択背景）
     TEXT = pyxel.COLOR_WHITE               # 白（テキスト）
-    BUSBAR = pyxel.COLOR_WHITE             # 白（バスバー）
+    BUSBAR = pyxel.COLOR_ORANGE            # オレンジ（バスバー）
     BLACK = pyxel.COLOR_BLACK              # 黒（背景）
     STATUS_BAR_BG = pyxel.COLOR_NAVY       # ステータスバー背景
     MODE_EDIT = pyxel.COLOR_YELLOW         # EDITモード表示色
     MODE_RUN = pyxel.COLOR_LIME            # RUNモード表示色
+    PLC_STOPPED = pyxel.COLOR_RED          # PLC停止中表示色
+    PLC_RUNNING = pyxel.COLOR_LIME         # PLC実行中表示色
 
 # デバイスタイプ定義
 class DeviceType(Enum):
@@ -93,3 +95,8 @@ class SimulatorMode(Enum):
     EDIT = "EDIT"        # 回路構築モード
     RUN = "RUN"          # シミュレーション実行モード
     DIALOG = "DIALOG"    # モーダルダイアログ有効（一時的）
+
+# PLC実行状態
+class PLCRunState(Enum):
+    STOPPED = "STOPPED"  # 停止中
+    RUNNING = "RUNNING"  # 実行中
