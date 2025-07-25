@@ -298,7 +298,7 @@ class MouseHandler:
         # マウスプレビュー更新
         self._update_preview(grid_manager)
         
-        # クリック処理
+        # 左クリック処理
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
             mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
             
@@ -313,6 +313,15 @@ class MouseHandler:
             else:
                 # グリッド上でのデバイス配置処理
                 self._handle_grid_placement(grid_manager, device_manager)
+        
+        # 右クリック処理（グリッド上のデバイス設定）
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
+            grid_pos = self.get_grid_position_from_mouse()
+            if grid_pos:
+                grid_x, grid_y = grid_pos
+                device = grid_manager.get_device(grid_x, grid_y)
+                if device and device.device_type != DeviceType.EMPTY:
+                    return ("DEVICE_CONFIG", device)  # デバイス設定要求を返す
         
         return None  # 何も選択されなかった場合
     

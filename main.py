@@ -14,6 +14,7 @@ from grid_system import GridDeviceManager
 from electrical_system import ElectricalSystem
 from plc_logic import DeviceManager, LadderProgram, LadderLine, ContactA, ContactB, Coil, Timer, Counter
 from ui_components import UIRenderer, MouseHandler
+from pyxdlg import PyxDialog, InputType
 
 
 class PLCSimulator:
@@ -78,6 +79,9 @@ class PLCSimulator:
         # PLC実行状態管理
         self.plc_run_state = PLCRunState.STOPPED
         
+        # ダイアログシステム初期化
+        self.dialog = PyxDialog()
+        
         # UI コンポーネント初期化
         self.ui_renderer = UIRenderer(self.sprites, self.device_palette)
         self.mouse_handler = MouseHandler(self.device_palette, self.selected_device_type)
@@ -133,9 +137,15 @@ class PLCSimulator:
         
         # マウス入力処理（EDITモードのみ）
         if self.current_mode == SimulatorMode.EDIT:
-            selected_device = self.mouse_handler.handle_mouse_input(self.grid_device_manager, self.device_manager)
-            if selected_device is not None:
-                self.selected_device_type = selected_device
+            mouse_result = self.mouse_handler.handle_mouse_input(self.grid_device_manager, self.device_manager)
+            if mouse_result is not None:
+                if isinstance(mouse_result, tuple) and mouse_result[0] == "DEVICE_CONFIG":
+                    # デバイス設定ダイアログを表示
+                    _, device = mouse_result
+                    self._show_device_config_dialog(device)
+                else:
+                    # デバイスタイプ選択
+                    self.selected_device_type = mouse_result
         else:
             # RUNモードではマウスプレビューをクリア
             self.mouse_handler.show_preview = False
@@ -201,6 +211,33 @@ class PLCSimulator:
         else:
             # 停止中でも電気系統の表示は更新（入力変更の反映のため）
             self.electrical_system.update_electrical_state()
+    
+    def _show_device_config_dialog(self, device):
+        """デバイス設定ダイアログを表示"""
+        # 現在のデバイスアドレスを初期値として設定
+        current_address = device.device_address if device.device_address else ""
+        
+        # デバイス設定ダイアログを表示
+        success, new_address = self.dialog.input_text_dialog(
+            "Device Settings",
+            f"Device Address for {device.device_type.value}:",
+            current_address,
+            InputType.DEVICE_ADDRESS
+        )
+        
+        if success and new_address and new_address != current_address:
+            # 新しいアドレスを設定
+            device.device_address = new_address.upper()
+            
+            # デバイスマネージャーにも登録
+            if not self.device_manager.get_device(new_address):
+                # 新しいデバイスとして登録
+                self.device_manager.set_device_value(new_address, False)
+            
+            # 古いアドレスがあれば削除（必要に応じて）
+            if current_address and current_address != new_address:
+                # 古いアドレスの削除は他で使用されている可能性があるため慎重に行う
+                pass
     
     def draw(self):
         """描画処理"""
