@@ -55,6 +55,8 @@ class PLCSimulator:
             "LINK_UP": sprite_manager.get_sprite_by_name_and_tag("LINK_UP"),
             "LINK_DOWN": sprite_manager.get_sprite_by_name_and_tag("LINK_DOWN"),
             "DEL": sprite_manager.get_sprite_by_name_and_tag("DEL"),
+            "INCOIL_ON": sprite_manager.get_sprite_by_name_and_tag("INCOIL_ON"),
+            "INCOIL_OFF": sprite_manager.get_sprite_by_name_and_tag("INCOIL_OFF"),
             "OUTCOIL_NML_ON": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_NML_ON"),
             "OUTCOIL_NML_OFF": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_NML_OFF"),
             "OUTCOIL_REV_ON": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_REV_ON"),
@@ -67,6 +69,7 @@ class PLCSimulator:
         self.device_palette = [
             {"type": DeviceType.TYPE_A, "name": "A Contact", "sprite": "TYPE_A_OFF"},
             {"type": DeviceType.TYPE_B, "name": "B Contact", "sprite": "TYPE_B_OFF"},
+            {"type": DeviceType.INCOIL, "name": "Input Coil", "sprite": "INCOIL_OFF"},
             {"type": DeviceType.COIL, "name": "Output Coil", "sprite": "OUTCOIL_NML_OFF"},
             {"type": DeviceType.TIMER, "name": "Timer", "sprite": "TIMER_OFF"},
             {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
@@ -187,9 +190,9 @@ class PLCSimulator:
             else:
                 self.plc_run_state = PLCRunState.STOPPED
         
-        # EDITモードでのデバイス選択（1-7キー）
+        # EDITモードでのデバイス選択（1-8キー）
         if self.current_mode == SimulatorMode.EDIT:
-            for i in range(1, 8):
+            for i in range(1, 9):
                 if pyxel.btnp(getattr(pyxel, f"KEY_{i}")):
                     if i - 1 < len(self.device_palette):
                         self.selected_device_type = self.device_palette[i - 1]["type"]

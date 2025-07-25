@@ -44,6 +44,9 @@ class GridDevice:
         elif self.device_type == DeviceType.COIL:
             # 正式なOUTCOIL_NMLスプライトを使用（|Y01|形式）
             return "OUTCOIL_NML_ON" if self.coil_energized else "OUTCOIL_NML_OFF"
+        elif self.device_type == DeviceType.INCOIL:
+            # 入力コイルスプライト（内部処理用）
+            return "INCOIL_ON" if self.coil_energized else "INCOIL_OFF"
         elif self.device_type == DeviceType.TIMER:
             return "TIMER_ON" if self.active else "TIMER_OFF"
         elif self.device_type == DeviceType.COUNTER:
@@ -67,6 +70,10 @@ class GridDevice:
                 self.contact_state = plc_device.value
                 self.active = not self.contact_state  # B接点は反転
         elif self.device_address and self.device_type == DeviceType.COIL:
+            plc_device = device_manager.get_device(self.device_address)
+            self.coil_energized = plc_device.value
+            self.active = self.coil_energized
+        elif self.device_address and self.device_type == DeviceType.INCOIL:
             plc_device = device_manager.get_device(self.device_address)
             self.coil_energized = plc_device.value
             self.active = self.coil_energized

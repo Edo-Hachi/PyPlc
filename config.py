@@ -74,7 +74,8 @@ class DeviceType(Enum):
     BUSBAR = "BUSBAR"        # バスバー
     TYPE_A = "TYPE_A"        # A接点
     TYPE_B = "TYPE_B"        # B接点
-    COIL = "COIL"            # コイル
+    COIL = "COIL"            # 出力コイル（OUTCOIL_NML）
+    INCOIL = "INCOIL"        # 入力コイル（内部処理用）
     TIMER = "TIMER"          # タイマー
     COUNTER = "COUNTER"      # カウンター
     WIRE_H = "WIRE_H"        # 横配線

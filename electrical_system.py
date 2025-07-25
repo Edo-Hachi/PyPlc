@@ -62,7 +62,11 @@ class LadderRung:
                 # B接点：デバイスがOFFの時に通電継続
                 power_state = power_state and (not device.contact_state)
             elif device.device_type == DeviceType.COIL:
-                # コイル：電力状態を受け取って励磁
+                # 出力コイル：電力状態を受け取って励磁
+                device.coil_energized = power_state
+                device.active = power_state
+            elif device.device_type == DeviceType.INCOIL:
+                # 入力コイル：電力状態を受け取って励磁（内部処理用）
                 device.coil_energized = power_state
                 device.active = power_state
             # 他のデバイスタイプも必要に応じて追加
@@ -266,15 +270,16 @@ class ElectricalSystem:
         # 全グリッドデバイスをスキャンしてコイルを検出
         for row in self.grid_manager.grid:
             for device in row:
-                if device.device_type == DeviceType.COIL and device.device_address:
-                    # コイルのデバイスアドレス（例: Y001）からY接点デバイスを更新
+                if device.device_type in [DeviceType.COIL, DeviceType.INCOIL] and device.device_address:
+                    # コイルのデバイスアドレス（例: Y001, M001）から対応デバイスを更新
                     plc_device = device_manager.get_device(device.device_address)
                     if plc_device:
-                        # コイルの励磁状態をY接点デバイスに反映
+                        # コイルの励磁状態をデバイスに反映
                         plc_device.value = device.coil_energized
                         
-                        # グリッド上の他のY接点（TYPE_A/TYPE_B）も同期
-                        self._synchronize_y_contacts(device.device_address, device.coil_energized)
+                        # Y接点の場合は、グリッド上の他のY接点（TYPE_A/TYPE_B）も同期
+                        if device.device_address.startswith('Y'):
+                            self._synchronize_y_contacts(device.device_address, device.coil_energized)
     
     def _synchronize_y_contacts(self, y_address: str, energized_state: bool):
         """指定Yアドレスに対応するグリッド上のY接点を同期
