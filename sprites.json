@@ -103,7 +103,7 @@
     "24_8": {
       "x": 24,
       "y": 8,
-      "NAME": "TIMR_STNBY",
+      "NAME": "TIMER_STNBY",
       "ACT_NAME": "STANBY OFF"
     },
     "32_8": {

@@ -55,10 +55,10 @@ class PLCSimulator:
             "LINK_UP": sprite_manager.get_sprite_by_name_and_tag("LINK_UP"),
             "LINK_DOWN": sprite_manager.get_sprite_by_name_and_tag("LINK_DOWN"),
             "DEL": sprite_manager.get_sprite_by_name_and_tag("DEL"),
-            "CDEV_NML_ON": sprite_manager.get_sprite_by_name_and_tag("CDEV_NML_ON"),
-            "CDEV_NML_OFF": sprite_manager.get_sprite_by_name_and_tag("CDEV_NML_OFF"),
-            "CDEV_REV_ON": sprite_manager.get_sprite_by_name_and_tag("CDEV_REV_ON"),
-            "CDEV_REV_OFF": sprite_manager.get_sprite_by_name_and_tag("CDEV_REV_OFF")
+            "OUTCOIL_NML_ON": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_NML_ON"),
+            "OUTCOIL_NML_OFF": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_NML_OFF"),
+            "OUTCOIL_REV_ON": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_REV_ON"),
+            "OUTCOIL_REV_OFF": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_REV_OFF")
         }
     
     def _initialize_ui_systems(self):
@@ -67,7 +67,7 @@ class PLCSimulator:
         self.device_palette = [
             {"type": DeviceType.TYPE_A, "name": "A Contact", "sprite": "TYPE_A_OFF"},
             {"type": DeviceType.TYPE_B, "name": "B Contact", "sprite": "TYPE_B_OFF"},
-            {"type": DeviceType.COIL, "name": "Output Coil", "sprite": "CDEV_NML_OFF"},
+            {"type": DeviceType.COIL, "name": "Output Coil", "sprite": "OUTCOIL_NML_OFF"},
             {"type": DeviceType.TIMER, "name": "Timer", "sprite": "TIMER_OFF"},
             {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "Link Down", "sprite": "LINK_DOWN"},

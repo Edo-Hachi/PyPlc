@@ -42,8 +42,8 @@ class GridDevice:
         elif self.device_type == DeviceType.TYPE_B:
             return "TYPE_B_ON" if self.active else "TYPE_B_OFF"
         elif self.device_type == DeviceType.COIL:
-            # 新しいCOILスプライトを使用（|Y01|形式）
-            return "CDEV_NML_ON" if self.coil_energized else "CDEV_NML_OFF"
+            # 正式なOUTCOIL_NMLスプライトを使用（|Y01|形式）
+            return "OUTCOIL_NML_ON" if self.coil_energized else "OUTCOIL_NML_OFF"
         elif self.device_type == DeviceType.TIMER:
             return "TIMER_ON" if self.active else "TIMER_OFF"
         elif self.device_type == DeviceType.COUNTER:
