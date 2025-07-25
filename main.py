@@ -72,6 +72,7 @@ class PLCSimulator:
             {"type": DeviceType.TYPE_B, "name": "B Contact", "sprite": "TYPE_B_OFF"},
             {"type": DeviceType.INCOIL, "name": "Input Coil", "sprite": "INCOIL_OFF"},
             {"type": DeviceType.COIL, "name": "Output Coil", "sprite": "OUTCOIL_NML_OFF"},
+            {"type": DeviceType.OUTCOIL_REV, "name": "Rev Output", "sprite": "OUTCOIL_REV_OFF"},
             {"type": DeviceType.TIMER, "name": "Timer", "sprite": "TIMER_STANBY"},
             {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "Link Down", "sprite": "LINK_DOWN"},
@@ -191,9 +192,9 @@ class PLCSimulator:
             else:
                 self.plc_run_state = PLCRunState.STOPPED
         
-        # EDITモードでのデバイス選択（1-8キー）
+        # EDITモードでのデバイス選択（1-9キー）
         if self.current_mode == SimulatorMode.EDIT:
-            for i in range(1, 9):
+            for i in range(1, 10):
                 if pyxel.btnp(getattr(pyxel, f"KEY_{i}")):
                     if i - 1 < len(self.device_palette):
                         self.selected_device_type = self.device_palette[i - 1]["type"]

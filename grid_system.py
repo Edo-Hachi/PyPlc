@@ -48,6 +48,9 @@ class GridDevice:
         elif self.device_type == DeviceType.INCOIL:
             # 入力コイルスプライト（内部処理用）
             return "INCOIL_ON" if self.coil_energized else "INCOIL_OFF"
+        elif self.device_type == DeviceType.OUTCOIL_REV:
+            # 反転出力コイルスプライト（反転動作）
+            return "OUTCOIL_REV_ON" if self.coil_energized else "OUTCOIL_REV_OFF"
         elif self.device_type == DeviceType.TIMER:
             # 3状態スプライト切り替え
             if self.timer_state == "STANBY":
@@ -83,6 +86,10 @@ class GridDevice:
             self.coil_energized = plc_device.value
             self.active = self.coil_energized
         elif self.device_address and self.device_type == DeviceType.INCOIL:
+            plc_device = device_manager.get_device(self.device_address)
+            self.coil_energized = plc_device.value
+            self.active = self.coil_energized
+        elif self.device_address and self.device_type == DeviceType.OUTCOIL_REV:
             plc_device = device_manager.get_device(self.device_address)
             self.coil_energized = plc_device.value
             self.active = self.coil_energized

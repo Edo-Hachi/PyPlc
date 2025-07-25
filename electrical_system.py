@@ -69,6 +69,10 @@ class LadderRung:
                 # 入力コイル：電力状態を受け取って励磁（内部処理用）
                 device.coil_energized = power_state
                 device.active = power_state
+            elif device.device_type == DeviceType.OUTCOIL_REV:
+                # 反転出力コイル：電力状態を反転して励磁（反転動作）
+                device.coil_energized = not power_state  # 反転！
+                device.active = not power_state
             elif device.device_type == DeviceType.TIMER:
                 # タイマー：電力状態に応じて状態遷移とタイマー動作
                 self._process_timer_logic(device, power_state)
@@ -273,7 +277,7 @@ class ElectricalSystem:
         # 全グリッドデバイスをスキャンしてコイルを検出
         for row in self.grid_manager.grid:
             for device in row:
-                if device.device_type in [DeviceType.COIL, DeviceType.INCOIL] and device.device_address:
+                if device.device_type in [DeviceType.COIL, DeviceType.INCOIL, DeviceType.OUTCOIL_REV] and device.device_address:
                     # コイルのデバイスアドレス（例: Y001, M001）から対応デバイスを更新
                     plc_device = device_manager.get_device(device.device_address)
                     if plc_device:

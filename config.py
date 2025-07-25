@@ -76,6 +76,7 @@ class DeviceType(Enum):
     TYPE_B = "TYPE_B"        # B接点
     COIL = "COIL"            # 出力コイル（OUTCOIL_NML）
     INCOIL = "INCOIL"        # 入力コイル（内部処理用）
+    OUTCOIL_REV = "OUTCOIL_REV"  # 反転出力コイル
     TIMER = "TIMER"          # タイマー
     COUNTER = "COUNTER"      # カウンター
     WIRE_H = "WIRE_H"        # 横配線
