@@ -1,0 +1,42 @@
+{
+  "title": "Device Settings",
+  "width": 220,
+  "height": 140,
+  "controls": [
+    {
+      "type": "label",
+      "id": "title_label",
+      "x": 10,
+      "y": 20,
+      "text": "Configure Device Properties",
+      "color": "white"
+    },
+    {
+      "type": "label",
+      "id": "address_label",
+      "x": 10,
+      "y": 40,
+      "text": "Device Address:",
+      "color": "cyan"
+    },
+    {
+      "type": "textinput",
+      "id": "device_address",
+      "x": 10,
+      "y": 55,
+      "width": 120,
+      "height": 20,
+      "input_type": "device_address",
+      "placeholder": "X001",
+      "value": "X001"
+    },
+    {
+      "type": "label",
+      "id": "info_label",
+      "x": 10,
+      "y": 85,
+      "text": "Valid formats: X001, Y010, M100, T050, C020",
+      "color": "gray"
+    }
+  ]
+}

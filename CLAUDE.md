@@ -13,11 +13,17 @@ PyPlc/
 ├── electrical_system.py    # 電気的継続性システム (197行) ✅
 ├── plc_logic.py            # 従来PLCロジック (184行) ✅
 ├── ui_components.py        # UI描画・マウス処理 (269行) ✅
+├── pyxdlg.py               # モーダルダイアログシステム (559行) ✅
+├── pyxdlg.txt              # pyxdlg.py使用マニュアル ✅
 ├── main_original.py        # 元のmain.py (1,109行) - バックアップ
 ├── SpriteManager.py        # スプライト管理システム  
 ├── SpriteDefiner.py        # ビジュアルスプライト定義ツール
 ├── sprites.json            # スプライト定義データ
 ├── my_resource.pyxres      # Pyxelリソースファイル
+├── dialogs/                # JSONダイアログ定義ディレクトリ ✅
+│   ├── device_settings.json    # デバイス設定ダイアログ
+│   ├── timer_settings.json     # タイマー設定ダイアログ
+│   └── text_input.json         # テキスト入力ダイアログ
 ├── docs/
 │   └── plc_simulator_plan.md  # 開発計画書
 └── venv/                   # Python仮想環境
@@ -657,8 +663,86 @@ LINK_UP (8x8):     LINK_DOWN (8x8):
 
 ---
 
-*Project Status: ✅ Vertical Bus Line Fix COMPLETED*  
+---
+
+## Dialog System Implementation (2025-01-25)
+
+### 📦 **pyxdlg.py - Modal Dialog System**
+
+#### **概要**
+EDITモード拡張用のモーダルダイアログシステムを実装。デバイス設定、タイマー値、テキスト入力に対応した統合UI環境を提供。
+
+#### **主要機能**
+- **モーダルダイアログ**: 常にメイン画面上に表示される入力ダイアログ
+- **入力タイプバリデーション**: TEXT/NUMBER/DEVICE_ADDRESS別の入力制限
+- **JSONリソースファイル**: Windowsリソースファイル風のダイアログ定義
+- **マウス・キーボード対応**: 直感的なUI操作
+- **視認性改善**: マウスカーソル表示とボタンホバー効果
+
+#### **技術仕様**
+```python
+# 従来API（シンプル）
+result, text = pyxdlg.input_device_address("Device Settings", "X001")
+result, text = pyxdlg.input_number("Timer Settings", "Timer value:", "3")
+result, text = pyxdlg.input_text("Name Input", "Enter name:", "")
+
+# JSONリソースAPI（高度）
+result, values = pyxdlg.JsonDialogBuilder.show_json_dialog("dialogs/device_settings.json")
+```
+
+#### **JSONダイアログ定義システム**
+```json
+{
+  "title": "Device Settings",
+  "width": 220, "height": 140,
+  "controls": [
+    {
+      "type": "label",
+      "x": 10, "y": 20,
+      "text": "Configure Device Properties",
+      "color": "white"
+    },
+    {
+      "type": "textinput",
+      "x": 10, "y": 55,
+      "width": 120, "height": 20,
+      "input_type": "device_address",
+      "placeholder": "X001"
+    }
+  ]
+}
+```
+
+#### **実装されたコンポーネント**
+- **PyxDialog**: メインダイアログクラス
+- **DialogLabel**: 色付きテキストラベル
+- **JsonDialogBuilder**: JSON定義からの動的ダイアログ生成
+- **InputType**: TEXT/NUMBER/DEVICE_ADDRESS入力タイプ定義
+- **マウスカーソル描画**: ダイアログ上での視認性確保
+
+#### **ファイル構成**
+- `pyxdlg.py` (559行): メインモジュール
+- `pyxdlg.txt`: 詳細使用マニュアル・テストコード集
+- `dialogs/device_settings.json`: デバイス設定ダイアログ定義
+- `dialogs/timer_settings.json`: タイマー設定ダイアログ定義
+- `dialogs/text_input.json`: テキスト入力ダイアログ定義
+
+#### **PyPlc統合準備**
+- EDITモードでのデバイス設定ダイアログ表示
+- ENTERキーでのデバイスアドレス入力
+- タイマー・カウンター値設定ダイアログ
+- 回路保存・読み込み時の名前入力
+
+#### **品質保証**
+- **完全なテストスイート**: 基本機能・JSON・エラーハンドリング・統合テスト
+- **エラーハンドリング**: FileNotFoundError、JSON解析エラー対応
+- **パフォーマンス最適化**: 効率的な背景暗転効果、マウスカーソル描画
+- **使用マニュアル**: 豊富なコード例とトラブルシューティング
+
+---
+
+*Project Status: ✅ Dialog System Implementation COMPLETED*  
 *Last Updated: 2025-01-25*  
-*Latest Achievement: 縦方向バスライン接続ロジック修正完了 + スプライト情報共有方法確立*  
+*Latest Achievement: モーダルダイアログシステム + JSONリソースファイル実装完了*  
 *Current Status: Phase 8 (EDIT/RUN Mode System) 実装待機中*  
-*Next Session: EDITモード拡張・実行モード・デバイス番号入力システムの実装*
+*Next Session: pyxdlg.pyをPyPlc main.pyに統合・EDITモード拡張*
