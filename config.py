@@ -5,6 +5,7 @@ PyPlc Configuration Module
 main.pyから分離して設定の一元管理を実現。
 """
 
+import pyxel
 from enum import Enum
 
 # 画面サイズ定数
@@ -45,18 +46,15 @@ class Layout:
     SPRITE_TEST_X = 160
     SPRITE_TEST_Y = 10
 
-# 色定数
-
-#>> to Claude
-#色番号がハードコーディングされてるので、pyxel.COLOR_XXXXX で置き換えてください
+# 色定数 (Pyxel COLOR constants)
 class Colors:
-    GRID_LINE = 1        # ダークグレイ
-    WIRE_OFF = 1         # グレイ（通電なし）
-    WIRE_ON = 11         # 緑（通電中）
-    SELECTED_BG = 6      # 黄色（選択背景）
-    TEXT = 7             # 白
-    BUSBAR = 7           # 白
-    BLACK = 0            # 黒
+    GRID_LINE = pyxel.COLOR_DARK_BLUE      # グリッド線
+    WIRE_OFF = pyxel.COLOR_GRAY            # グレイ（通電なし）
+    WIRE_ON = pyxel.COLOR_LIME             # 緑（通電中）
+    SELECTED_BG = pyxel.COLOR_YELLOW       # 黄色（選択背景）
+    TEXT = pyxel.COLOR_WHITE               # 白（テキスト）
+    BUSBAR = pyxel.COLOR_WHITE             # 白（バスバー）
+    BLACK = pyxel.COLOR_BLACK              # 黒（背景）
 
 # デバイスタイプ定義
 class DeviceType(Enum):

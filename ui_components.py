@@ -42,7 +42,7 @@ class UIRenderer:
                 pyxel.rectb(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.TEXT)
             elif is_mouse_over:
                 # マウスオーバー時は薄い背景 + 白い枠線（8x8サイズ）
-                pyxel.rect(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, 5)  # ダークグレー背景
+                pyxel.rect(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, pyxel.COLOR_NAVY)  # ダークブルー背景
                 pyxel.rectb(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.TEXT)
             
             # デバイススプライト表示
@@ -189,7 +189,7 @@ class UIRenderer:
             x_pos = 10
             
             # 左バスバー
-            pyxel.line(x_pos, y_pos, x_pos, y_pos + 8, 7)
+            pyxel.line(x_pos, y_pos, x_pos, y_pos + 8, Colors.TEXT)
             x_pos += 5
             
             for element in line.elements:
@@ -197,31 +197,31 @@ class UIRenderer:
                 if isinstance(element, ContactA):
                     color = 11 if element.last_result else 1
                     pyxel.rect(x_pos, y_pos, 8, 8, color)
-                    pyxel.text(x_pos + 1, y_pos + 2, "A", 0)
-                    pyxel.text(x_pos, y_pos - 8, element.device_address, 7)
+                    pyxel.text(x_pos + 1, y_pos + 2, "A", Colors.BLACK)
+                    pyxel.text(x_pos, y_pos - 8, element.device_address, Colors.TEXT)
                     
                 elif isinstance(element, ContactB):
                     color = 11 if element.last_result else 1
                     pyxel.rect(x_pos, y_pos, 8, 8, color)
-                    pyxel.text(x_pos + 1, y_pos + 2, "B", 0)
-                    pyxel.text(x_pos, y_pos - 8, element.device_address, 7)
+                    pyxel.text(x_pos + 1, y_pos + 2, "B", Colors.BLACK)
+                    pyxel.text(x_pos, y_pos - 8, element.device_address, Colors.TEXT)
                     
                 elif isinstance(element, Coil):
                     color = 11 if element.last_result else 1
                     pyxel.circ(x_pos + 4, y_pos + 4, 3, color)
-                    pyxel.text(x_pos, y_pos - 8, element.device_address, 7)
+                    pyxel.text(x_pos, y_pos - 8, element.device_address, Colors.TEXT)
                     
                 elif isinstance(element, Timer):
                     color = 11 if element.last_result else 1
                     pyxel.rect(x_pos, y_pos, 10, 8, color)
-                    pyxel.text(x_pos + 1, y_pos + 2, "T", 0)
-                    pyxel.text(x_pos, y_pos - 8, element.device_address, 7)
+                    pyxel.text(x_pos + 1, y_pos + 2, "T", Colors.BLACK)
+                    pyxel.text(x_pos, y_pos - 8, element.device_address, Colors.TEXT)
                     
                 elif isinstance(element, Counter):
                     color = 11 if element.last_result else 1
                     pyxel.rect(x_pos, y_pos, 10, 8, color)
-                    pyxel.text(x_pos + 1, y_pos + 2, "C", 0)
-                    pyxel.text(x_pos, y_pos - 8, element.device_address, 7)
+                    pyxel.text(x_pos + 1, y_pos + 2, "C", Colors.BLACK)
+                    pyxel.text(x_pos, y_pos - 8, element.device_address, Colors.TEXT)
                 
                 # 接続線
                 if x_pos > 15:  # 最初の素子でない場合
