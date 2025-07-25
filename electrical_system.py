@@ -76,6 +76,9 @@ class LadderRung:
             elif device.device_type == DeviceType.TIMER:
                 # タイマー：電力状態に応じて状態遷移とタイマー動作
                 self._process_timer_logic(device, power_state)
+            elif device.device_type == DeviceType.COUNTER:
+                # カウンター：電力状態に応じてカウント動作
+                self._process_counter_logic(device, power_state)
             # 他のデバイスタイプも必要に応じて追加
         
         self.is_energized = power_state
@@ -346,3 +349,42 @@ class ElectricalSystem:
             timer_device.timer_state = "STANBY"
             timer_device.timer_current = 0.0
             timer_device.active = False
+    
+    def _process_counter_logic(self, counter_device, power_input: bool):
+        """カウンターデバイスの動作処理
+        
+        Args:
+            counter_device: カウンターデバイス
+            power_input: 入力電力状態
+        """
+        # プリセット値がない場合はデフォルト値を設定
+        if counter_device.counter_preset <= 0:
+            counter_device.counter_preset = 3  # デフォルト3回
+        
+        # エッジ検出用の前回状態を記録（簡易実装）
+        if not hasattr(counter_device, '_prev_power_input'):
+            counter_device._prev_power_input = False
+        
+        # 立ち上がりエッジ検出（OFF→ONの瞬間）
+        rising_edge = power_input and not counter_device._prev_power_input
+        
+        if rising_edge:
+            # カウントアップ
+            counter_device.counter_current += 1
+            
+            # プリセット値到達チェック
+            if counter_device.counter_current >= counter_device.counter_preset:
+                counter_device.counter_state = "ON"
+                counter_device.active = True
+            else:
+                counter_device.counter_state = "OFF"
+                counter_device.active = False
+        
+        # 前回状態を更新
+        counter_device._prev_power_input = power_input
+        
+        # リセット条件（電力が完全に切れた場合）
+        if not power_input:
+            # 通常、カウンターは電力が切れてもカウント値は保持される
+            # ただし、特定の条件でリセットする場合はここに実装
+            pass

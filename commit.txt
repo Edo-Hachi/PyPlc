@@ -1,29 +1,50 @@
-Add comprehensive modal dialog system with JSON resource support
+Major refactoring: Unified device system with CSV specification compliance
 
-Implement pyxdlg.py module providing modal dialog functionality for EDIT mode enhancement:
+5-Phase Device System Refactoring:
 
-- Add PyxDialog class with modal dialog support for text input, device address entry, and numeric input
-- Implement DialogLabel class for colored text display within dialogs  
-- Add JsonDialogBuilder for dynamic dialog generation from JSON resource files
-- Support three input types: TEXT, NUMBER, and DEVICE_ADDRESS with validation
-- Add mouse cursor visibility fix for dialogs with crosshair cursor display
-- Implement Windows resource file style JSON dialog definitions
-- Add dialog background dimming effect with improved visual feedback
-- Support keyboard and mouse input with hover effects for buttons
-- Add comprehensive error handling for file operations and JSON parsing
+Phase 1: Sprite Name Unification
+- Unified CDEV_NML → OUTCOIL_NML across all modules
+- Updated sprite cache in main.py with proper naming
+- Synchronized config.py, grid_system.py, electrical_system.py
 
-JSON dialog system features:
-- Windows RC file inspired JSON structure for dialog layout definition
-- Support for label and textinput controls with positioning and styling
-- Color name to Pyxel color constant mapping
-- Dynamic dialog sizing and button repositioning
-- Initial value support through kwargs parameter passing
+Phase 2: INCOIL (Input Coil) Implementation
+- Added DeviceType.INCOIL to config.py
+- Implemented INCOIL_ON/OFF sprite support in grid_system.py
+- Added electrical logic for input coil processing
+- Extended device palette to include input coil
 
-File additions:
-- pyxdlg.py (559 lines): Main modal dialog system module
-- pyxdlg.txt: Comprehensive usage manual with test code examples
-- dialogs/device_settings.json: Device address configuration dialog
-- dialogs/timer_settings.json: Timer preset value dialog  
-- dialogs/text_input.json: General text input dialog
+Phase 3: TIMER 3-State System Enhancement
+- Implemented TIMER_STANBY/CNTUP/ON state management
+- Added timer logic with electrical power flow integration
+- Enhanced GridDevice with timer state fields (timer_preset, timer_current, timer_state)
+- Synchronized timer sprites with CSV specification
 
-Integration ready for PyPlc main.py EDIT mode enhancement with device configuration dialogs, timer settings, and text input capabilities. Provides foundation for Phase 8 EDIT/RUN mode system implementation.
+Phase 4: OUTCOIL_REV (Reverse Output Coil) Implementation
+- Added DeviceType.OUTCOIL_REV with reverse logic operation
+- Implemented coil_energized = not power_state for reverse operation
+- Added OUTCOIL_REV_ON/OFF sprite support
+- Extended electrical system with reverse coil synchronization
+
+Phase 5: COUNTER System Enhancement
+- Implemented COUNTER_ON/OFF sprite switching
+- Added edge detection logic for counter increment
+- Enhanced GridDevice with counter state management (counter_preset, counter_current, counter_state)
+- Integrated counter logic into electrical power flow system
+
+Technical Achievements:
+- Extended device palette from 8 to 10 devices (1-0 keys)
+- Maintained full electrical simulation with power flow visualization
+- Complete CSV specification compliance for sprite naming
+- Enhanced modular architecture with proper separation of concerns
+- All existing functionality preserved with new device support
+
+Files Modified:
+- main.py: Sprite cache extension, device palette update
+- config.py: New device type definitions
+- grid_system.py: State management and sprite switching logic
+- electrical_system.py: Device logic implementation and electrical simulation
+- Device synchronization between grid system and PLC logic maintained
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

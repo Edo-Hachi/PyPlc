@@ -53,6 +53,8 @@ class PLCSimulator:
             "TIMER_STANBY": sprite_manager.get_sprite_by_name_and_tag("TIMER_STANBY"),
             "TIMER_CNTUP": sprite_manager.get_sprite_by_name_and_tag("TIMER_CNTUP"),
             "TIMER_ON": sprite_manager.get_sprite_by_name_and_tag("TIMER_ON"),
+            "COUNTER_ON": sprite_manager.get_sprite_by_name_and_tag("COUNTER_ON"),
+            "COUNTER_OFF": sprite_manager.get_sprite_by_name_and_tag("COUNTER_OFF"),
             "LINK_UP": sprite_manager.get_sprite_by_name_and_tag("LINK_UP"),
             "LINK_DOWN": sprite_manager.get_sprite_by_name_and_tag("LINK_DOWN"),
             "DEL": sprite_manager.get_sprite_by_name_and_tag("DEL"),
@@ -74,6 +76,7 @@ class PLCSimulator:
             {"type": DeviceType.COIL, "name": "Output Coil", "sprite": "OUTCOIL_NML_OFF"},
             {"type": DeviceType.OUTCOIL_REV, "name": "Rev Output", "sprite": "OUTCOIL_REV_OFF"},
             {"type": DeviceType.TIMER, "name": "Timer", "sprite": "TIMER_STANBY"},
+            {"type": DeviceType.COUNTER, "name": "Counter", "sprite": "COUNTER_OFF"},
             {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "Link Down", "sprite": "LINK_DOWN"},
             {"type": DeviceType.DEL, "name": "Delete", "sprite": "DEL"}
@@ -192,13 +195,18 @@ class PLCSimulator:
             else:
                 self.plc_run_state = PLCRunState.STOPPED
         
-        # EDITモードでのデバイス選択（1-9キー）
+        # EDITモードでのデバイス選択（1-0キー、0は10番目）
         if self.current_mode == SimulatorMode.EDIT:
             for i in range(1, 10):
                 if pyxel.btnp(getattr(pyxel, f"KEY_{i}")):
                     if i - 1 < len(self.device_palette):
                         self.selected_device_type = self.device_palette[i - 1]["type"]
                         self.mouse_handler.selected_device_type = self.selected_device_type
+            # 0キーは10番目のデバイス
+            if pyxel.btnp(pyxel.KEY_0):
+                if 9 < len(self.device_palette):
+                    self.selected_device_type = self.device_palette[9]["type"]
+                    self.mouse_handler.selected_device_type = self.selected_device_type
         
         # RUNモードまたはデバイス操作（Shift+1-4キー）
         if pyxel.btn(pyxel.KEY_LSHIFT) or pyxel.btn(pyxel.KEY_RSHIFT):
