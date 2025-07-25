@@ -45,6 +45,13 @@ class Layout:
     # スプライトテスト（右上）
     SPRITE_TEST_X = 160
     SPRITE_TEST_Y = 10
+    
+    # ステータスバー（画面下部）
+    STATUS_BAR_Y = 248
+    STATUS_BAR_HEIGHT = 8
+    STATUS_BAR_X = 0
+    STATUS_BAR_WIDTH = WIDTH
+    MODE_DISPLAY_X = WIDTH - 40  # 右端からのオフセット
 
 # 色定数 (Pyxel COLOR constants)
 class Colors:
@@ -55,6 +62,9 @@ class Colors:
     TEXT = pyxel.COLOR_WHITE               # 白（テキスト）
     BUSBAR = pyxel.COLOR_WHITE             # 白（バスバー）
     BLACK = pyxel.COLOR_BLACK              # 黒（背景）
+    STATUS_BAR_BG = pyxel.COLOR_NAVY       # ステータスバー背景
+    MODE_EDIT = pyxel.COLOR_YELLOW         # EDITモード表示色
+    MODE_RUN = pyxel.COLOR_LIME            # RUNモード表示色
 
 # デバイスタイプ定義
 class DeviceType(Enum):
@@ -77,3 +87,9 @@ class BusbarDirection(Enum):
     UP = 1
     DOWN = 2
     BOTH = 3
+
+# シミュレーターモード
+class SimulatorMode(Enum):
+    EDIT = "EDIT"        # 回路構築モード
+    RUN = "RUN"          # シミュレーション実行モード
+    DIALOG = "DIALOG"    # モーダルダイアログ有効（一時的）

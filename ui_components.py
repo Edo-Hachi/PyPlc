@@ -8,7 +8,7 @@ UIの描画処理とマウス入力処理を管理するモジュール。
 
 import pyxel
 from typing import Dict, Optional, Tuple
-from config import Layout, Colors, DeviceType
+from config import Layout, Colors, DeviceType, SimulatorMode
 from plc_logic import ContactA, ContactB, Coil, Timer, Counter
 
 
@@ -18,14 +18,15 @@ class UIRenderer:
     def __init__(self, sprites: Dict, device_palette: list):
         self.sprites = sprites
         self.device_palette = device_palette
+        self.status_message = ""  # ステータスバーメッセージ
     
-    def draw_title(self):
-        """タイトル描画"""
-        pyxel.text(Layout.TITLE_X, Layout.TITLE_Y, "PLC Ladder Simulator", Colors.TEXT)
+#    def draw_title(self):
+#        """タイトル描画"""
+#        #pyxel.text(Layout.TITLE_X, Layout.TITLE_Y, "PLC Ladder Simulator", Colors.TEXT)
     
     def draw_device_palette(self, selected_device_type, mouse_handler=None):
         """デバイスパレット描画（Y=16ライン）"""
-        pyxel.text(Layout.PALETTE_START_X, Layout.PALETTE_Y - 8, "Device Palette:", Colors.TEXT)
+        #pyxel.text(Layout.PALETTE_START_X, Layout.PALETTE_Y - 8, "Device Palette:", Colors.TEXT)
         
         for i, device in enumerate(self.device_palette):
             x_pos = Layout.PALETTE_START_X + i * Layout.PALETTE_DEVICE_WIDTH
@@ -35,10 +36,13 @@ class UIRenderer:
             is_mouse_over = (x_pos <= mouse_x <= x_pos + 8 and 
                            Layout.PALETTE_Y <= mouse_y <= Layout.PALETTE_Y + 8)
             
+            # マウスオーバー時にステータスメッセージを更新
+            if is_mouse_over:
+                self.status_message = f"{device['name']} (Key: {i + 1})"
+            
             # 選択中のデバイスは明確に表示
             if device["type"] == selected_device_type:
-                # 選択中は黄色の背景 + 白い枠線（8x8サイズ）
-                pyxel.rect(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.SELECTED_BG)
+                # 選択中は白い枠線のみ（8x8サイズ）
                 pyxel.rectb(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.TEXT)
             elif is_mouse_over:
                 # マウスオーバー時は薄い背景 + 白い枠線（8x8サイズ）
@@ -50,9 +54,8 @@ class UIRenderer:
                 sprite = self.sprites[device["sprite"]]
                 pyxel.blt(x_pos, Layout.PALETTE_Y, 0, sprite.x, sprite.y, 8, 8, 0)
             else:
-                # スプライトがない場合は記号で表示
-                if device["type"] == DeviceType.BUSBAR:
-                    pyxel.rect(x_pos + 2, Layout.PALETTE_Y - 2, 4, 12, Colors.BUSBAR)
+                # スプライトがない場合は記号で表示（現在はBUSBAR削除により該当なし）
+                pass
             
             # デバイス番号表示
             pyxel.text(x_pos + 8, Layout.PALETTE_Y + Layout.PALETTE_NUMBER_OFFSET_Y, str(i + 1), Colors.TEXT)
@@ -97,9 +100,6 @@ class UIRenderer:
                     if sprite_name and sprite_name in self.sprites:
                         sprite = self.sprites[sprite_name]
                         pyxel.blt(px - 4, py - 4, 0, sprite.x, sprite.y, 8, 8, 0)
-                    elif device.device_type == DeviceType.BUSBAR:
-                        # バスバーは白い縦線で表示
-                        pyxel.line(px, py - 6, px, py + 6, Colors.BUSBAR)
                     elif device.device_type == DeviceType.LINK_UP:
                         sprite = self.sprites["LINK_UP"]  # LINK_UP（↑）スプライト - 下のラインに配置
                         pyxel.blt(px - 4, py - 4, 0, sprite.x, sprite.y, 8, 8, 0)
@@ -231,6 +231,24 @@ class UIRenderer:
                 x_pos += 15
                 
             y_pos += 20
+    
+    def draw_status_bar(self, current_mode: SimulatorMode = SimulatorMode.EDIT):
+        """ステータスバー描画（画面下部）"""
+        # ステータスバー背景
+        pyxel.rect(Layout.STATUS_BAR_X, Layout.STATUS_BAR_Y, Layout.STATUS_BAR_WIDTH, Layout.STATUS_BAR_HEIGHT, Colors.STATUS_BAR_BG)
+        
+        # ステータスメッセージ表示（左側）
+        if self.status_message:
+            pyxel.text(Layout.STATUS_BAR_X + 2, Layout.STATUS_BAR_Y + 1, self.status_message, Colors.TEXT)
+        
+        # モード表示（右端）
+        mode_text = current_mode.value
+        mode_color = Colors.MODE_EDIT if current_mode == SimulatorMode.EDIT else Colors.MODE_RUN
+        pyxel.text(Layout.MODE_DISPLAY_X, Layout.STATUS_BAR_Y + 1, mode_text, mode_color)
+    
+    def clear_status_message(self):
+        """ステータスメッセージをクリア"""
+        self.status_message = ""
 
 
 class MouseHandler:

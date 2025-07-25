@@ -9,7 +9,7 @@ import pyxel
 from SpriteManager import sprite_manager
 
 # モジュール化された各コンポーネントをインポート
-from config import WIDTH, HEIGHT, Layout, Colors, DeviceType
+from config import WIDTH, HEIGHT, Layout, Colors, DeviceType, SimulatorMode
 from grid_system import GridDeviceManager
 from electrical_system import ElectricalSystem
 from plc_logic import DeviceManager, LadderProgram, LadderLine, ContactA, ContactB, Coil, Timer, Counter
@@ -64,7 +64,6 @@ class PLCSimulator:
             {"type": DeviceType.TYPE_B, "name": "B接点", "sprite": "TYPE_B_OFF"},
             {"type": DeviceType.COIL, "name": "コイル", "sprite": "LAMP_OFF"},
             {"type": DeviceType.TIMER, "name": "タイマー", "sprite": "TIMER_OFF"},
-            {"type": DeviceType.BUSBAR, "name": "バスバー", "sprite": None},
             {"type": DeviceType.LINK_UP, "name": "上結線", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "下結線", "sprite": "LINK_DOWN"},
             {"type": DeviceType.DEL, "name": "削除", "sprite": "DEL"}
@@ -72,6 +71,9 @@ class PLCSimulator:
         
         # 選択状態管理（元のコード形式）
         self.selected_device_type = DeviceType.TYPE_A
+        
+        # モード管理
+        self.current_mode = SimulatorMode.EDIT
         
         # UI コンポーネント初期化
         self.ui_renderer = UIRenderer(self.sprites, self.device_palette)
@@ -88,8 +90,7 @@ class PLCSimulator:
     def _setup_test_grid_devices(self):
         
         """テスト用グリッドデバイス配置"""
-        # グリッドAND回路: バスバー → X001 → X002 → Y001
-        self.grid_device_manager.place_device(0, 2, DeviceType.BUSBAR)
+        # グリッドAND回路: X001 → X002 → Y001 (左バスバーは自動)
         self.grid_device_manager.place_device(2, 2, DeviceType.TYPE_A, "X001")
         self.grid_device_manager.place_device(4, 2, DeviceType.TYPE_A, "X002")
         self.grid_device_manager.place_device(8, 2, DeviceType.COIL, "Y001")
@@ -127,10 +128,14 @@ class PLCSimulator:
         # キーボード入力処理
         self._handle_keyboard_input()
         
-        # マウス入力処理
-        selected_device = self.mouse_handler.handle_mouse_input(self.grid_device_manager, self.device_manager)
-        if selected_device is not None:
-            self.selected_device_type = selected_device
+        # マウス入力処理（EDITモードのみ）
+        if self.current_mode == SimulatorMode.EDIT:
+            selected_device = self.mouse_handler.handle_mouse_input(self.grid_device_manager, self.device_manager)
+            if selected_device is not None:
+                self.selected_device_type = selected_device
+        else:
+            # RUNモードではマウスプレビューをクリア
+            self.mouse_handler.show_preview = False
         
         # システム状態更新
         self._update_systems()
@@ -141,14 +146,22 @@ class PLCSimulator:
     
     def _handle_keyboard_input(self):
         """キーボード入力処理"""
-        # デバイス選択（1-8キー）
-        for i in range(1, 9):
-            if pyxel.btnp(getattr(pyxel, f"KEY_{i}")):
-                if i - 1 < len(self.device_palette):
-                    self.selected_device_type = self.device_palette[i - 1]["type"]
-                    self.mouse_handler.selected_device_type = self.selected_device_type
+        # モード切り替え（TABキー）
+        if pyxel.btnp(pyxel.KEY_TAB):
+            if self.current_mode == SimulatorMode.EDIT:
+                self.current_mode = SimulatorMode.RUN
+            elif self.current_mode == SimulatorMode.RUN:
+                self.current_mode = SimulatorMode.EDIT
         
-        # デバイス操作（Shift+1-4キー）
+        # EDITモードでのデバイス選択（1-7キー）
+        if self.current_mode == SimulatorMode.EDIT:
+            for i in range(1, 8):
+                if pyxel.btnp(getattr(pyxel, f"KEY_{i}")):
+                    if i - 1 < len(self.device_palette):
+                        self.selected_device_type = self.device_palette[i - 1]["type"]
+                        self.mouse_handler.selected_device_type = self.selected_device_type
+        
+        # RUNモードまたはデバイス操作（Shift+1-4キー）
         if pyxel.btn(pyxel.KEY_LSHIFT) or pyxel.btn(pyxel.KEY_RSHIFT):
             if pyxel.btnp(pyxel.KEY_1):
                 device = self.device_manager.get_device("X001")
@@ -178,8 +191,11 @@ class PLCSimulator:
         """描画処理"""
         pyxel.cls(Colors.BLACK)
         
+        # ステータスメッセージのクリア（フレーム開始時）
+        self.ui_renderer.clear_status_message()
+        
         # UI描画
-        self.ui_renderer.draw_title()
+        #self.ui_renderer.draw_title()
         self.ui_renderer.draw_device_palette(self.selected_device_type, self.mouse_handler)
         self.ui_renderer.draw_device_grid(
             self.grid_device_manager, 
@@ -189,6 +205,9 @@ class PLCSimulator:
         
         # 従来ラダー図描画
         self.ui_renderer.draw_traditional_ladder(self.ladder_program)
+        
+        # ステータスバー描画（最後に描画）
+        self.ui_renderer.draw_status_bar(self.current_mode)
     
     def run(self):
         """メインループ実行"""
