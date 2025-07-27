@@ -59,296 +59,86 @@ class LadderRung:
             self.devices.append((grid_x, device))
     
     def calculate_power_flow(self) -> bool:
-        """左から右への電力フロー計算（ワイヤー対応）"""
-        if not self.left_bus_connection.is_energized:
-            return False
-            
-        # 左バスバーからスタート
-        power_state = True
-        
-        # ワイヤー経由の接続を考慮した電力フロー計算
-        power_state = self._calculate_wire_aware_power_flow()
-        
-        self.is_energized = power_state
-        self.right_bus_connection.is_energized = power_state
-        return power_state
-    
-    def _calculate_wire_aware_power_flow(self) -> bool:
-        """ワイヤーを考慮した電力フロー計算（並列パス対応）"""
-        if not self.devices:
-            return True  # デバイスがない場合は通電
-        
-        # 並列パスを検出して処理
-        power_state = self._process_parallel_paths()
-        
-        return power_state
-    
-    def _process_parallel_paths(self) -> bool:
-        """並列パスを処理して電力状態を計算（ワイヤー依存）"""
-        if len(self.devices) == 0:
-            return True
-        elif len(self.devices) == 1:
-            # 単独デバイスの場合、左バスバーからの直接接続をチェック
-            grid_x, device = self.devices[0]
-            return self._check_single_device_connection(grid_x, device)
-        
-        # 複数デバイスの場合、デバイス間のワイヤー接続を確認
-        return self._check_multi_device_wire_connection()
-    
-    def _check_single_device_connection(self, grid_x: int, device) -> bool:
-        """単独デバイスの左バスバーからの接続をチェック"""
-        # 左バスバー(0)から当該デバイスまでの経路にワイヤーがあるかチェック
-        for check_x in range(1, grid_x):
-            check_device = self.grid_manager.get_device(check_x, device.grid_y)
-            if not check_device or check_device.device_type != DeviceType.WIRE_H:
-                # ワイヤーが欠けている場合は接続なし
-                return False
-        
-        # デバイス自体の状態を評価
-        device_result = self._evaluate_device_state(device)
-        
-        # 全デバイスの表示状態を更新
-        if device.device_type in [DeviceType.COIL, DeviceType.INCOIL, DeviceType.OUTCOIL_REV, 
-                                 DeviceType.TIMER, DeviceType.COUNTER]:
-            self._update_single_device_state(device, device_result)
-        elif device.device_type in [DeviceType.TYPE_A, DeviceType.TYPE_B]:
-            # 接点の表示状態を電気的継続性に基づいて設定
-            device.active = device_result
-        
-        return device_result
-    
-    def _update_single_device_state(self, device, power_state: bool):
-        """単独デバイスの状態を更新"""
-        if device.device_type == DeviceType.COIL:
-            device.coil_energized = power_state
-            device.active = power_state
-        elif device.device_type == DeviceType.INCOIL:
-            device.coil_energized = power_state
-            device.active = power_state
-        elif device.device_type == DeviceType.OUTCOIL_REV:
-            device.coil_energized = not power_state
-            device.active = not power_state
-        elif device.device_type == DeviceType.TIMER:
-            self._process_timer_logic(device, power_state)
-        elif device.device_type == DeviceType.COUNTER:
-            self._process_counter_logic(device, power_state)
-    
-    def _check_multi_device_wire_connection(self) -> bool:
-        """複数デバイス間のワイヤー接続をチェック"""
-        power_state = True
-        
-        # 各デバイス間にワイヤーが存在するかチェック
-        for i in range(len(self.devices) - 1):
-            current_x, current_device = self.devices[i]
-            next_x, next_device = self.devices[i + 1]
-            
-            # 現在のデバイスの状態を評価
-            device_result = self._evaluate_device_state(current_device)
-            power_state = power_state and device_result
-            
-            # 接点デバイスの表示状態を更新
-            if current_device.device_type in [DeviceType.TYPE_A, DeviceType.TYPE_B]:
-                current_device.active = device_result
-            
-            if not power_state:
-                break
-            
-            # デバイス間のワイヤー接続をチェック
-            if not self._check_wire_connection_between_devices(current_x, next_x, current_device.grid_y):
-                power_state = False
-                break
-        
-        # 最後のデバイスの状態も評価
-        if power_state and self.devices:
-            _, last_device = self.devices[-1]
-            device_result = self._evaluate_device_state(last_device)
-            power_state = power_state and device_result
-            
-            # 最後のデバイスの表示状態も更新
-            if last_device.device_type in [DeviceType.TYPE_A, DeviceType.TYPE_B]:
-                last_device.active = device_result
-            
-            # コイルデバイスの状態を更新
-            self._update_coil_states(power_state)
-        
-        return power_state
-    
-    def _update_coil_states(self, final_power_state: bool):
-        """ラング内のコイルデバイスの状態を更新"""
-        for grid_x, device in self.devices:
-            if device.device_type == DeviceType.COIL:
-                # 出力コイル：最終電力状態で励磁
-                device.coil_energized = final_power_state
-                device.active = final_power_state
-            elif device.device_type == DeviceType.INCOIL:
-                # 入力コイル：最終電力状態で励磁
-                device.coil_energized = final_power_state
-                device.active = final_power_state
-            elif device.device_type == DeviceType.OUTCOIL_REV:
-                # 反転出力コイル：最終電力状態を反転して励磁
-                device.coil_energized = not final_power_state
-                device.active = not final_power_state
-            elif device.device_type == DeviceType.TIMER:
-                # タイマー：電力状態に応じて状態遷移
-                self._process_timer_logic(device, final_power_state)
-            elif device.device_type == DeviceType.COUNTER:
-                # カウンター：電力状態に応じてカウント動作
-                self._process_counter_logic(device, final_power_state)
-    
-    def _evaluate_device_state(self, device) -> bool:
-        """デバイスの状態を評価（電源側・負荷側チェック含む）"""
-        if device.device_type == DeviceType.TYPE_A:
-            # A接点：左側に電源接続 AND 右側に負荷 AND 接点論理状態
-            has_power = self._has_power_on_left_side(device.grid_x, device.grid_y)
-            has_load = self._has_load_on_right_side(device.grid_x, device.grid_y)
-            return device.contact_state and has_power and has_load
-        elif device.device_type == DeviceType.TYPE_B:
-            # B接点：左側に電源接続 AND 右側に負荷 AND 接点反転論理状態
-            has_power = self._has_power_on_left_side(device.grid_x, device.grid_y)
-            has_load = self._has_load_on_right_side(device.grid_x, device.grid_y)
-            return (not device.contact_state) and has_power and has_load
-        elif device.device_type in [DeviceType.COIL, DeviceType.INCOIL, DeviceType.OUTCOIL_REV]:
-            # コイル：左側に電源接続 AND 右側にコールド接続が必要
-            has_power = self._has_power_on_left_side(device.grid_x, device.grid_y)
-            has_cold_connection = self._has_cold_connection_on_right_side(device.grid_x, device.grid_y)
-            return has_power and has_cold_connection
-        elif device.device_type in [DeviceType.TIMER, DeviceType.COUNTER]:
-            # タイマー・カウンター：左側に電源接続 AND 右側にコールド接続が必要
-            has_power = self._has_power_on_left_side(device.grid_x, device.grid_y)
-            has_cold_connection = self._has_cold_connection_on_right_side(device.grid_x, device.grid_y)
-            return has_power and has_cold_connection
-        return True
-    
-    def _has_power_on_left_side(self, contact_x: int, contact_y: int) -> bool:
-        """接点の左側（上流）にHOT側電力源が存在するかをチェック"""
-        # 新方式：列0=HOT決め打ち
-        hot_col = 0  # HOT列は決め打ち
-        
-        debug_logger.debug(f"HOT(列{hot_col})→接点({contact_x},{contact_y})接続チェック開始")
-        
-        # 接点が列1にある場合は、HOT（列0）に直接隣接しているので接続済み
-        if contact_x == 1:
-            debug_logger.debug(f"接点({contact_x},{contact_y})はHOTに直接隣接、接続OK")
-            return True
-        
-        # 接点が列2以降にある場合は、HOTから接点まで完全にワイヤーで接続が必要
-        for check_x in range(hot_col + 1, contact_x):
-            device = self.grid_manager.get_device(check_x, contact_y)
-            if not device or device.device_type != DeviceType.WIRE_H:
-                debug_logger.debug(f"位置({check_x},{contact_y})にワイヤーなし - HOT接続失敗")
-                return False
-            debug_logger.debug(f"位置({check_x},{contact_y})にワイヤー確認OK")
-        
-        debug_logger.debug(f"HOT→接点({contact_x},{contact_y})完全接続確認")
-        return True
-    
-    def _has_load_on_right_side(self, contact_x: int, contact_y: int) -> bool:
-        """接点の右側（下流）に負荷デバイスが存在するかをチェック"""
-        # 接点の右側から右バスバーまでの範囲で負荷デバイスを探索
-        for check_x in range(contact_x + 1, self.grid_manager.grid_cols):
-            device = self.grid_manager.get_device(check_x, contact_y)
+        """左から右への電力フロー計算（新ロジック）"""
+        power = self.left_bus_connection.is_energized
+
+        # --- Debug Start ---
+        device_info = [(d.grid_x, d.device_type.name) for _, d in self.devices]
+        debug_logger.debug(f"[Rung {self.grid_y}] Calculating power flow. Initial power: {power}. Devices: {device_info}")
+        # --- Debug End ---
+
+        # ラング内の全デバイスの通電状態を一旦リセット
+        for _, device in self.devices:
+            device.active = False
+            if hasattr(device, 'coil_energized'):
+                device.coil_energized = False
+            if hasattr(device, 'wire_energized'):
+                device.wire_energized = False
+
+        # 左から右へ電力伝播を計算
+        for i in range(self.grid_cols):
+            device = self.grid_manager.get_device(i, self.grid_y)
+            # --- Debug Start ---
+            dev_type_str = device.device_type.name if device else "None"
+            debug_logger.debug(f"[Rung {self.grid_y} Col {i}] Power before: {power}, Device: {dev_type_str}")
+            # --- Debug End ---
+
             if not device or device.device_type == DeviceType.EMPTY:
+                if i > 0: # 0列目(HOTバス)はチェック対象外
+                    # 空白グリッドは電力を遮断（ただし、直前が通電中のワイヤーなら継続）
+                    prev_device = self.grid_manager.get_device(i - 1, self.grid_y)
+                    if not (prev_device and prev_device.device_type == DeviceType.WIRE_H and prev_device.wire_energized):
+                        power = False
+                # --- Debug Start ---
+                debug_logger.debug(f"[Rung {self.grid_y} Col {i}] Empty grid. Power after: {power}")
+                # --- Debug End ---
                 continue
-                
-            # 負荷デバイス（電力を消費するデバイス）をチェック
-            if device.device_type in [DeviceType.COIL, DeviceType.INCOIL, DeviceType.OUTCOIL_REV,
-                                     DeviceType.TIMER, DeviceType.COUNTER]:
-                # 負荷デバイスが見つかった場合、そこまでの経路をチェック
-                return self._check_wire_path_to_load(contact_x, check_x, contact_y)
-            elif device.device_type == DeviceType.WIRE_H:
-                # ワイヤーは通過可能、継続探索
-                continue
-            elif device.device_type in [DeviceType.TYPE_A, DeviceType.TYPE_B]:
-                # 他の接点がある場合、その先に負荷があるかを再帰的にチェック
-                if self._has_load_on_right_side(check_x, contact_y):
-                    # その接点の先に負荷がある場合、経路をチェック
-                    return self._check_wire_path_to_load(contact_x, check_x, contact_y)
-        
-        # 右バスバーまで到達した場合も負荷とみなす（右バスバーへの出力）
-        return self._check_wire_path_to_load(contact_x, self.grid_manager.grid_cols - 1, contact_y)
+
+            # 現在の電力状態とデバイスの種類に応じて処理
+            if power:
+                # 電力が供給されている場合
+                if device.device_type == DeviceType.WIRE_H:
+                    device.wire_energized = True
+                    device.active = True
+                    # ワイヤーは電力をそのまま伝える
+                elif device.device_type == DeviceType.TYPE_A:
+                    power = power and device.contact_state
+                    device.active = power
+                elif device.device_type == DeviceType.TYPE_B:
+                    power = power and not device.contact_state
+                    device.active = power
+                elif device.device_type in [DeviceType.COIL, DeviceType.INCOIL, DeviceType.OUTCOIL_REV, DeviceType.TIMER, DeviceType.COUNTER]:
+                    # コイルやタイマー/カウンターはここで電力を消費するが、右への流れは止めない
+                    device.active = True 
+                    if device.device_type == DeviceType.COIL:
+                        device.coil_energized = True
+                    elif device.device_type == DeviceType.INCOIL:
+                        device.coil_energized = True
+                    elif device.device_type == DeviceType.OUTCOIL_REV:
+                        device.coil_energized = True # REVの反転ロジックは同期処理に任せる
+                    elif device.device_type == DeviceType.TIMER:
+                        self._process_timer_logic(device, True)
+                    elif device.device_type == DeviceType.COUNTER:
+                        self._process_counter_logic(device, True)
+                # 「電力の流れを止める」デバイス以外は、基本的に電力をそのまま右に流す
+                # （個別のデバイスがpowerをFalseに上書きする）
+                pass
+            else:
+                # 電力が供給されていない場合
+                device.active = False
+                if hasattr(device, 'wire_energized'):
+                    device.wire_energized = False
+                if device.device_type == DeviceType.TIMER:
+                    self._process_timer_logic(device, False)
+                # カウンターは入力が切れてもリセットされない
+            # --- Debug Start ---
+            debug_logger.debug(f"[Rung {self.grid_y} Col {i}] Power after: {power}, Device Active: {device.active}")
+            # --- Debug End ---
+
+        self.is_energized = self.right_bus_connection.is_energized = power
+        return power
     
-    def _has_cold_connection_on_right_side(self, coil_x: int, coil_y: int) -> bool:
-        """コイルの右側（下流）にCOLD側接続が存在するかをチェック"""
-        # 新方式：列9=COLD決め打ち
-        cold_col = 9  # COLD列は決め打ち
-        
-        debug_logger.debug(f"コイル({coil_x},{coil_y})→COLD(列{cold_col})接続チェック開始")
-        
-        # コイルが列8にある場合は、COLD（列9）に直接隣接しているので接続済み
-        if coil_x == 8:
-            debug_logger.debug(f"コイル({coil_x},{coil_y})はCOLDに直接隣接、接続OK")
-            return True
-        
-        # コイルから列9まで、すべての位置にワイヤーが必要
-        for check_x in range(coil_x + 1, cold_col):
-            device = self.grid_manager.get_device(check_x, coil_y)
-            if not device or device.device_type != DeviceType.WIRE_H:
-                debug_logger.debug(f"位置({check_x},{coil_y})にワイヤーなし - COLD接続失敗")
-                return False
-            debug_logger.debug(f"位置({check_x},{coil_y})にワイヤー確認OK")
-        
-        debug_logger.debug(f"コイル({coil_x},{coil_y})→COLD完全接続確認")
-        return True
     
-    def _check_wire_path_to_load(self, start_x: int, end_x: int, grid_y: int) -> bool:
-        """指定範囲にワイヤー経路が存在するかをチェック"""
-        # start_x + 1 から end_x - 1 までの範囲にワイヤーが必要
-        for check_x in range(start_x + 1, end_x):
-            device = self.grid_manager.get_device(check_x, grid_y)
-            if not device or device.device_type != DeviceType.WIRE_H:
-                return False  # ワイヤーが欠けている場合は接続なし
-        return True
-    
-    def _check_wire_connection_between_devices(self, start_x: int, end_x: int, grid_y: int) -> bool:
-        """デバイス間のワイヤー接続をチェック"""
-        # start_x + 1 から end_x - 1 までの範囲にワイヤーが必要
-        for check_x in range(start_x + 1, end_x):
-            device = self.grid_manager.get_device(check_x, grid_y)
-            if not device or device.device_type != DeviceType.WIRE_H:
-                # ワイヤーが欠けている場合は接続なし
-                return False
-        return True
-    
-    def _legacy_process_devices(self):
-        """レガシーデバイス処理（従来のロジック）"""
-        power_state = True
-        
-        # デバイスを左から右に処理（AND直列論理）
-        for grid_x, device in self.devices:
-            if device.device_type == DeviceType.TYPE_A:
-                # A接点：デバイスがONの時に通電継続
-                power_state = power_state and device.active
-            elif device.device_type == DeviceType.TYPE_B:
-                # B接点：デバイスがOFFの時に通電継続
-                power_state = power_state and (not device.contact_state)
-            elif device.device_type == DeviceType.COIL:
-                # 出力コイル：電力状態を受け取って励磁
-                device.coil_energized = power_state
-                device.active = power_state
-            elif device.device_type == DeviceType.INCOIL:
-                # 入力コイル：電力状態を受け取って励磁（内部処理用）
-                device.coil_energized = power_state
-                device.active = power_state
-            elif device.device_type == DeviceType.OUTCOIL_REV:
-                # 反転出力コイル：電力状態を反転して励磁（反転動作）
-                device.coil_energized = not power_state  # 反転！
-                device.active = not power_state
-            elif device.device_type == DeviceType.TIMER:
-                # タイマー：電力状態に応じて状態遷移とタイマー動作
-                self._process_timer_logic(device, power_state)
-            elif device.device_type == DeviceType.COUNTER:
-                # カウンター：電力状態に応じてカウント動作
-                self._process_counter_logic(device, power_state)
-            elif device.device_type in [DeviceType.WIRE_H, DeviceType.WIRE_V]:
-                # ワイヤー：電力状態を伝達
-                device.wire_energized = power_state
-                device.active = power_state
-                # ワイヤーは電力を通すだけなので、power_stateはそのまま継続
-            # 他のデバイスタイプも必要に応じて追加
-        
-        self.is_energized = power_state
-        self.right_bus_connection.is_energized = power_state
-        return power_state
     
     def get_power_segments(self) -> List[Tuple[int, int, bool]]:
         """電力セグメント情報を取得（描画用）"""

@@ -127,6 +127,7 @@ class PLCSimulator:
         # UI コンポーネント初期化
         self.ui_renderer = UIRenderer(self.sprites, self.device_palette)
         self.mouse_handler = MouseHandler(self.device_palette, self.selected_device_type)
+        self.frame_counter = 0
     
     def _setup_test_systems(self):
         """テストシステムセットアップ"""
@@ -169,7 +170,9 @@ class PLCSimulator:
             self.mouse_handler.show_preview = False
         
         # システム状態更新
-        self._update_systems()
+        self.frame_counter += 1
+        if self.frame_counter % 60 == 0:
+            self._update_systems()
         
         # 終了処理
         if pyxel.btnp(pyxel.KEY_Q) or pyxel.btnp(pyxel.KEY_ESCAPE):
