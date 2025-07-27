@@ -305,9 +305,9 @@ class MouseHandler:
             grid_x = round((mouse_x - Layout.GRID_START_X) / Layout.GRID_SIZE)
             grid_y = round((mouse_y - Layout.GRID_START_Y) / Layout.GRID_SIZE)
             
-            # 範囲チェック + バスバー領域除外
+            # 範囲チェック + バスバー領域除外  
             if (0 <= grid_x < Layout.GRID_COLS and 0 <= grid_y < Layout.GRID_ROWS and
-                grid_x != 0 and grid_x != Layout.GRID_COLS - 1):  # バスバー領域を除外
+                grid_x != 0):  # 左バスバー（0列）のみ除外、1-9列が配置可能
                 return (grid_x, grid_y)
         
         return None

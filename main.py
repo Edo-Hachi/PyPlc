@@ -5,6 +5,10 @@ PyPlc Main Module - Refactored
 各機能モジュールを統合し、システム全体の制御を行う。
 """
 
+# TODO
+# Runモードで、F5＞start  から　　F5>ストップになった時は給電を止めて、デバイスを初期状態に戻したい
+
+
 import pyxel
 from SpriteManager import sprite_manager
 
