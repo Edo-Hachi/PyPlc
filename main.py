@@ -6,7 +6,14 @@ PyPlc Main Module - Refactored
 """
 
 # TODO
-# Runモードで、F5＞start  から　　F5>ストップになった時は給電を止めて、デバイスを初期状態に戻したい
+# Runモードで、F5＞start  から F5>ストップになった時は給電を止めて、デバイスを初期状態に戻したい
+# RUNモード実行中でインプットコイル（名前は Y01とつけた）に通電し、ONになった時。同じ名前をつけられたアウトプットコイルが連動するようにしてほしい。
+# ーーー
+# Y01のインプットコイルがONになればアウトプットコイルもONになる。電源が落ちれば、当然両方とも初期化される
+# Y01のインプットコイルがONになり、同名のリバースタイプのアウトプットコイルがあるのなら、それはOFFになる。電源がオフになれば Y01の名前のリバースはOnに戻る
+# ーーー
+# こういった処理が、内部のデバイスオブジェクトで正常に反映されているのかもチェックしたい
+
 
 
 import pyxel
@@ -212,6 +219,9 @@ class PLCSimulator:
             
             # コイル状態とY接点デバイスの自動連動
             self.electrical_system.synchronize_coil_to_device(self.device_manager)
+            
+            # 同名アドレスコイルの連動処理（Input→Output/Reverse連動）
+            self.electrical_system.synchronize_same_address_coils(self.device_manager)
             
             # 従来ラダープログラム実行
             self.ladder_program.scan_cycle(self.device_manager)

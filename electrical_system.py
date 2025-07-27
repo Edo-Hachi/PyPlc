@@ -336,6 +336,42 @@ class ElectricalSystem:
                         device.contact_state = energized_state
                         device.active = not energized_state
     
+    def synchronize_same_address_coils(self, device_manager):
+        """同名アドレスのコイル連動処理（Input→Output/Reverse連動）"""
+        # 処理済みアドレスを記録（重複処理防止）
+        processed_addresses = set()
+        
+        # 全グリッドデバイスをスキャンしてInputCoilを検出
+        for row in self.grid_manager.grid:
+            for device in row:
+                if (device.device_type == DeviceType.INCOIL and 
+                    device.device_address and 
+                    device.device_address not in processed_addresses):
+                    
+                    # 同名デバイス関係を取得
+                    relationships = self.grid_manager.get_coil_relationships(device.device_address)
+                    
+                    # InputCoilの状態を取得
+                    input_energized = device.coil_energized
+                    
+                    # 同名OutputCoilと連動（InputCoil ON → OutputCoil ON）
+                    for output_coil in relationships['output_coils']:
+                        output_coil.coil_energized = input_energized
+                        output_coil.active = input_energized
+                    
+                    # 同名ReverseCoilと反転連動（InputCoil ON → ReverseCoil OFF）
+                    for reverse_coil in relationships['reverse_coils']:
+                        reverse_coil.coil_energized = not input_energized
+                        reverse_coil.active = not input_energized
+                    
+                    # PLCデバイスマネージャーと同期
+                    plc_device = device_manager.get_device(device.device_address)
+                    if plc_device:
+                        plc_device.value = input_energized
+                    
+                    # 処理済みとしてマーク
+                    processed_addresses.add(device.device_address)
+    
     def _process_timer_logic(self, timer_device, power_input: bool):
         """タイマーデバイスの状態遷移処理
         

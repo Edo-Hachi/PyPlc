@@ -161,8 +161,43 @@ class GridDeviceManager:
                 device.counter_current = 0
                 device.counter_state = "OFF"
                 device.contact_state = False
-                device.coil_energized = False
+                
+                # リバースコイルは初期状態でON（電源オフ時の状態）
+                if device.device_type == DeviceType.OUTCOIL_REV:
+                    device.coil_energized = True
+                    device.active = True
+                else:
+                    device.coil_energized = False
                 
                 # バスバー・配線状態をリセット
                 device.busbar_direction = BusbarDirection.NONE
                 device.wire_energized = False
+    
+    def find_devices_by_address(self, device_address: str):
+        """指定アドレスのデバイスを全て検索してタイプ別に分類"""
+        if not device_address:
+            return {}
+        
+        devices_by_type = {
+            DeviceType.INCOIL: [],
+            DeviceType.COIL: [],
+            DeviceType.OUTCOIL_REV: []
+        }
+        
+        for row in self.grid:
+            for device in row:
+                if (device.device_address == device_address and 
+                    device.device_type in devices_by_type):
+                    devices_by_type[device.device_type].append(device)
+        
+        return devices_by_type
+    
+    def get_coil_relationships(self, device_address: str):
+        """指定アドレスのコイル関係を取得（Input→Output/Reverse連動用）"""
+        devices = self.find_devices_by_address(device_address)
+        
+        return {
+            'input_coils': devices[DeviceType.INCOIL],
+            'output_coils': devices[DeviceType.COIL], 
+            'reverse_coils': devices[DeviceType.OUTCOIL_REV]
+        }
