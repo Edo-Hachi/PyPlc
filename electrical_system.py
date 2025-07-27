@@ -108,7 +108,7 @@ class LadderRung:
                     power = power and not device.contact_state
                     device.active = power
                 elif device.device_type in [DeviceType.COIL, DeviceType.INCOIL, DeviceType.OUTCOIL_REV, DeviceType.TIMER, DeviceType.COUNTER]:
-                    # コイルやタイマー/カウンターはここで電力を消費するが、右への流れは止めない
+                    # コイルやタイマー/カウンターは電力を消費するが、電力の流れは継続する
                     device.active = True 
                     if device.device_type == DeviceType.COIL:
                         device.coil_energized = True
@@ -120,9 +120,11 @@ class LadderRung:
                         self._process_timer_logic(device, True)
                     elif device.device_type == DeviceType.COUNTER:
                         self._process_counter_logic(device, True)
-                # 「電力の流れを止める」デバイス以外は、基本的に電力をそのまま右に流す
-                # （個別のデバイスがpowerをFalseに上書きする）
-                pass
+                    # 重要: powerはTrueのまま維持（電力の流れを継続）
+                elif device.device_type in [DeviceType.LINK_UP, DeviceType.LINK_DOWN]:
+                    # 縦方向結線デバイスは電力の流れを継続
+                    device.active = True
+                # その他の未定義デバイスは電力を遮断しない（デフォルト動作）
             else:
                 # 電力が供給されていない場合
                 device.active = False
@@ -131,9 +133,9 @@ class LadderRung:
                 if device.device_type == DeviceType.TIMER:
                     self._process_timer_logic(device, False)
                 # カウンターは入力が切れてもリセットされない
-            # --- Debug Start ---
-            debug_logger.debug(f"[Rung {self.grid_y} Col {i}] Power after: {power}, Device Active: {device.active}")
-            # --- Debug End ---
+        # --- Debug Start ---
+        debug_logger.debug(f"[Rung {self.grid_y} Col {i}] Power after: {power}, Device Active: {device.active}")
+        # --- Debug End ---
 
         self.is_energized = self.right_bus_connection.is_energized = power
         return power
