@@ -25,12 +25,17 @@ class UIRenderer:
 #        #pyxel.text(Layout.TITLE_X, Layout.TITLE_Y, "PLC Ladder Simulator", Colors.TEXT)
     
     def draw_device_palette(self, selected_device_type, mouse_handler=None, palette_row=0, selected_device_index=0):
-        """デバイスパレット描画（2段システム対応）"""
-        # 10個のデバイスを5個ずつ2段に分けて表示
+        """デバイスパレット描画（3段システム対応）"""
+        # 12個のデバイスを5個ずつ3段に分けて表示
         devices_per_row = 5
         
-        for row in range(2):  # 上段(0)と下段(1)
-            y_pos = Layout.PALETTE_Y if row == 0 else Layout.PALETTE_Y_LOWER
+        for row in range(3):  # 上段(0)、中段(1)、下段(2)
+            if row == 0:
+                y_pos = Layout.PALETTE_Y
+            elif row == 1:
+                y_pos = Layout.PALETTE_Y_MIDDLE
+            else:
+                y_pos = Layout.PALETTE_Y_LOWER
             
             # アクティブな段に白い枠を描画（段ごとに1回だけ）
             if row == palette_row:
@@ -88,11 +93,21 @@ class UIRenderer:
         for col in range(Layout.GRID_COLS + 1):
             x = Layout.GRID_START_X + col * Layout.GRID_SIZE
             if col == 0:
-                # 左端の縦線（ホット側）はオレンジの太線で表示
+                # 左端の縦線（HOTバス）はオレンジの太線で表示
                 pyxel.rect(x - 1, Layout.GRID_START_Y, 3, Layout.GRID_ROWS * Layout.GRID_SIZE + 1, Colors.BUSBAR)
+            elif col == Layout.GRID_COLS:
+                # 右端の縦線（COLDバス）は水色の太線で表示
+                pyxel.rect(x - 1, Layout.GRID_START_Y, 3, Layout.GRID_ROWS * Layout.GRID_SIZE + 1, pyxel.COLOR_CYAN)
             else:
                 # その他の縦線は通常のグリッド線
                 pyxel.line(x, Layout.GRID_START_Y, x, Layout.GRID_START_Y + Layout.GRID_ROWS * Layout.GRID_SIZE, Colors.GRID_LINE)
+        
+        # HOT/COLDラベル描画
+        hot_x = Layout.GRID_START_X
+        cold_x = Layout.GRID_START_X + Layout.GRID_COLS * Layout.GRID_SIZE
+        label_y = Layout.GRID_START_Y - 12
+        pyxel.text(hot_x - 8, label_y, "HOT", Colors.BUSBAR)
+        pyxel.text(cold_x - 12, label_y, "COLD", pyxel.COLOR_CYAN)
         
         # 配置済みデバイス描画
         self._draw_grid_devices(grid_manager)
@@ -130,21 +145,10 @@ class UIRenderer:
                         pyxel.text(px - 8, py + 6, device.device_address, Colors.TEXT)
     
     def _draw_electrical_wiring(self, electrical_system):
-        """横方向電気配線描画"""
-        for rung in electrical_system.rungs.values():
-            segments = rung.get_power_segments()
-            
-            for start_x, end_x, is_energized in segments:
-                color = Colors.WIRE_ON if is_energized else Colors.WIRE_OFF
-                
-                # 配線の描画位置計算（元のコードと同じ）
-                y = Layout.GRID_START_Y + rung.grid_y * Layout.GRID_SIZE
-                start_px = Layout.GRID_START_X + start_x * Layout.GRID_SIZE
-                end_px = Layout.GRID_START_X + end_x * Layout.GRID_SIZE
-                
-                # 横線描画
-                if start_px < end_px:
-                    pyxel.line(start_px, y, end_px, y, color)
+        """横方向電気配線描画（手動ワイヤーのみ）"""
+        # 自動セグメント描画を無効化
+        # 代わりに明示的に配置されたワイヤーデバイスのみを描画
+        pass  # 自動線描画は無効化
     
     def _draw_vertical_wiring(self, electrical_system):
         """縦方向電気配線描画"""
@@ -305,9 +309,9 @@ class MouseHandler:
             grid_x = round((mouse_x - Layout.GRID_START_X) / Layout.GRID_SIZE)
             grid_y = round((mouse_y - Layout.GRID_START_Y) / Layout.GRID_SIZE)
             
-            # 範囲チェック + バスバー領域除外  
+            # 範囲チェック + HOT/COLDバス領域除外  
             if (0 <= grid_x < Layout.GRID_COLS and 0 <= grid_y < Layout.GRID_ROWS and
-                grid_x != 0):  # 左バスバー（0列）のみ除外、1-9列が配置可能
+                1 <= grid_x <= 8):  # デバイス配置可能領域は列1-8のみ
                 return (grid_x, grid_y)
         
         return None
@@ -332,12 +336,20 @@ class MouseHandler:
                         selected_device_index = col  # 上段: 0-4
                         break
             
-            # 下段チェック
-            elif Layout.PALETTE_Y_LOWER <= mouse_y <= Layout.PALETTE_Y_LOWER + 8:
-                for col in range(5):  # 下段は5-9列
+            # 中段チェック
+            elif Layout.PALETTE_Y_MIDDLE <= mouse_y <= Layout.PALETTE_Y_MIDDLE + 8:
+                for col in range(5):  # 中段は5-9列
                     x_pos = Layout.PALETTE_START_X + col * Layout.PALETTE_DEVICE_WIDTH
                     if x_pos <= mouse_x <= x_pos + 8:
-                        selected_device_index = 5 + col  # 下段: 5-9
+                        selected_device_index = 5 + col  # 中段: 5-9
+                        break
+            
+            # 下段チェック
+            elif Layout.PALETTE_Y_LOWER <= mouse_y <= Layout.PALETTE_Y_LOWER + 8:
+                for col in range(5):  # 下段は10-14列
+                    x_pos = Layout.PALETTE_START_X + col * Layout.PALETTE_DEVICE_WIDTH
+                    if x_pos <= mouse_x <= x_pos + 8:
+                        selected_device_index = 10 + col  # 下段: 10-14
                         break
             
             # デバイス選択が確定した場合

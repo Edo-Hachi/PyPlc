@@ -32,6 +32,12 @@ class PLCSimulator:
     """PLCシミュレーターのメインコーディネータークラス"""
     
     def __init__(self):
+        # デバッグログの初期化
+        import logging
+        debug_logger = logging.getLogger('PyPlc_Debug')
+        debug_logger.debug("=== PyPlc Simulator Started ===")
+        debug_logger.debug("Debug logging system initialized")
+        
         # Pyxel初期化
         pyxel.init(WIDTH, HEIGHT, title="PLC Ladder Simulator")
         pyxel.mouse(True)
@@ -74,7 +80,11 @@ class PLCSimulator:
             "OUTCOIL_NML_ON": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_NML_ON"),
             "OUTCOIL_NML_OFF": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_NML_OFF"),
             "OUTCOIL_REV_ON": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_REV_ON"),
-            "OUTCOIL_REV_OFF": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_REV_OFF")
+            "OUTCOIL_REV_OFF": sprite_manager.get_sprite_by_name_and_tag("OUTCOIL_REV_OFF"),
+            "H_LINE_ON": sprite_manager.get_sprite_by_name_and_tag("H_LINE_ON"),
+            "H_LINE_OFF": sprite_manager.get_sprite_by_name_and_tag("H_LINE_OFF"),
+            "V_LINE_ON": sprite_manager.get_sprite_by_name_and_tag("V_LINE_ON"),
+            "V_LINE_OFF": sprite_manager.get_sprite_by_name_and_tag("V_LINE_OFF")
         }
     
     def _initialize_ui_systems(self):
@@ -88,6 +98,8 @@ class PLCSimulator:
             {"type": DeviceType.OUTCOIL_REV, "name": "Rev Output", "sprite": "OUTCOIL_REV_OFF"},
             {"type": DeviceType.TIMER, "name": "Timer", "sprite": "TIMER_STANBY"},
             {"type": DeviceType.COUNTER, "name": "Counter", "sprite": "COUNTER_OFF"},
+            {"type": DeviceType.WIRE_H, "name": "Wire H", "sprite": "H_LINE_OFF"},
+            {"type": DeviceType.WIRE_V, "name": "Wire V", "sprite": "V_LINE_OFF"},
             {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "Link Down", "sprite": "LINK_DOWN"},
             {"type": DeviceType.DEL, "name": "Delete", "sprite": "DEL"}
@@ -96,8 +108,8 @@ class PLCSimulator:
         # 選択状態管理（元のコード形式）
         self.selected_device_type = DeviceType.TYPE_A
         
-        # 2段デバイスパレット管理
-        self.palette_row = 0  # 0=上段, 1=下段
+        # 3段デバイスパレット管理
+        self.palette_row = 0  # 0=上段, 1=中段, 2=下段
         self.selected_device_index = 0  # 1-0キーに対応する0-9のインデックス
         
         # モード管理
@@ -141,7 +153,7 @@ class PLCSimulator:
                         self.selected_device_type = device_type
                         self.selected_device_index = device_index
                         # マウス選択時はアクティブエリアも更新
-                        self.palette_row = device_index // 5  # 0-4は上段(0), 5-9は下段(1)
+                        self.palette_row = device_index // 5  # 0-4は上段(0), 5-9は中段(1), 10-14は下段(2)
                 else:
                     # 従来の単一値の場合（後方互換性）
                     self.selected_device_type = mouse_result
@@ -183,15 +195,15 @@ class PLCSimulator:
         
         # EDITモードでのデバイス選択（シフトキー切り替え方式）
         if self.current_mode == SimulatorMode.EDIT:
-            # シフトキー押下でアクティブエリア切り替え（上段⇔下段）
+            # シフトキー押下でアクティブエリア切り替え（上段→中段→下段→上段...）
             if pyxel.btnp(pyxel.KEY_LSHIFT) or pyxel.btnp(pyxel.KEY_RSHIFT):
-                self.palette_row = 1 - self.palette_row  # 0⇔1切り替え
+                self.palette_row = (self.palette_row + 1) % 3  # 0→1→2→0切り替え
             
             # 1-5キーでアクティブエリアのデバイス選択
             for i in range(1, 6):  # 1-5キー
                 if pyxel.btnp(getattr(pyxel, f"KEY_{i}")):
                     col_index = i - 1  # 0-4
-                    device_index = self.palette_row * 5 + col_index  # 0-9
+                    device_index = self.palette_row * 5 + col_index  # 0-14
                     if device_index < len(self.device_palette):
                         self.selected_device_index = device_index
                         self.selected_device_type = self.device_palette[device_index]["type"]

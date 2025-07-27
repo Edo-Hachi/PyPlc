@@ -947,8 +947,262 @@ class PLCSimulator:
 
 ---
 
-*Project Status: 🎊 Major Device System Refactoring COMPLETED*  
-*Last Updated: 2025-01-25*  
-*Latest Achievement: 5フェーズ大規模リファクタリング完全成功*  
-*Current Status: PyPlc Complete Device System - Production Ready*  
-*Next Session: 次期開発フェーズ検討・機能拡張*
+## 水平・垂直配線システム実装計画 (2025-01-27)
+
+### 🎯 **自己保持回路問題の解決方針**
+
+#### **現在の課題**
+`SimIssue/PLC Sim Plan.txt`で特定された自己保持回路の動作不良：
+- X001 → Y01入力コイル → Y01出力コイル → X002 → (バスライン) → Y01入力コイル
+- **問題**: 水平配線が明示的オブジェクト化されていないため、電気的接続が認識されない
+
+#### **解決アプローチ: 明示的配線システム**
+```
+従来: [X001] (暗黙接続) [Y01入力] (暗黙接続) [Y01出力]
+新方式: [X001]---[WIRE_H]---[Y01入力]---[WIRE_V]---[Y01出力]---[WIRE_H]---[X002]
+```
+
+### 📋 **実装ステップバイステップ計画**
+
+#### **Phase 1: アイコン・スプライト基盤 (ユーザー作業 + システム統合)**
+**Step 1**: ユーザーによる水平・垂直配線アイコン作成 (8x8ピクセル)
+- `WIRE_H`: 水平配線 `[---]`
+- `WIRE_V`: 垂直配線 `[|]`
+
+**Step 2**: `config.py`にWIRE_H、WIRE_Vデバイスタイプ追加
+**Step 3**: `sprites.json`に新しい配線アイコンエントリ追加
+**Step 4**: `main.py`スプライトキャッシュに配線スプライト追加
+
+#### **Phase 2: UI・操作系拡張 (3段パレットシステム)**
+**Step 5**: デバイスパレット3段化（現在10個→15個対応）
+- 上段5個・中段5個・下段5個の構成
+- Page Up/Downキーでパレット段切り替え
+
+**Step 6**: UIRendererでの3段パレット表示対応
+**Step 7**: キーボード操作拡張（Page Up/Downまたは追加キー）
+
+#### **Phase 3: 配線オブジェクト実装**
+**Step 8**: GridDeviceに配線専用フィールド追加
+- `wire_direction`: "H"/"V"方向指定
+- `connected_devices`: 接続デバイスリスト
+
+**Step 9**: マウスハンドラーに配線配置・削除機能追加
+
+#### **Phase 4: 電気系統配線トレース**
+**Step 10**: electrical_systemに配線トレース機能実装
+- 配線経由の電気的経路追跡
+- デバイス→配線→デバイスの連続性管理
+
+**Step 11**: 自己保持回路での動作テスト・検証
+**Step 12**: 複雑配線回路での電気的継続性テスト
+
+### 🔧 **技術仕様詳細**
+
+#### **配線オブジェクト設計**
+```python
+class WireDevice(GridDevice):
+    def __init__(self, direction: str):
+        self.direction = direction        # "H" or "V"
+        self.connected_terminals = []     # 接続端子リスト
+        self.wire_energized = False       # 配線通電状態
+        
+    def update_power_flow(self):
+        # 接続デバイスから電力状態を判定・伝送
+        pass
+```
+
+#### **電気的ネットワーク構築**
+```python
+class ElectricalNetwork:
+    def trace_power_path(self, start_node, end_node):
+        """配線を含む電力経路をトレース"""
+        pass
+        
+    def build_circuit_graph(self):
+        """デバイス+配線の接続グラフを構築"""
+        pass
+```
+
+### 🎯 **期待される効果**
+
+#### **自己保持回路の完全動作**
+```
+[X001]---[WIRE_H]---[Y01入力]
+                         |
+                    [WIRE_V]
+                         |
+[Y01出力]---[X002]---[WIRE_H]---[WIRE_V]
+```
+**完全な電気的経路追跡** → **正しい自己保持動作**
+
+#### **設計意図の明確化**
+- 配線を意識的に配置 → 回路構造の理解向上
+- 視覚的な回路表現 → デバッグの容易性
+- 実PLC図面との整合性 → 学習効果の向上
+
+### ⏱ **作業時間見積もり**
+- **Phase 1 (Step 1-4)**: 約30分
+- **Phase 2 (Step 5-7)**: 約1時間  
+- **Phase 3 (Step 8-9)**: 約45分
+- **Phase 4 (Step 10-12)**: 約1時間
+**合計**: 約3時間15分で完全実装予定
+
+### 📝 **実装優先度**
+1. **最優先**: 水平配線システム（自己保持回路の動作に直結）
+2. **高優先**: 3段パレットUI（操作性向上）
+3. **中優先**: 垂直配線システム（現LINK_UP/DOWNからの移行）
+4. **低優先**: 高度な配線機能（交差点、分岐等）
+
+### 🔄 **段階的移行戦略**
+1. **現在システム維持**: LINK_UP/DOWNシステムを保持
+2. **配線システム併用**: 新旧システムの並行動作
+3. **段階的移行**: ユーザビリティテスト後に最適解を決定
+
+---
+
+## Current Session Work Status (2025-01-27)
+
+### 🔍 **Session Analysis & Implemented Fixes**
+
+#### **F5 Reset System Enhancement ✅ COMPLETED**
+- **Issue**: F5 stop functionality needed to reset all devices to initial state
+- **Implementation**: 
+  - Added `_reset_all_systems()` method in main.py calling all subsystem resets
+  - Enhanced `DeviceManager.reset_all_devices()` for X,Y,M,T,C device state reset
+  - Enhanced `GridDeviceManager.reset_all_devices()` with reverse coil initial state handling
+  - Enhanced `ElectricalSystem.reset_electrical_state()` for complete electrical reset
+- **Result**: F5 now properly resets entire system to clean initial state
+
+#### **Grid Column Placement Fix ✅ COMPLETED**
+- **Issue**: Devices could only be placed in columns 1-8, not column 9
+- **Root Cause**: Overly restrictive grid validation in ui_components.py
+- **Fix**: Modified mouse input validation from `grid_x != 0 and grid_x != Layout.GRID_COLS - 1` to `grid_x != 0`
+- **Result**: Devices can now be placed in columns 1-9 as intended
+
+#### **Display State Synchronization Fix ✅ COMPLETED**
+- **Issue**: Device sprites remained lit after F5 stop despite reset system
+- **Root Cause**: Sprite display not updating after device reset
+- **Fix**: Added `self.grid_device_manager.update_all_devices(self.device_manager)` after reset
+- **Result**: All device sprites properly turn off when system is reset
+
+#### **Edit Mode Bus Connection Display Fix ✅ COMPLETED**
+- **Issue**: Vertical bus connection display disappeared in EDIT mode after reset changes
+- **Root Cause**: Full electrical updates were disabled during STOPPED state
+- **Solution**: Implemented `update_structure_only()` method for STOPPED state
+- **Result**: LINK_UP/DOWN sprites display correctly in EDIT mode without full simulation
+
+#### **Same-Address Coil Synchronization ✅ COMPLETED**
+- **Implementation**: Input coil (Y01) automatically synchronizes with output coils of same address
+- **Features**:
+  - Input coil ON → Output coil ON
+  - Input coil ON → Reverse coil OFF
+  - Automatic device manager synchronization
+  - Reset state handling for reverse coils (ON when power off)
+
+### 📋 **Self-Holding Circuit Analysis**
+
+#### **Problem Identified**
+From `SimIssue/PLC Sim Plan.txt` analysis:
+- Self-holding circuit: X001 → Y01 input coil → Y01 output coil → X002 → (busline) → Y01 input coil
+- **Current Issue**: Horizontal wiring connections are implicit, preventing proper electrical continuity recognition
+- **Expected**: When X001 turns OFF, circuit should maintain through Y01 output → X002 → busline connection back to Y01 input
+
+#### **Root Cause: Implicit Wiring System**
+```
+Current: [X001] (implicit) [Y01入力] (implicit) [Y01出力] (implicit) [X002]
+Problem: No explicit horizontal wire objects to trace electrical paths
+```
+
+#### **Proposed Solution: Explicit Wire Objects**
+```
+New System: [X001]---[WIRE_H]---[Y01入力]---[WIRE_H]---[Y01出力]---[WIRE_H]---[X002]
+                                      |                                            |
+                                 [WIRE_V]                                     [WIRE_V]
+                                      |                                            |
+                                   [BUSLINE]---[WIRE_H]---[WIRE_H]---[WIRE_H]---
+```
+
+### 🎯 **Implementation Plan: Wire Object System**
+
+#### **12-Step Implementation Strategy**
+
+**Phase 1: Icon & Sprite Foundation (User Task + System Integration)**
+1. ⏳ **User Task**: Create horizontal & vertical wire icons (8x8 pixels)
+2. 📝 **Add Device Types**: Update config.py with WIRE_H, WIRE_V enums
+3. 📝 **Update Sprites**: Add wire sprites to sprites.json
+4. 📝 **Cache Integration**: Add wire sprites to main.py sprite cache
+
+**Phase 2: UI & Interaction System (3-Tier Palette)**
+5. 📝 **Expand Palette**: Upgrade to 3-tier device palette (15 devices total)
+6. 📝 **UI Rendering**: Update UIRenderer for 3-tier display
+7. 📝 **Key Controls**: Add Page Up/Down or extended key controls
+
+**Phase 3: Wire Object Implementation**
+8. 📝 **Grid Enhancement**: Add wire-specific fields to GridDevice
+9. 📝 **Mouse Handling**: Implement wire placement/deletion in mouse handler
+
+**Phase 4: Electrical System Integration**
+10. 📝 **Wire Tracing**: Implement wire-based electrical path tracing
+11. 🧪 **Self-Hold Test**: Verify self-holding circuit operation
+12. 🔬 **Complex Circuits**: Test advanced circuit configurations
+
+#### **Technical Architecture**
+```python
+# Wire Object Design
+class GridDevice:
+    # Enhanced for wire support
+    def __init__(self):
+        self.wire_direction = None      # "H"/"V" for wire objects
+        self.wire_energized = False     # Wire power state
+        self.connected_terminals = []   # Connected device list
+
+# Electrical Network Tracing
+class ElectricalSystem:
+    def trace_wire_path(self, start_node, end_node):
+        """Trace electrical path through wire objects"""
+        
+    def build_circuit_graph(self):
+        """Build device+wire connection graph"""
+```
+
+#### **Expected Benefits**
+- ✅ **Self-Holding Circuits**: Proper electrical continuity recognition
+- ✅ **Visual Clarity**: Explicit wire placement shows circuit intention
+- ✅ **Real PLC Alignment**: Matches actual PLC ladder diagram conventions
+- ✅ **Educational Value**: Users learn proper circuit construction principles
+
+### 📊 **Current Technical Status**
+
+#### **System Architecture (Post-Refactoring)**
+- **main.py**: 309 lines (coordinator)
+- **config.py**: 106 lines (constants & enums) 
+- **grid_system.py**: 197 lines (grid device management)
+- **electrical_system.py**: 415 lines (electrical continuity)
+- **plc_logic.py**: 184 lines (traditional PLC logic)
+- **ui_components.py**: 269 lines (UI rendering & mouse)
+
+#### **Device System Completeness**
+- ✅ **10 Device Types**: A/B contacts, input/output/reverse coils, timer, counter, vertical links, delete
+- ✅ **Advanced Logic**: 3-state timers, edge-detection counters, reverse coil operation
+- ✅ **Real-time Simulation**: 60fps electrical flow visualization
+- ✅ **Mode System**: EDIT/RUN/STOP states with F5 control
+
+### 🚀 **Next Development Session**
+
+#### **Immediate Priority**
+1. **Wait for User**: Wire icon creation completion
+2. **Step 2**: Begin config.py wire device type addition
+3. **Progressive Implementation**: Follow 12-step plan systematically
+
+#### **Session Continuation Strategy**
+- User explicitly requested step-by-step implementation following the plan
+- All preparation work completed - ready for immediate Phase 1 execution
+- No outstanding technical debt or blocking issues identified
+
+---
+
+*Project Status: 🎯 Ready for Wire System Implementation*  
+*Last Updated: 2025-01-27*  
+*Latest Achievement: Complete session analysis & self-holding circuit solution design*  
+*Current Status: Awaiting wire icon completion → Phase 1 Step 2 ready to begin*  
+*Next Session: Progressive 12-step wire object system implementation*

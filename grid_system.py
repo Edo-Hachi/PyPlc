@@ -28,6 +28,11 @@ class GridDevice:
         self.counter_preset = 0      # カウンタープリセット値
         self.counter_current = 0     # カウンター現在値
         self.counter_state = "OFF"   # カウンター状態（OFF/ON）
+        
+        # ワイヤー専用状態
+        self.wire_direction = None   # ワイヤー方向（"H": 水平, "V": 垂直）
+        self.wire_energized = False  # ワイヤー通電状態
+        self.connected_devices = []  # 接続デバイスリスト
         self.contact_state = False   # 接点状態（A/B接点用）
         self.coil_energized = False  # コイル励磁状態
         
@@ -69,6 +74,10 @@ class GridDevice:
             return "LINK_UP"
         elif self.device_type == DeviceType.LINK_DOWN:
             return "LINK_DOWN"
+        elif self.device_type == DeviceType.WIRE_H:
+            return "H_LINE_ON" if self.wire_energized else "H_LINE_OFF"
+        elif self.device_type == DeviceType.WIRE_V:
+            return "V_LINE_ON" if self.wire_energized else "V_LINE_OFF"
         elif self.device_type == DeviceType.DEL:
             return "DEL"
         return None
@@ -77,12 +86,9 @@ class GridDevice:
         """デバイス状態を更新"""
         if self.device_address and self.device_type in [DeviceType.TYPE_A, DeviceType.TYPE_B]:
             plc_device = device_manager.get_device(self.device_address)
-            if self.device_type == DeviceType.TYPE_A:
-                self.contact_state = plc_device.value
-                self.active = self.contact_state
-            elif self.device_type == DeviceType.TYPE_B:
-                self.contact_state = plc_device.value
-                self.active = not self.contact_state  # B接点は反転
+            # 論理状態のみ更新、表示状態（active）は電気系統で決定
+            self.contact_state = plc_device.value
+            # activeは電気系統（ElectricalSystem）で設定されるため、ここでは更新しない
         elif self.device_address and self.device_type == DeviceType.COIL:
             plc_device = device_manager.get_device(self.device_address)
             self.coil_energized = plc_device.value
@@ -95,6 +101,9 @@ class GridDevice:
             plc_device = device_manager.get_device(self.device_address)
             self.coil_energized = plc_device.value
             self.active = self.coil_energized
+        elif self.device_type in [DeviceType.WIRE_H, DeviceType.WIRE_V]:
+            # ワイヤーの通電状態は電気系統から決定される
+            self.active = self.wire_energized
 
 
 class GridDeviceManager:
@@ -120,6 +129,15 @@ class GridDeviceManager:
             device.device_address = device_address
             device.grid_x = grid_x
             device.grid_y = grid_y
+            
+            # ワイヤー固有の初期化
+            if device_type == DeviceType.WIRE_H:
+                device.wire_direction = "H"
+                device.wire_energized = False
+            elif device_type == DeviceType.WIRE_V:
+                device.wire_direction = "V"
+                device.wire_energized = False
+            
             return True
         return False
     
