@@ -145,3 +145,24 @@ class GridDeviceManager:
             for device in row:
                 if device.device_type != DeviceType.EMPTY:
                     device.update_state(device_manager)
+    
+    def reset_all_devices(self):
+        """全グリッドデバイスを初期状態にリセット"""
+        for row in self.grid:
+            for device in row:
+                # デバイス共通状態をリセット
+                device.active = False
+                
+                # デバイス固有状態をリセット
+                device.timer_preset = 0.0
+                device.timer_current = 0.0
+                device.timer_state = "STANBY"
+                device.counter_preset = 0
+                device.counter_current = 0
+                device.counter_state = "OFF"
+                device.contact_state = False
+                device.coil_energized = False
+                
+                # バスバー・配線状態をリセット
+                device.busbar_direction = BusbarDirection.NONE
+                device.wire_energized = False

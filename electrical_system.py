@@ -205,6 +205,28 @@ class ElectricalSystem:
         # コイル状態とY接点デバイスの自動連動処理
         self._update_coil_device_synchronization()
     
+    def update_structure_only(self):
+        """構造のみ更新（電力フロー計算なし）"""
+        # 既存のラングデバイス情報をクリア
+        for rung in self.rungs.values():
+            rung.devices.clear()
+        
+        # 縦方向結線情報をクリア
+        self.vertical_connections.clear()
+        
+        # 各ラングにデバイス情報を同期 & 縦方向結線を検出
+        for row in self.grid_manager.grid:
+            for device in row:
+                if device.device_type != DeviceType.EMPTY:
+                    rung = self.get_or_create_rung(device.grid_y)
+                    rung.add_device_at_position(device.grid_x, device)
+                    
+                    # 縦方向結線点を登録
+                    if device.device_type in [DeviceType.LINK_UP, DeviceType.LINK_DOWN]:
+                        if device.grid_x not in self.vertical_connections:
+                            self.vertical_connections[device.grid_x] = VerticalConnection(device.grid_x)
+                        self.vertical_connections[device.grid_x].add_connection_point(device.grid_y, device.device_type)
+    
     def get_wire_color(self, grid_x: int, grid_y: int) -> int:
         """指定位置の配線色を取得"""
         if grid_y in self.rungs:
@@ -388,3 +410,28 @@ class ElectricalSystem:
             # 通常、カウンターは電力が切れてもカウント値は保持される
             # ただし、特定の条件でリセットする場合はここに実装
             pass
+    
+    def reset_electrical_state(self):
+        """電気系統を初期状態にリセット"""
+        # バスバー状態をリセット
+        self.left_bus_energized = True   # 左バスバーは常に通電
+        self.right_bus_energized = False
+        
+        # 全ラングの電力状態をリセット
+        for rung in self.rungs.values():
+            rung.left_bus_connection.is_energized = self.left_bus_energized
+            rung.right_bus_connection.is_energized = False
+            rung.is_energized = False
+            
+            # ラング内の全デバイスの電力状態をリセット
+            for grid_x, device in rung.devices:
+                device.wire_energized = False
+                if hasattr(device, 'coil_energized'):
+                    device.coil_energized = False
+                if hasattr(device, 'active'):
+                    device.active = False
+        
+        # 縦方向結線の状態をリセット
+        for connection in self.vertical_connections.values():
+            # 接続ポイントの電力状態をリセット
+            connection.connection_points = {}  # 接続ポイントをクリア

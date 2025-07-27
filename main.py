@@ -170,7 +170,9 @@ class PLCSimulator:
             if self.plc_run_state == PLCRunState.STOPPED:
                 self.plc_run_state = PLCRunState.RUNNING
             else:
+                # STOPする際は全デバイスを初期状態にリセット
                 self.plc_run_state = PLCRunState.STOPPED
+                self._reset_all_systems()
         
         # EDITモードでのデバイス選択（シフトキー切り替え方式）
         if self.current_mode == SimulatorMode.EDIT:
@@ -214,10 +216,11 @@ class PLCSimulator:
             # 従来ラダープログラム実行
             self.ladder_program.scan_cycle(self.device_manager)
         else:
-            # 停止中でも電気系統の表示は更新（入力変更の反映のため）
-            self.electrical_system.update_electrical_state()
-            # 停止中でもコイル→Y接点連動は実行（表示更新のため）
-            self.electrical_system.synchronize_coil_to_device(self.device_manager)
+            # 停止中は構造更新のみ実行（縦方向結線表示のため）
+            # 電力フロー計算は実行しない（リセット状態を維持するため）
+            self.electrical_system.update_structure_only()
+            # 入力変更があった場合のみ、グリッドデバイス状態を更新
+            self.grid_device_manager.update_all_devices(self.device_manager)
     
     def _show_device_config_dialog(self, device):
         """デバイス設定ダイアログを表示"""
@@ -270,6 +273,24 @@ class PLCSimulator:
                 self.plc_run_state = PLCRunState.RUNNING
                 self.ui_renderer.status_message = f"PLC RESUME from {device.device_address or 'B Contact'}"
                 self.status_message_timer = 180  # 3秒間表示
+    
+    def _reset_all_systems(self):
+        """全システムを初期状態にリセット（F5ストップ時）"""
+        # PLCデバイスリセット
+        self.device_manager.reset_all_devices()
+        
+        # グリッドデバイスリセット
+        self.grid_device_manager.reset_all_devices()
+        
+        # 電気系統リセット
+        self.electrical_system.reset_electrical_state()
+        
+        # リセット後にスプライト状態を強制更新
+        self.grid_device_manager.update_all_devices(self.device_manager)
+        
+        # ステータスメッセージ表示
+        self.ui_renderer.status_message = "All devices reset to initial state"
+        self.status_message_timer = 120  # 2秒間表示
     
     def draw(self):
         """描画処理"""

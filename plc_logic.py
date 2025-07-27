@@ -45,6 +45,22 @@ class DeviceManager:
         """デバイス値を設定"""
         device = self.get_device(address)
         device.value = value
+    
+    def reset_all_devices(self):
+        """全デバイスを初期状態にリセット"""
+        for device in self.devices.values():
+            if device.device_type in ['X', 'Y', 'M']:
+                # 接点・コイル系デバイスはFalseに初期化
+                device.value = False
+            elif device.device_type in ['T', 'C']:
+                # タイマー・カウンター系デバイスは0に初期化
+                device.value = 0
+                device.preset_value = 0
+                device.current_value = 0
+                device.coil_state = False
+            else:
+                # その他のデバイスは0に初期化
+                device.value = 0
 
 
 class LogicElement(ABC):
