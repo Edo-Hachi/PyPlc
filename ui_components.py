@@ -309,9 +309,8 @@ class MouseHandler:
             grid_x = round((mouse_x - Layout.GRID_START_X) / Layout.GRID_SIZE)
             grid_y = round((mouse_y - Layout.GRID_START_Y) / Layout.GRID_SIZE)
             
-            # 範囲チェック + HOT/COLDバス領域除外  
-            if (0 <= grid_x < Layout.GRID_COLS and 0 <= grid_y < Layout.GRID_ROWS and
-                1 <= grid_x <= 8):  # デバイス配置可能領域は列1-8のみ
+            # 範囲チェック + HOT/COLDバス領域除外
+            if (1 <= grid_x < Layout.GRID_COLS and 0 <= grid_y < Layout.GRID_ROWS):  # デバイス配置可能領域は列1-9
                 return (grid_x, grid_y)
         
         return None
