@@ -20,19 +20,21 @@ class Layout:
     
     # デバイスパレット
     PALETTE_Y = 16
+    PALETTE_Y_LOWER = 32  # 下段のY座標
     PALETTE_START_X = 20
     PALETTE_DEVICE_WIDTH = 24
     PALETTE_NUMBER_OFFSET_Y = -8
+    PALETTE_ROW_HEIGHT = 16  # 上段・下段間の高さ
     
     # グリッド設定
     GRID_SIZE = 16
     GRID_COLS = 10
     GRID_ROWS = 10
     GRID_START_X = 16
-    GRID_START_Y = 32
+    GRID_START_Y = 64
     
     # デバイス状態表示
-    DEVICE_STATUS_Y = 160
+    DEVICE_STATUS_Y = 192
     DEVICE_STATUS_X = 10
     DEVICE_STATUS_SPACING = 12
     DEVICE_STATUS_X2 = 90

@@ -85,6 +85,10 @@ class PLCSimulator:
         # 選択状態管理（元のコード形式）
         self.selected_device_type = DeviceType.TYPE_A
         
+        # 2段デバイスパレット管理
+        self.palette_row = 0  # 0=上段, 1=下段
+        self.selected_device_index = 0  # 1-0キーに対応する0-9のインデックス
+        
         # モード管理
         self.current_mode = SimulatorMode.EDIT
         
@@ -103,47 +107,8 @@ class PLCSimulator:
     
     def _setup_test_systems(self):
         """テストシステムセットアップ"""
-        # テスト用グリッドデバイス配置
-        self._setup_test_grid_devices()
-        
-        # テスト用従来ラダー回路作成
-        #self._setup_test_ladder_circuits()
-    
-    def _setup_test_grid_devices(self):
-        
-        """テスト用グリッドデバイス配置"""
-        # グリッドAND回路: X001 → X002 → Y001 (左バスバーは自動)
-        self.grid_device_manager.place_device(2, 2, DeviceType.TYPE_A, "X001")
-        self.grid_device_manager.place_device(4, 2, DeviceType.TYPE_A, "X002")
-        self.grid_device_manager.place_device(8, 2, DeviceType.COIL, "Y001")
-        
-        # 初期デバイス値設定
-        self.device_manager.set_device_value("X001", False)
-        self.device_manager.set_device_value("X002", False)
-    
-    def _setup_test_ladder_circuits(self):
-        return
-        """テスト用従来ラダー回路作成"""
-        # テスト用AND回路: X001 AND X002 -> Y001
-        line1 = LadderLine()
-        line1.add_element(ContactA("X001"))
-        line1.add_element(ContactA("X002"))
-        line1.add_element(Coil("Y001"))
-        self.ladder_program.add_line(line1)
-        
-        # テスト用タイマー回路: X003 -> T001(3秒) -> Y002
-        line2 = LadderLine()
-        line2.add_element(ContactA("X003"))
-        line2.add_element(Timer("T001", 3.0))
-        line2.add_element(Coil("Y002"))
-        self.ladder_program.add_line(line2)
-        
-        # テスト用カウンター回路: X004 -> C001(3回) -> Y003
-        line3 = LadderLine()
-        line3.add_element(ContactA("X004"))
-        line3.add_element(Counter("C001", 3))
-        line3.add_element(Coil("Y003"))
-        self.ladder_program.add_line(line3)
+        # 現在はテスト用デバイス配置なし - ユーザーが自由に構築
+        pass
     
     def update(self):
         """メインアップデート処理"""
@@ -154,12 +119,20 @@ class PLCSimulator:
         if self.current_mode == SimulatorMode.EDIT:
             mouse_result = self.mouse_handler.handle_mouse_input(self.grid_device_manager, self.device_manager)
             if mouse_result is not None:
-                if isinstance(mouse_result, tuple) and mouse_result[0] == "DEVICE_CONFIG":
-                    # デバイス設定ダイアログを表示
-                    _, device = mouse_result
-                    self._show_device_config_dialog(device)
+                if isinstance(mouse_result, tuple):
+                    if mouse_result[0] == "DEVICE_CONFIG":
+                        # デバイス設定ダイアログを表示
+                        _, device = mouse_result
+                        self._show_device_config_dialog(device)
+                    else:
+                        # デバイスタイプとインデックス選択
+                        device_type, device_index = mouse_result
+                        self.selected_device_type = device_type
+                        self.selected_device_index = device_index
+                        # マウス選択時はアクティブエリアも更新
+                        self.palette_row = device_index // 5  # 0-4は上段(0), 5-9は下段(1)
                 else:
-                    # デバイスタイプ選択
+                    # 従来の単一値の場合（後方互換性）
                     self.selected_device_type = mouse_result
         elif self.current_mode == SimulatorMode.RUN:
             # RUNモードでは右クリックでデバイス操作
@@ -195,33 +168,31 @@ class PLCSimulator:
             else:
                 self.plc_run_state = PLCRunState.STOPPED
         
-        # EDITモードでのデバイス選択（1-0キー、0は10番目）
+        # EDITモードでのデバイス選択（シフトキー切り替え方式）
         if self.current_mode == SimulatorMode.EDIT:
-            for i in range(1, 10):
+            # シフトキー押下でアクティブエリア切り替え（上段⇔下段）
+            if pyxel.btnp(pyxel.KEY_LSHIFT) or pyxel.btnp(pyxel.KEY_RSHIFT):
+                self.palette_row = 1 - self.palette_row  # 0⇔1切り替え
+            
+            # 1-5キーでアクティブエリアのデバイス選択
+            for i in range(1, 6):  # 1-5キー
                 if pyxel.btnp(getattr(pyxel, f"KEY_{i}")):
-                    if i - 1 < len(self.device_palette):
-                        self.selected_device_type = self.device_palette[i - 1]["type"]
+                    col_index = i - 1  # 0-4
+                    device_index = self.palette_row * 5 + col_index  # 0-9
+                    if device_index < len(self.device_palette):
+                        self.selected_device_index = device_index
+                        self.selected_device_type = self.device_palette[device_index]["type"]
                         self.mouse_handler.selected_device_type = self.selected_device_type
-            # 0キーは10番目のデバイス
+            
+            # 0キーはアクティブエリアの5番目のデバイス
             if pyxel.btnp(pyxel.KEY_0):
-                if 9 < len(self.device_palette):
-                    self.selected_device_type = self.device_palette[9]["type"]
+                col_index = 4  # 5番目は列インデックス4
+                device_index = self.palette_row * 5 + col_index
+                if device_index < len(self.device_palette):
+                    self.selected_device_index = device_index
+                    self.selected_device_type = self.device_palette[device_index]["type"]
                     self.mouse_handler.selected_device_type = self.selected_device_type
         
-        # RUNモードまたはデバイス操作（Shift+1-4キー）
-        if pyxel.btn(pyxel.KEY_LSHIFT) or pyxel.btn(pyxel.KEY_RSHIFT):
-            if pyxel.btnp(pyxel.KEY_1):
-                device = self.device_manager.get_device("X001")
-                device.value = not device.value
-            elif pyxel.btnp(pyxel.KEY_2):
-                device = self.device_manager.get_device("X002")
-                device.value = not device.value
-            elif pyxel.btnp(pyxel.KEY_3):
-                device = self.device_manager.get_device("X003")
-                device.value = not device.value
-            elif pyxel.btnp(pyxel.KEY_4):
-                device = self.device_manager.get_device("X004")
-                device.value = not device.value
     
     def _update_systems(self):
         """システム状態更新"""
@@ -309,7 +280,8 @@ class PLCSimulator:
         
         # UI描画
         #self.ui_renderer.draw_title()
-        self.ui_renderer.draw_device_palette(self.selected_device_type, self.mouse_handler)
+        self.ui_renderer.draw_device_palette(self.selected_device_type, self.mouse_handler, 
+                                            self.palette_row, self.selected_device_index)
         self.ui_renderer.draw_device_grid(
             self.grid_device_manager, 
             self.electrical_system, 

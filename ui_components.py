@@ -24,41 +24,59 @@ class UIRenderer:
 #        """タイトル描画"""
 #        #pyxel.text(Layout.TITLE_X, Layout.TITLE_Y, "PLC Ladder Simulator", Colors.TEXT)
     
-    def draw_device_palette(self, selected_device_type, mouse_handler=None):
-        """デバイスパレット描画（Y=16ライン）"""
-        #pyxel.text(Layout.PALETTE_START_X, Layout.PALETTE_Y - 8, "Device Palette:", Colors.TEXT)
+    def draw_device_palette(self, selected_device_type, mouse_handler=None, palette_row=0, selected_device_index=0):
+        """デバイスパレット描画（2段システム対応）"""
+        # 10個のデバイスを5個ずつ2段に分けて表示
+        devices_per_row = 5
         
-        for i, device in enumerate(self.device_palette):
-            x_pos = Layout.PALETTE_START_X + i * Layout.PALETTE_DEVICE_WIDTH
+        for row in range(2):  # 上段(0)と下段(1)
+            y_pos = Layout.PALETTE_Y if row == 0 else Layout.PALETTE_Y_LOWER
             
-            # マウスオーバー時の視覚的フィードバック（8x8スプライトに合わせて縮小）
-            mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
-            is_mouse_over = (x_pos <= mouse_x <= x_pos + 8 and 
-                           Layout.PALETTE_Y <= mouse_y <= Layout.PALETTE_Y + 8)
+            # アクティブな段に白い枠を描画（段ごとに1回だけ）
+            if row == palette_row:
+                row_start_x = Layout.PALETTE_START_X - 2
+                row_width = devices_per_row * Layout.PALETTE_DEVICE_WIDTH + 4
+                pyxel.rectb(row_start_x, y_pos - 2, row_width, 12, Colors.TEXT)
             
-            # マウスオーバー時にステータスメッセージを更新
-            if is_mouse_over:
-                self.status_message = f"{device['name']} (Key: {i + 1})"
-            
-            # 選択中のデバイスは明確に表示
-            if device["type"] == selected_device_type:
-                # 選択中は白い枠線のみ（8x8サイズ）
-                pyxel.rectb(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.TEXT)
-            elif is_mouse_over:
-                # マウスオーバー時は薄い背景 + 白い枠線（8x8サイズ）
-                pyxel.rect(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, pyxel.COLOR_NAVY)  # ダークブルー背景
-                pyxel.rectb(x_pos - 1, Layout.PALETTE_Y - 1, 10, 10, Colors.TEXT)
-            
-            # デバイススプライト表示
-            if device["sprite"]:
-                sprite = self.sprites[device["sprite"]]
-                pyxel.blt(x_pos, Layout.PALETTE_Y, 0, sprite.x, sprite.y, 8, 8, 0)
-            else:
-                # スプライトがない場合は記号で表示（現在はBUSBAR削除により該当なし）
-                pass
-            
-            # デバイス番号表示
-            pyxel.text(x_pos + 8, Layout.PALETTE_Y + Layout.PALETTE_NUMBER_OFFSET_Y, str(i + 1), Colors.TEXT)
+            for col in range(devices_per_row):
+                device_index = row * devices_per_row + col
+                if device_index >= len(self.device_palette):
+                    break
+                
+                device = self.device_palette[device_index]
+                x_pos = Layout.PALETTE_START_X + col * Layout.PALETTE_DEVICE_WIDTH
+                
+                # マウスオーバー時の視覚的フィードバック
+                mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+                is_mouse_over = (x_pos <= mouse_x <= x_pos + 8 and 
+                               y_pos <= mouse_y <= y_pos + 8)
+                
+                # マウスオーバー時にステータスメッセージを更新
+                if is_mouse_over:
+                    key_num = col + 1 if col < 9 else 0  # 0は10番目
+                    self.status_message = f"{device['name']} (Key: {key_num})"
+                
+                # 現在選択中の段と位置かどうかをチェック
+                is_selected_row = (row == palette_row)
+                is_selected_device = (device_index == selected_device_index and device["type"] == selected_device_type)
+                
+                # 選択中のデバイスは明確に表示
+                if is_selected_device:
+                    # 選択中は白い枠線のみ（8x8サイズ）
+                    pyxel.rectb(x_pos - 1, y_pos - 1, 10, 10, Colors.TEXT)
+                elif is_mouse_over:
+                    # マウスオーバー時は薄い背景 + 白い枠線（8x8サイズ）
+                    pyxel.rect(x_pos - 1, y_pos - 1, 10, 10, pyxel.COLOR_NAVY)
+                    pyxel.rectb(x_pos - 1, y_pos - 1, 10, 10, Colors.TEXT)
+                
+                # デバイススプライト表示
+                if device["sprite"]:
+                    sprite = self.sprites[device["sprite"]]
+                    pyxel.blt(x_pos, y_pos, 0, sprite.x, sprite.y, 8, 8, 0)
+                
+                # デバイス番号表示（1-5の形式、0は5番目として表示）
+                key_num = col + 1 if col < 4 else 0  # 0は5番目
+                pyxel.text(x_pos + 8, y_pos + Layout.PALETTE_NUMBER_OFFSET_Y, str(key_num), Colors.TEXT)
     
     def draw_device_grid(self, grid_manager, electrical_system, mouse_handler):
         """デバイスグリッド描画"""
@@ -287,8 +305,9 @@ class MouseHandler:
             grid_x = round((mouse_x - Layout.GRID_START_X) / Layout.GRID_SIZE)
             grid_y = round((mouse_y - Layout.GRID_START_Y) / Layout.GRID_SIZE)
             
-            # 範囲チェック
-            if 0 <= grid_x < Layout.GRID_COLS and 0 <= grid_y < Layout.GRID_ROWS:
+            # 範囲チェック + バスバー領域除外
+            if (0 <= grid_x < Layout.GRID_COLS and 0 <= grid_y < Layout.GRID_ROWS and
+                grid_x != 0 and grid_x != Layout.GRID_COLS - 1):  # バスバー領域を除外
                 return (grid_x, grid_y)
         
         return None
@@ -302,14 +321,30 @@ class MouseHandler:
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
             mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
             
-            # デバイスパレット選択判定（8x8スプライトサイズに合わせて縮小）
+            # デバイスパレット選択判定（2段対応）
+            selected_device_index = None
+            
+            # 上段チェック
             if Layout.PALETTE_Y <= mouse_y <= Layout.PALETTE_Y + 8:
-                for i, device in enumerate(self.device_palette):
-                    x_pos = Layout.PALETTE_START_X + i * Layout.PALETTE_DEVICE_WIDTH
+                for col in range(5):  # 上段は0-4列
+                    x_pos = Layout.PALETTE_START_X + col * Layout.PALETTE_DEVICE_WIDTH
                     if x_pos <= mouse_x <= x_pos + 8:
-                        # デバイスタイプを選択
-                        self.selected_device_type = device["type"]
-                        return device["type"]  # メインクラスに選択されたデバイスタイプを返す
+                        selected_device_index = col  # 上段: 0-4
+                        break
+            
+            # 下段チェック
+            elif Layout.PALETTE_Y_LOWER <= mouse_y <= Layout.PALETTE_Y_LOWER + 8:
+                for col in range(5):  # 下段は5-9列
+                    x_pos = Layout.PALETTE_START_X + col * Layout.PALETTE_DEVICE_WIDTH
+                    if x_pos <= mouse_x <= x_pos + 8:
+                        selected_device_index = 5 + col  # 下段: 5-9
+                        break
+            
+            # デバイス選択が確定した場合
+            if selected_device_index is not None and selected_device_index < len(self.device_palette):
+                device = self.device_palette[selected_device_index]
+                self.selected_device_type = device["type"]
+                return (device["type"], selected_device_index)  # デバイスタイプとインデックスを返す
             else:
                 # グリッド上でのデバイス配置処理
                 self._handle_grid_placement(grid_manager, device_manager)
@@ -346,6 +381,7 @@ class MouseHandler:
             self.preview_grid_pos = grid_pos
             grid_x, grid_y = grid_pos
             
+            # 配置可能性のチェック（バスバー領域は既にget_grid_position_from_mouseで除外済み）
             # 既存デバイスがある場合は赤色、ない場合は黄色
             existing_device = grid_manager.get_device(grid_x, grid_y)
             if existing_device and existing_device.device_type != DeviceType.EMPTY:
