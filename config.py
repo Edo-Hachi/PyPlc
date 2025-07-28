@@ -212,25 +212,25 @@ class GridConstraints:
         return False
 
 
-class Colors:
-    """色定義"""
-    # 基本色
-    BLACK = 0
-    WHITE = 7
-    RED = 8
-    GREEN = 11
-    BLUE = 12
-    YELLOW = 10
-    GRAY = 13
-    
-    # 機能別色
-    BACKGROUND = BLACK
-    GRID_LINE = GRAY
-    POWER_ON = GREEN        # 通電状態
-    POWER_OFF = GRAY        # 非通電状態
-    SELECTED = YELLOW       # 選択状態
-    ERROR = RED             # エラー状態
-    TEXT = WHITE            # テキスト
+    # class Colors:
+    #     """色定義"""
+    #     # 基本色
+    #     BLACK = 0
+    #     WHITE = 7
+    #     RED = 8
+    #     GREEN = 11
+    #     BLUE = 12
+    #     YELLOW = 10
+    #     GRAY = 13
+        
+    #     # 機能別色
+    #     BACKGROUND = BLACK
+    #     GRID_LINE = GRAY
+    #     POWER_ON = GREEN        # 通電状態
+    #     POWER_OFF = GRAY        # 非通電状態
+    #     SELECTED = YELLOW       # 選択状態
+    #     ERROR = RED             # エラー状態
+    #     TEXT = WHITE            # テキスト
 
 
 class Layout:

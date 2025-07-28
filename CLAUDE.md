@@ -1201,8 +1201,131 @@ class ElectricalSystem:
 
 ---
 
+---
+
+## PyPlc-v2 Rebuild & Grid System Architecture (2025-01-28)
+
+### 🎯 **PyPlc-v2 Complete Rebuild Project**
+
+#### **Ver1の問題点と解決方針**
+- **Ver1の課題**: 内部データと表示データの齟齬による混乱
+- **解決方針**: 単一システムアーキテクチャによる完全再構築
+- **実装方針**: ステップバイステップでの段階的構築
+
+#### **現在の実装状況 (2025-01-28)**
+```
+PyPlc-v2/
+├── config.py                # 設定管理システム ✅
+├── core/
+│   ├── logic_element.py     # LogicElement基底クラス ✅
+│   └── grid_manager.py      # GridDeviceManager ✅
+├── main.py                  # メインアプリケーション ✅
+├── PyPlc.json              # 設定ファイル ✅
+└── test_core.py            # コアシステムテスト ✅
+```
+
+### 🔧 **重要な設計概念: L_SIDE/R_SIDE保持の意義**
+
+#### **Col=0/Col=9 バス予約制度の重要性**
+
+PyPlcシステムにおいて、**Col=0をL_SIDE（左バス）、Col=9をR_SIDE（右バス）として厳密に予約**する設計は、以下の重要な意義を持つ：
+
+#### **1. 電気的継続性の厳密管理**
+```python
+# 浮いた回路の検出が可能
+def detect_floating_circuits(self):
+    for device in self.get_all_devices():
+        if not device.is_bus_device():
+            # L_SIDEへの経路チェック
+            has_left_connection = self.trace_to_left_bus(device)
+            # R_SIDEへの経路チェック  
+            has_right_connection = self.trace_to_right_bus(device)
+            
+            if not (has_left_connection and has_right_connection):
+                # 浮いた回路として警告
+                warnings.append(f"Floating circuit: {device.name}")
+```
+
+#### **2. 実PLCシステムとの完全整合性**
+- **実際のPLC**: 必ず電源バス（L1）とニュートラル（L2/N）が存在
+- **電力フロー**: 左バス→デバイス→右バスの明確な経路
+- **故障診断**: バス接続不良の検出が実システムと同様に重要
+
+#### **3. 回路検証機能の基盤**
+```python
+def validate_circuit_integrity(self):
+    """回路の電気的整合性チェック"""
+    issues = []
+    
+    for row in range(self.grid_rows):
+        left_bus = self.get_device(row, 0)      # L_SIDE
+        right_bus = self.get_device(row, 9)     # R_SIDE
+        
+        if not left_bus or not right_bus:
+            issues.append(f"Missing bus at row {row}")
+        
+        # 行内の電気的連続性チェック
+        if not self.check_electrical_continuity(row):
+            issues.append(f"Broken circuit at row {row}")
+    
+    return issues
+```
+
+#### **4. 座標系の明確化**
+```python
+# 重要な座標系理解
+# Pythonの配列アクセス: grid[row][col] = [y座標][x座標]
+# PyPlcでの座標定義:
+grid_row: int    # Y座標（行）
+grid_col: int    # X座標（列）
+
+# 配置制約:
+# Col 0: L_SIDE（左バス）専用
+# Col 1-8: 一般デバイス編集可能領域（8列）
+# Col 9: R_SIDE（右バス）専用
+```
+
+#### **5. システム設計の利点**
+- **明確な電力源**: 各行が独立した電力経路を持つ
+- **浮き回路検出**: バス接続のない回路を確実に特定
+- **実PLC準拠**: 実際のラダー図面と同じ構造
+- **デバッグ容易**: 電力フローの視覚的確認が簡単
+- **将来拡張**: 回路検証・診断機能の実装基盤
+
+#### **6. 編集領域制約の合理性**
+- **8列の編集領域**: 一般的なラダー回路には充分な配置空間
+- **実用的制約**: 無制限配置による混乱を防止
+- **拡張可能**: 必要に応じてグリッドサイズ拡張可能
+- **品質保証**: 制約により回路の電気的整合性を保証
+
+### 📊 **内部データ⇔表示データ整合性テスト結果**
+
+#### **Ver1問題の完全解決**
+- **座標系統一**: grid[row][col] = [y座標][x座標]の明確化
+- **配置制約**: Col=0/9バス予約による制約エラーの発見・修正
+- **表示同期**: 内部データ(1,1) ⇔ 表示位置の完全一致確認
+- **状態反映**: デバイス状態変更の即座な画面反映
+
+#### **テスト成功確認**
+- **Run04.png**: 交点ベースグリッド表示の成功
+- **X001デバイス**: (1,1)位置への正確配置
+- **8x8rect表示**: グリッド交点での正確な描画
+- **状態切り替え**: 1キー操作による色変化動作確認
+
+### 🎯 **設計決定の確定**
+
+**L_SIDE/R_SIDE厳密保持制度を継続**することで：
+- **電気的整合性**: 厳密な管理体制の確立
+- **実PLC準拠**: 現実的なシステムとの整合
+- **機能拡張性**: 将来の回路検証機能への対応
+- **教育価値**: 正しいPLC設計理解の促進
+
+**この設計思想は、PyPlcシステムの根幹をなす重要な概念である。**
+
+---
+
 *Project Status: 🎯 Ready for Wire System Implementation*  
-*Last Updated: 2025-01-27*  
-*Latest Achievement: Complete session analysis & self-holding circuit solution design*  
-*Current Status: Awaiting wire icon completion → Phase 1 Step 2 ready to begin*  
-*Next Session: Progressive 12-step wire object system implementation*
+*Last Updated: 2025-01-28*  
+*Latest Achievement: L_SIDE/R_SIDE設計思想の文書化 & 内部データ表示整合性確認*  
+*Current Status: 基盤システム完成 → 次期機能拡張準備完了*  
+*Next Session: 電気的継続性システムまたは回路検証機能の実装*
