@@ -8,6 +8,11 @@
 # ですので、ドンドンとコードを書いて進めないで下さい
 
 
+# Caution!
+# Ver1のシステムでは、内部データと表示データの齟齬があり、混乱が発生しました。
+# 今回は、まず、内部データをViewportに正確に表示できるか、徹底的にテストしましょう
+
+
 
 import pyxel
 from config import PyPlcConfig, DeviceType, Colors, Layout
@@ -36,34 +41,38 @@ class PyPlcSimulator:
     
     def _setup_test_circuit(self) -> None:
         """Setup test circuit / テスト回路セットアップ"""
-        # Place A contact at (2, 2) / A接点を(2,2)に配置
-        self.grid_manager.place_device(2, 2, DeviceType.CONTACT_A, "X001")
+        # 内部データと表示データの整合性テスト用
+        # Test data: A接点を(1,0)に配置 - データと表示の一致確認
+        self.grid_manager.place_device(1, 0, DeviceType.CONTACT_A, "X001")
         
-        # Place B contact at (2, 4) / B接点を(2,4)に配置
-        self.grid_manager.place_device(2, 4, DeviceType.CONTACT_B, "X002")
-        
-        # Place output coil at (2, 7) / 出力コイルを(2,7)に配置
-        self.grid_manager.place_device(2, 7, DeviceType.COIL, "Y001")
-        
-        # Place timer at (4, 3) / タイマーを(4,3)に配置
-        self.grid_manager.place_device(4, 3, DeviceType.TIMER, "T001")
+        # 他のテストデータはコメントアウト
+        # # Place B contact at (2, 4) / B接点を(2,4)に配置
+        # self.grid_manager.place_device(2, 4, DeviceType.CONTACT_B, "X002")
+        # 
+        # # Place output coil at (2, 7) / 出力コイルを(2,7)に配置
+        # self.grid_manager.place_device(2, 7, DeviceType.COIL, "Y001")
+        # 
+        # # Place timer at (4, 3) / タイマーを(4,3)に配置
+        # self.grid_manager.place_device(4, 3, DeviceType.TIMER, "T001")
     
     def update(self) -> None:
         if pyxel.btnp(pyxel.KEY_Q):
             pyxel.quit()
         
-        # Test device interaction / テストデバイス操作
+        # Test device interaction / テストデバイス操作（整合性テスト用）
         if pyxel.btnp(pyxel.KEY_1):
-            # Toggle X001 state / X001状態切り替え
-            contact = self.grid_manager.get_device(2, 2)
+            # Toggle X001 state at (1,0) / (1,0)のX001状態切り替え
+            contact = self.grid_manager.get_device(1, 0)
             if contact:
                 contact.active = not contact.active
+                print(f"X001 state changed to: {contact.active}")  # デバッグ出力
         
-        if pyxel.btnp(pyxel.KEY_2):
-            # Toggle X002 state / X002状態切り替え
-            contact = self.grid_manager.get_device(2, 4)
-            if contact:
-                contact.active = not contact.active
+        # 他のキー操作はコメントアウト
+        # if pyxel.btnp(pyxel.KEY_2):
+        #     # Toggle X002 state / X002状態切り替え
+        #     contact = self.grid_manager.get_device(2, 4)
+        #     if contact:
+        #         contact.active = not contact.active
     
     def draw(self) -> None:
         pyxel.cls(Colors.BACKGROUND)
@@ -154,7 +163,7 @@ class PyPlcSimulator:
     def _draw_controls(self) -> None:
         """Draw control information / 操作情報描画"""
         control_y = self.config.control_info_y
-        pyxel.text(10, control_y, "Controls: 1-Toggle X001, 2-Toggle X002, Q-Quit", Colors.TEXT)
+        pyxel.text(10, control_y, "Test: 1-Toggle X001 at (1,0), Q-Quit", Colors.TEXT)
 
 if __name__ == "__main__":
     PyPlcSimulator()
