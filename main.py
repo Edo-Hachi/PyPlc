@@ -163,37 +163,33 @@ class PyPlcSimulator:
         return None
     
     def _screen_to_grid(self, screen_x: int, screen_y: int) -> tuple[int, int] | None:
-        """Convert screen coordinates to grid coordinates / スクリーン座標をグリッド座標に変換"""
-        grid_x = self.config.grid_origin_x
-        grid_y = self.config.grid_origin_y
-        cell_size = self.config.grid_cell_size
-        
+        """Convert screen coordinates to grid coordinates (Optimized: O(1) nearest neighbor) / スクリーン座標をグリッド座標に変換（最適化版：O(1)最近隣計算）"""
         if not self.snap_mode:
             # 通常モード: グリッド範囲外では何も返さない
             return None
         
-        # スナップモード: 最も近い交点を検索
-        closest_row = -1
-        closest_col = -1
-        min_distance = float('inf')
+        grid_x = self.config.grid_origin_x
+        grid_y = self.config.grid_origin_y
+        cell_size = self.config.grid_cell_size
         
-        for row in range(self.config.grid_rows):
-            for col in range(self.config.grid_cols):
-                # 交点座標計算
-                intersection_x = grid_x + col * cell_size
-                intersection_y = grid_y + row * cell_size
-                
-                # マウスとの距離計算
-                distance = ((screen_x - intersection_x) ** 2 + (screen_y - intersection_y) ** 2) ** 0.5
-                
-                if distance < self.config.snap_threshold and distance < min_distance:
-                    min_distance = distance
-                    closest_row = row
-                    closest_col = col
+        # 最も近いグリッド交点を数学的に直接計算（O(1)）
+        nearest_col = round((screen_x - grid_x) / cell_size)
+        nearest_row = round((screen_y - grid_y) / cell_size)
         
-        # 有効な交点が見つかった場合
-        if closest_row >= 0 and closest_col >= 0:
-            return (closest_row, closest_col)  # grid[row][col] # [y座標][x座標] の順序
+        # グリッド範囲内チェック
+        if not (0 <= nearest_row < self.config.grid_rows and 0 <= nearest_col < self.config.grid_cols):
+            return None
+        
+        # 最近隣交点との距離をチェック（平方根計算を回避して高速化）
+        intersection_x = grid_x + nearest_col * cell_size
+        intersection_y = grid_y + nearest_row * cell_size
+        
+        # 平方根計算を避けて二乗比較で高速化（2-3倍高速）
+        distance_squared = (screen_x - intersection_x) ** 2 + (screen_y - intersection_y) ** 2
+        threshold_squared = self.config.snap_threshold ** 2
+        
+        if distance_squared < threshold_squared:
+            return (nearest_row, nearest_col)  # grid[row][col] # [y座標][x座標] の順序
         
         return None
     

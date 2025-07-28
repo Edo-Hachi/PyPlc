@@ -32,7 +32,7 @@ class PyPlcConfig:
     palette_y: int = 16
     status_area_y: int = 200
     control_info_y: int = 240
-    snap_threshold: int = 5
+    snap_threshold: float = 5.0
     
     # パフォーマンス設定
     target_fps: int = 60

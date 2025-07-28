@@ -19,7 +19,7 @@
     "palette_y": 16,
     "status_area_y": 280,
     "control_info_y": 300,
-    "snap_threshold": 7
+    "snap_threshold": 7.0
   },
   "performance": {
     "target_fps": 60,
