@@ -1,11 +1,18 @@
 # TODO
-#Configでグリッドサイズを変更し、配列情報、エディタ画面が正常に動作するかテストする
 
+#グリッドの描画処理が複雑じゃないか？
+
+#スキャンタイムを動的に変更したい（configで）デバッグ中とかそんなに速くなくても良い（実働時も30FPSで動いていたら上等）
+#マウスカーソルの動作をフリーな移動にしたい。グリッド近くに来たときだけ、スナップするような仕組みにしたい（しきい値5px以下とか）
+
+#<完了>Configでグリッドサイズを変更し、配列情報、エディタ画面が正常に動作するかテストする
 
 
 # For Ai Support
 # このコメントは消さないでください
-# 実行環境は .vscode/ 以下のファイルに定義してあります
+
+## 実行環境は .vscode/ 以下のファイルに定義してあります
+
 # 返答は日本語でお願いします
 # pythonとはいえ、型はちゃんと宣言してください
 # コメントも日本語でつけて下さい
@@ -51,17 +58,17 @@ class PyPlcSimulator:
     def _setup_test_circuit(self) -> None:
         """Setup test circuit / テスト回路セットアップ"""
         # 内部データと表示データの整合性テスト用
-        # Test data: A接点を(1,1)に配置 - データと表示の一致確認（列0はバス専用のため1に変更）
-        # result = self.grid_manager.place_device(1, 1, DeviceType.CONTACT_A, "X001")
-        # print(f"Device placement result: {result}")
-        # print(f"Total devices: {len(self.grid_manager.get_all_devices())}")
-        # 
-        # # デバイス確認
-        # device = self.grid_manager.get_device(1, 1)
-        # if device:
-        #     print(f"Found device at (1,1): {device}")
-        # else:
-        #     print("No device found at (1,1)")
+        # Test data: A接点を(5,10)に配置 - データと表示の一致確認
+        result = self.grid_manager.place_device(5, 10, DeviceType.CONTACT_A, "X001")
+        print(f"Device placement result: {result}")
+        print(f"Total devices: {len(self.grid_manager.get_all_devices())}")
+        
+        # デバイス確認
+        device = self.grid_manager.get_device(5, 10)
+        if device:
+            print(f"Found device at (5,10): {device}")
+        else:
+            print("No device found at (5,10)")
         
         # 他のテストデータはコメントアウト
         # # Place B contact at (2, 4) / B接点を(2,4)に配置
@@ -82,8 +89,8 @@ class PyPlcSimulator:
         
         # Test device interaction / テストデバイス操作（整合性テスト用）
         if pyxel.btnp(pyxel.KEY_1):
-            # Toggle X001 state at (1,1) / (1,1)のX001状態切り替え
-            contact = self.grid_manager.get_device(1, 1)
+            # Toggle X001 state at (5,10) / (5,10)のX001状態切り替え
+            contact = self.grid_manager.get_device(5, 10)
             if contact:
                 contact.active = not contact.active
                 print(f"X001 state changed to: {contact.active}")  # デバッグ出力

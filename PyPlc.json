@@ -1,12 +1,12 @@
 {
   "grid": {
-    "rows": 10,
-    "cols": 10,
+    "rows": 15,
+    "cols": 20,
     "cell_size": 16
   },
   "display": {
-    "window_width": 256,
-    "window_height": 256,
+    "window_width": 352,
+    "window_height": 320,
     "grid_origin_x": 16,
     "grid_origin_y": 32
   },
@@ -17,8 +17,8 @@
   },
   "ui": {
     "palette_y": 16,
-    "status_area_y": 200,
-    "control_info_y": 240
+    "status_area_y": 280,
+    "control_info_y": 300
   },
   "performance": {
     "target_fps": 60,
