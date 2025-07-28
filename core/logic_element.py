@@ -5,7 +5,7 @@ PyPlc-v2 Logic Element Module
 
 from typing import Optional
 from dataclasses import dataclass
-from config import DeviceType
+from core.constants import DeviceType
 
 
 @dataclass

@@ -11,7 +11,7 @@ Phase 3 リファクタリング: PLCロジック系分離
 import pyxel
 from typing import Optional
 from dataclasses import dataclass
-from config import PyPlcConfig
+from core.config_manager import PyPlcConfig
 
 
 @dataclass

@@ -35,25 +35,29 @@
 
 
 import pyxel
-from typing import List
-from config import PyPlcConfig, DeviceType, Layout
+from typing import Optional
+
+# Import modules / モジュールインポート
+from core.constants import DeviceType, GridConstraints, Layout, DeviceAddressRanges, AppConstants
+from core.config_manager import PyPlcConfigManager, PyPlcConfig
+from core.data_manager import PyPlcDataManager, CircuitData, DeviceData
 from core.grid_manager import GridDeviceManager
 from core.logic_element import LogicElement
 from core.renderer import PyPlcRenderer
 from core.input_handler import PyPlcInputHandler, MouseState
 from core.plc_controller import PyPlcController, PlcScanState
 
-# アプリケーション定数 / Application Constants
-class AppConstants:
-    """アプリケーション全体の定数定義"""
-    TARGET_FPS = 60           # 目標フレームレート（60FPS固定）
-
+# アプリケーション定数はcore/constants.pyに移動済み
 # 描画関連の定数はcore/renderer.pyに移動済み
 
 class PyPlcSimulator:
     def __init__(self):
-        # Load configuration / 設定読み込み
-        self.config = PyPlcConfig.load_from_file()
+        # Initialize configuration manager / 設定管理システム初期化
+        self.config_manager = PyPlcConfigManager()
+        self.config = self.config_manager.get_config()
+        
+        # Initialize data manager / データ管理システム初期化
+        self.data_manager = PyPlcDataManager()
         
         # Initialize Pyxel / Pyxel初期化
         pyxel.init(
@@ -83,35 +87,10 @@ class PyPlcSimulator:
         self.show_cursor = False    # カーソル表示フラグ
         self.snap_mode = False      # スナップモード（CTRL押下時）
         
-        # Test: Place some devices / テスト：いくつかのデバイス配置
-        self._setup_test_circuit()
+        # Setup test circuit using data manager / データ管理システムを使用したテスト回路セットアップ
+        self.data_manager.setup_circuit_on_grid(self.grid_manager)
         
         pyxel.run(self.update, self.draw)
-    
-    def _setup_test_circuit(self) -> None:
-        """Setup test circuit / テスト回路セットアップ"""
-        # 内部データと表示データの整合性テスト用
-        # Test data: A接点を(5,5)に配置 - データと表示の一致確認（編集可能エリア内）
-        result = self.grid_manager.place_device(5, 5, DeviceType.CONTACT_A, "X001")
-        print(f"Device placement result: {result}")
-        print(f"Total devices: {len(self.grid_manager.get_all_devices())}")
-        
-        # デバイス確認
-        device = self.grid_manager.get_device(5, 5)
-        if device:
-            print(f"Found device at (5,5): {device}")
-        else:
-            print("No device found at (5,5)")
-        
-        # 他のテストデータはコメントアウト
-        # # Place B contact at (2, 4) / B接点を(2,4)に配置
-        # self.grid_manager.place_device(2, 4, DeviceType.CONTACT_B, "X002")
-        # 
-        # # Place output coil at (2, 7) / 出力コイルを(2,7)に配置
-        # self.grid_manager.place_device(2, 7, DeviceType.COIL, "Y001")
-        # 
-        # # Place timer at (4, 3) / タイマーを(4,3)に配置
-        # self.grid_manager.place_device(4, 3, DeviceType.TIMER, "T001")
     
     def update(self) -> None:
         # Get key input state / キー入力状態取得
@@ -123,13 +102,13 @@ class PyPlcSimulator:
         
         # PLC scan time control / PLCスキャンタイム制御
         if key_input['scan_time_f5']:
-            self._set_scan_time(50)   # 高速スキャン（50ms）
+            self.plc_controller.set_scan_time(50)   # 高速スキャン（50ms）
         elif key_input['scan_time_f6']:
-            self._set_scan_time(100)  # 標準スキャン（100ms）
+            self.plc_controller.set_scan_time(100)  # 標準スキャン（100ms）
         elif key_input['scan_time_f7']:
-            self._set_scan_time(200)  # 低速スキャン（200ms）
+            self.plc_controller.set_scan_time(200)  # 低速スキャン（200ms）
         elif key_input['scan_time_f8']:
-            self._set_scan_time(500)  # 超低速スキャン（500ms）
+            self.plc_controller.set_scan_time(500)  # 超低速スキャン（500ms）
         
         # Update mouse state / マウス状態更新
         mouse_state = self.input_handler.update_mouse_state()

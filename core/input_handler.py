@@ -12,7 +12,7 @@ Phase 2 リファクタリング: 入力系分離
 import pyxel
 from typing import Optional, Tuple
 from dataclasses import dataclass
-from config import PyPlcConfig
+from core.config_manager import PyPlcConfig
 
 
 @dataclass

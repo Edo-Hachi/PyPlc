@@ -11,7 +11,8 @@ Phase 1 リファクタリング: 描画系分離
 
 import pyxel
 from typing import List, Dict, Any, Optional, Tuple
-from config import PyPlcConfig, DeviceType
+from core.constants import DeviceType
+from core.config_manager import PyPlcConfig
 from core.logic_element import LogicElement
 
 

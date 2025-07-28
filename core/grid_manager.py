@@ -5,7 +5,8 @@ PyPlc-v2 Grid Device Manager
 
 from typing import Optional, List, Dict, Tuple
 from dataclasses import dataclass
-from config import PyPlcConfig, DeviceType, GridConstraints
+from core.constants import DeviceType, GridConstraints
+from core.config_manager import PyPlcConfig
 from core.logic_element import LogicElement, create_logic_element, validate_connection_compatibility
 
 
