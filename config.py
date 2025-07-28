@@ -37,6 +37,7 @@ class PyPlcConfig:
     # パフォーマンス設定
     target_fps: int = 60
     max_devices: int = 100
+    scan_time_ms: int = 100  # PLCスキャンタイム（ミリ秒）
     
     @classmethod
     def load_from_file(cls, config_path: str = "PyPlc.json") -> 'PyPlcConfig':
@@ -77,7 +78,8 @@ class PyPlcConfig:
                 
                 # パフォーマンス設定
                 target_fps=performance.get('target_fps', 60),
-                max_devices=performance.get('max_devices', 100)
+                max_devices=performance.get('max_devices', 100),
+                scan_time_ms=performance.get('scan_time_ms', 100)
             )
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"設定ファイル読み込みエラー: {e}")
@@ -112,7 +114,8 @@ class PyPlcConfig:
                 },
                 "performance": {
                     "target_fps": self.target_fps,
-                    "max_devices": self.max_devices
+                    "max_devices": self.max_devices,
+                    "scan_time_ms": self.scan_time_ms
                 }
             }
             

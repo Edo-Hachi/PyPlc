@@ -1,11 +1,19 @@
 # TODO
 
-#グリッドの描画処理が複雑じゃないか？
+#スキャンタイムはを動的変更はPyPlc.jsonを変更すれば良いので、F8-F5 での変更はコメントアウトで良い
 
-#スキャンタイムを動的に変更したい（configで）デバッグ中とかそんなに速くなくても良い（実働時も30FPSで動いていたら上等）
-#マウスカーソルの動作をフリーな移動にしたい。グリッド近くに来たときだけ、スナップするような仕組みにしたい（しきい値5px以下とか）
+#メモで
+# PLCスキャンタイム: F5-F8キーで可変
+# F5: 50ms（3フレーム間隔）
+# F6: 100ms（6フレーム間隔）
+# F7: 200ms（12フレーム間隔）
+# F8: 500ms（30フレーム間隔）
+#これはコンフィグに残しておいてほしい
 
 #<完了>Configでグリッドサイズを変更し、配列情報、エディタ画面が正常に動作するかテストする
+#<完了>グリッドの描画処理が複雑じゃないか？
+#<完了>マウスカーソルの動作をフリーな移動にしたい。グリッド近くに来たときだけ、スナップするような仕組みにしたい（しきい値5px以下とか）
+#<完了>スキャンタイムを動的に変更したい（configで）デバッグ中とかそんなに速くなくても良い（実働時も30FPSで動いていたら上等）
 
 
 # For Ai Support
@@ -31,6 +39,11 @@ from typing import List
 from config import PyPlcConfig, DeviceType, Layout
 from core.grid_manager import GridDeviceManager
 from core.logic_element import LogicElement
+
+# アプリケーション定数 / Application Constants
+class AppConstants:
+    """アプリケーション全体の定数定義"""
+    TARGET_FPS = 60           # 目標フレームレート（60FPS固定）
 
 # 描画定数 / Drawing Constants
 class DrawingConstants:
@@ -58,7 +71,8 @@ class PyPlcSimulator:
         pyxel.init(
             self.config.window_width, 
             self.config.window_height, 
-            title="PyPlc-v2 - PLC Ladder Simulator"
+            title="PyPlc-v2 - PLC Ladder Simulator",
+            fps=AppConstants.TARGET_FPS
         )
         
         # Show mouse cursor / マウスカーソル表示
@@ -71,6 +85,10 @@ class PyPlcSimulator:
         self.mouse_grid_pos = None  # マウスのグリッド座標
         self.show_cursor = False    # カーソル表示フラグ
         self.snap_mode = False      # スナップモード（CTRL押下時）
+        
+        # Initialize PLC scan time management / PLCスキャンタイム管理初期化
+        self.last_scan_time = pyxel.frame_count  # 最後のスキャン実行時刻
+        self.scan_interval_frames = int(self.config.scan_time_ms * AppConstants.TARGET_FPS / 1000)  # スキャン間隔
         
         # Test: Place some devices / テスト：いくつかのデバイス配置
         self._setup_test_circuit()
@@ -106,8 +124,25 @@ class PyPlcSimulator:
         if pyxel.btnp(pyxel.KEY_Q):
             pyxel.quit()
         
+
+        # PLC scan time control / PLCスキャンタイム制御
+        if pyxel.btnp(pyxel.KEY_F5):
+            self._set_scan_time(50)   # 高速スキャン（50ms）
+        elif pyxel.btnp(pyxel.KEY_F6):
+            self._set_scan_time(100)  # 標準スキャン（100ms）
+        elif pyxel.btnp(pyxel.KEY_F7):
+            self._set_scan_time(200)  # 低速スキャン（200ms）
+        elif pyxel.btnp(pyxel.KEY_F8):
+            self._set_scan_time(500)  # 超低速スキャン（500ms）
+        
         # Update mouse state / マウス状態更新
         self._update_mouse()
+        
+        # PLC scan time control / PLCスキャンタイム制御
+        current_frame = pyxel.frame_count
+        if current_frame - self.last_scan_time >= self.scan_interval_frames:
+            self._execute_plc_scan()
+            self.last_scan_time = current_frame
         
         # Test device interaction / テストデバイス操作（整合性テスト用）
         if pyxel.btnp(pyxel.KEY_1):
@@ -192,6 +227,28 @@ class PyPlcSimulator:
             return (nearest_row, nearest_col)  # grid[row][col] # [y座標][x座標] の順序
         
         return None
+    
+    def _execute_plc_scan(self) -> None:
+        """Execute PLC scan cycle / PLCスキャンサイクル実行"""
+        # PLC logic execution would go here / PLCロジック実行処理をここに記述
+        # For now, just update device states / 現在はデバイス状態更新のみ
+        
+        # Example: Update all devices based on their logic / 例：全デバイスをロジックに基づいて更新
+        for device in self.grid_manager.get_all_devices():
+            if not device.is_bus_device():
+                # Placeholder for actual PLC logic / 実際のPLCロジックのプレースホルダー
+                pass
+        
+        # Debug output for scan execution / スキャン実行のデバッグ出力
+        # print(f"PLC scan executed at frame {pyxel.frame_count}")
+    
+    def _set_scan_time(self, scan_time_ms: int) -> None:
+        """Set PLC scan time dynamically / PLCスキャンタイムを動的に設定"""
+        self.config.scan_time_ms = scan_time_ms
+        # Recalculate scan interval in frames / スキャン間隔をフレーム数で再計算
+        # Use defined FPS constant / 定義されたFPS定数を使用
+        self.scan_interval_frames = int(scan_time_ms * AppConstants.TARGET_FPS / 1000)
+        print(f"PLC scan time changed to {scan_time_ms}ms ({self.scan_interval_frames} frames)")
     
     def _is_editable_position(self, row: int, col: int) -> bool:
         """Check if position is editable / 位置が編集可能かチェック"""
@@ -353,7 +410,7 @@ class PyPlcSimulator:
     def _draw_controls(self) -> None:
         """Draw control information / 操作情報描画"""
         control_y = self.config.control_info_y
-        pyxel.text(10, control_y, "Hold CTRL: Snap to grid, Mouse: Free movement, 1: Toggle X001, Q: Quit", pyxel.COLOR_WHITE)
+        pyxel.text(10, control_y, "CTRL: Snap, 1: Toggle X001, F5-F8: Scan(50/100/200/500ms), Q: Quit", pyxel.COLOR_WHITE)
     
     def _draw_status_bar(self) -> None:
         """Draw status bar with mouse position / マウス位置情報を含むステータスバー描画"""
