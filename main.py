@@ -34,6 +34,10 @@ class PyPlcSimulator:
         # Initialize grid manager / グリッドマネージャー初期化
         self.grid_manager = GridDeviceManager(self.config)
         
+        # Initialize mouse state / マウス状態初期化
+        self.mouse_grid_pos = None  # マウスのグリッド座標
+        self.show_cursor = False    # カーソル表示フラグ
+        
         # Test: Place some devices / テスト：いくつかのデバイス配置
         self._setup_test_circuit()
         
@@ -43,16 +47,16 @@ class PyPlcSimulator:
         """Setup test circuit / テスト回路セットアップ"""
         # 内部データと表示データの整合性テスト用
         # Test data: A接点を(1,1)に配置 - データと表示の一致確認（列0はバス専用のため1に変更）
-        result = self.grid_manager.place_device(1, 1, DeviceType.CONTACT_A, "X001")
-        print(f"Device placement result: {result}")
-        print(f"Total devices: {len(self.grid_manager.get_all_devices())}")
-        
-        # デバイス確認
-        device = self.grid_manager.get_device(1, 1)
-        if device:
-            print(f"Found device at (1,1): {device}")
-        else:
-            print("No device found at (1,1)")
+        # result = self.grid_manager.place_device(1, 1, DeviceType.CONTACT_A, "X001")
+        # print(f"Device placement result: {result}")
+        # print(f"Total devices: {len(self.grid_manager.get_all_devices())}")
+        # 
+        # # デバイス確認
+        # device = self.grid_manager.get_device(1, 1)
+        # if device:
+        #     print(f"Found device at (1,1): {device}")
+        # else:
+        #     print("No device found at (1,1)")
         
         # 他のテストデータはコメントアウト
         # # Place B contact at (2, 4) / B接点を(2,4)に配置
@@ -67,6 +71,9 @@ class PyPlcSimulator:
     def update(self) -> None:
         if pyxel.btnp(pyxel.KEY_Q):
             pyxel.quit()
+        
+        # Update mouse state / マウス状態更新
+        self._update_mouse()
         
         # Test device interaction / テストデバイス操作（整合性テスト用）
         if pyxel.btnp(pyxel.KEY_1):
@@ -83,6 +90,46 @@ class PyPlcSimulator:
         #     if contact:
         #         contact.active = not contact.active
     
+    def _update_mouse(self) -> None:
+        """Update mouse state / マウス状態更新"""
+        mouse_x = pyxel.mouse_x
+        mouse_y = pyxel.mouse_y
+        
+        # Convert screen coordinates to grid coordinates / スクリーン座標をグリッド座標に変換
+        grid_pos = self._screen_to_grid(mouse_x, mouse_y)
+        
+        if grid_pos and self._is_editable_position(grid_pos[0], grid_pos[1]):
+            self.mouse_grid_pos = grid_pos
+            self.show_cursor = True
+        else:
+            self.mouse_grid_pos = None
+            self.show_cursor = False
+    
+    def _screen_to_grid(self, screen_x: int, screen_y: int) -> tuple[int, int] | None:
+        """Convert screen coordinates to grid coordinates / スクリーン座標をグリッド座標に変換"""
+        grid_x = self.config.grid_origin_x
+        grid_y = self.config.grid_origin_y
+        cell_size = self.config.grid_cell_size
+        
+        # Check if mouse is within grid bounds / マウスがグリッド範囲内かチェック
+        if (grid_x <= screen_x <= grid_x + self.config.grid_cols * cell_size and
+            grid_y <= screen_y <= grid_y + self.config.grid_rows * cell_size):
+            
+            # Calculate nearest grid intersection / 最も近いグリッド交点を計算
+            col = round((screen_x - grid_x) / cell_size)
+            row = round((screen_y - grid_y) / cell_size)
+            
+            # Ensure within valid range / 有効範囲内かチェック
+            if 0 <= row < self.config.grid_rows and 0 <= col < self.config.grid_cols:
+                return (row, col)  # grid[row][col] # [y座標][x座標] の順序
+        
+        return None
+    
+    def _is_editable_position(self, row: int, col: int) -> bool:
+        """Check if position is editable / 位置が編集可能かチェック"""
+        # 列0（左バス）と列9（右バス）は編集不可
+        return 1 <= col <= self.config.grid_cols - 2
+    
     def draw(self) -> None:
         pyxel.cls(pyxel.COLOR_BLACK)
         
@@ -98,8 +145,14 @@ class PyPlcSimulator:
         # Draw device info / デバイス情報描画
         self._draw_device_info()
         
+        # Draw mouse cursor / マウスカーソル描画
+        self._draw_mouse_cursor()
+        
         # Draw controls / 操作説明描画
         self._draw_controls()
+        
+        # Draw status bar / ステータスバー描画
+        self._draw_status_bar()
     
     def _draw_grid(self) -> None:
         """Draw grid lines / グリッド線描画（交点ベース）"""
@@ -108,22 +161,29 @@ class PyPlcSimulator:
         cell_size = self.config.grid_cell_size
         
         # Draw vertical lines (blue) / 縦線描画（青色）
-        for col in range(self.config.grid_cols + 1):
+        # 右バス線（列9）がグリッドの右端になるよう、余分な線は描画しない
+        for col in range(self.config.grid_cols):
             x = grid_x + col * cell_size
-            pyxel.line(x, grid_y, x, grid_y + self.config.grid_rows * cell_size, pyxel.COLOR_DARK_BLUE)
+            # 縦線の終点を最終行（grid_rows-1）の位置に合わせ、下段のはみ出しを防ぐ
+            pyxel.line(x, grid_y, x, grid_y + (self.config.grid_rows - 1) * cell_size, pyxel.COLOR_DARK_BLUE)
         
         # Draw horizontal lines (blue) / 横線描画（青色）
-        for row in range(self.config.grid_rows + 1):
+        # 右バス線の位置（最終列）まで描画し、はみ出しを防ぐ
+        # 最終行（grid_rows-1）までの横線を描画し、下端の余分な線を削除
+        for row in range(self.config.grid_rows):
             y = grid_y + row * cell_size
-            pyxel.line(grid_x, y, grid_x + self.config.grid_cols * cell_size, y, pyxel.COLOR_DARK_BLUE)
+            # 終点を右バス線（grid_cols-1）の位置に合わせる
+            pyxel.line(grid_x, y, grid_x + (self.config.grid_cols - 1) * cell_size, y, pyxel.COLOR_DARK_BLUE)
         
         # Draw left bus line (orange) / 左バスライン描画（オレンジ色）
+        # 2px幅の太い線で描画、下端のはみ出しを防ぐ
         left_bus_x = grid_x
-        pyxel.line(left_bus_x, grid_y, left_bus_x, grid_y + self.config.grid_rows * cell_size, pyxel.COLOR_YELLOW)  # オレンジの代用
+        pyxel.rect(left_bus_x, grid_y, 2, (self.config.grid_rows - 1) * cell_size, pyxel.COLOR_YELLOW)  # オレンジの代用
         
         # Draw right bus line (gray) / 右バスライン描画（グレー）
-        right_bus_x = grid_x + self.config.grid_cols * cell_size
-        pyxel.line(right_bus_x, grid_y, right_bus_x, grid_y + self.config.grid_rows * cell_size, pyxel.COLOR_GRAY)
+        # 右バスは最終列（grid_cols-1）の位置に2px幅で描画、下端のはみ出しを防ぐ
+        right_bus_x = grid_x + (self.config.grid_cols - 1) * cell_size
+        pyxel.rect(right_bus_x, grid_y, 2, (self.config.grid_rows - 1) * cell_size, pyxel.COLOR_GRAY)
     
     def _draw_devices(self) -> None:
         """Draw all devices / 全デバイス描画（交点ベース）"""
@@ -193,10 +253,56 @@ class PyPlcSimulator:
                 if y_offset > 20:  # Limit display / 表示制限
                     break
     
+    def _draw_mouse_cursor(self) -> None:
+        """Draw mouse cursor at editable positions / 編集可能位置にマウスカーソル描画"""
+        if not self.show_cursor or not self.mouse_grid_pos:
+            return
+        
+        row, col = self.mouse_grid_pos
+        grid_x = self.config.grid_origin_x
+        grid_y = self.config.grid_origin_y
+        cell_size = self.config.grid_cell_size
+        
+        # Calculate intersection position / 交点位置計算
+        intersection_x = grid_x + col * cell_size
+        intersection_y = grid_y + row * cell_size
+        
+        # Draw cursor as a small circle / カーソルを小さな円で描画
+        pyxel.circb(intersection_x, intersection_y, 3, pyxel.COLOR_YELLOW)
+        
+        # Draw crosshair / 十字線描画
+        pyxel.line(intersection_x - 5, intersection_y, intersection_x + 5, intersection_y, pyxel.COLOR_YELLOW)
+        pyxel.line(intersection_x, intersection_y - 5, intersection_x, intersection_y + 5, pyxel.COLOR_YELLOW)
+    
     def _draw_controls(self) -> None:
         """Draw control information / 操作情報描画"""
         control_y = self.config.control_info_y
-        pyxel.text(10, control_y, "Test: 1-Toggle X001 at (1,1), Q-Quit", pyxel.COLOR_WHITE)
+        pyxel.text(10, control_y, "Mouse: Hover over grid intersections, Q-Quit", pyxel.COLOR_WHITE)
+    
+    def _draw_status_bar(self) -> None:
+        """Draw status bar with mouse position / マウス位置情報を含むステータスバー描画"""
+        # ステータスバーの位置（画面下部）
+        status_y = self.config.window_height - 20
+        
+        # 背景を黒でクリア
+        pyxel.rect(0, status_y, self.config.window_width, 20, pyxel.COLOR_BLACK)
+        
+        # マウス位置情報表示
+        if self.mouse_grid_pos:
+            row, col = self.mouse_grid_pos
+            position_text = f"Grid Position: Row={row}, Col={col} [grid[{row}][{col}]]"
+            pyxel.text(10, status_y + 5, position_text, pyxel.COLOR_WHITE)
+            
+            # 編集可能かどうか表示
+            if self._is_editable_position(row, col):
+                pyxel.text(10, status_y + 12, "Editable: YES", pyxel.COLOR_GREEN)
+            else:
+                pyxel.text(10, status_y + 12, "Editable: NO (Bus area)", pyxel.COLOR_RED)
+        else:
+            # グリッド外の場合
+            mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+            pyxel.text(10, status_y + 5, f"Mouse: ({mouse_x}, {mouse_y}) - Outside grid", pyxel.COLOR_GRAY)
+            pyxel.text(10, status_y + 12, "Editable: NO (Outside grid)", pyxel.COLOR_RED)
 
 if __name__ == "__main__":
     PyPlcSimulator()
