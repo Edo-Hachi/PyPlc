@@ -32,6 +32,7 @@ class PyPlcConfig:
     palette_y: int = 16
     status_area_y: int = 200
     control_info_y: int = 240
+    snap_threshold: int = 5
     
     # パフォーマンス設定
     target_fps: int = 60
@@ -72,6 +73,7 @@ class PyPlcConfig:
                 palette_y=ui.get('palette_y', 16),
                 status_area_y=ui.get('status_area_y', 200),
                 control_info_y=ui.get('control_info_y', 240),
+                snap_threshold=ui.get('snap_threshold', 5),
                 
                 # パフォーマンス設定
                 target_fps=performance.get('target_fps', 60),
@@ -105,7 +107,8 @@ class PyPlcConfig:
                 "ui": {
                     "palette_y": self.palette_y,
                     "status_area_y": self.status_area_y,
-                    "control_info_y": self.control_info_y
+                    "control_info_y": self.control_info_y,
+                    "snap_threshold": self.snap_threshold
                 },
                 "performance": {
                     "target_fps": self.target_fps,
