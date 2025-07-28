@@ -1,0 +1,28 @@
+デバイスパレットの並び順（左から）
+
+呼称、定義名、ONのスプライト,OFFのスプライト
+
+1）A端子, TYPE_A, TYPE_A_ON
+, TYPE_A_OFF
+2）B端子, TYPE_B, TYPE_B_ON, TYPE_B_OFF
+
+3）コイル, COIL,   COIL_ON, COIL_OFF
+
+6）タイマ, TIMER,   TIMER_ON, TIMER_OFF
+
+7) リンク上向き, LINK_UP, LINK_UP, ----
+8) リンク下向き, LINK_DOWN, LINK_DOWN, ---
+
+9) 削除, DEL, DEL, ----
+
+10) カウンタ(スタンバイ) , COUNTER, COUNTER_STNBY
+10) カウンタ(カウント中) , COUNTER, COUNTER_COUNTUP
+10) カウンタ(ON) , COUNTER, COUNTER_ON
+
+4) Outputコイルデバイス正 (コイルonでデバイスON),CDEV,  CDEV_NML_ON
+4) Outputコイルデバイス正 (コイルonでデバイスON),CDEV,  CDEV_NML_OFF
+
+5) Outputコイルデバイス逆 (コイルonでデバイスOFF)  CDEV_REV_OFF
+5) Outputコイルデバイス逆 (コイルonでデバイスOFF)  CDEV_REV_ON
+
+

@@ -13,6 +13,7 @@ import logging
 from typing import List, Tuple, Dict, Optional
 from config import DeviceType, Colors
 from circuit_topology import CircuitTopologyManager
+from device_utils import DeviceTypeUtils, DeviceStateUtils
 
 # デバッグログ設定
 debug_logger = logging.getLogger('PyPlc_Debug')
@@ -61,81 +62,125 @@ class LadderRung:
     def calculate_power_flow(self) -> bool:
         """左から右への電力フロー計算（新ロジック）"""
         power = self.left_bus_connection.is_energized
-
-        # --- Debug Start ---
-        device_info = [(d.grid_x, d.device_type.name) for _, d in self.devices]
-        debug_logger.debug(f"[Rung {self.grid_y}] Calculating power flow. Initial power: {power}. Devices: {device_info}")
-        # --- Debug End ---
-
-        # ラング内の全デバイスの通電状態を一旦リセット
-        for _, device in self.devices:
-            device.active = False
-            if hasattr(device, 'coil_energized'):
-                device.coil_energized = False
-            if hasattr(device, 'wire_energized'):
-                device.wire_energized = False
-
+        self._log_power_flow_start(power)
+        self._reset_device_states()
+        
         # 左から右へ電力伝播を計算
         for i in range(self.grid_cols):
             device = self.grid_manager.get_device(i, self.grid_y)
-            # --- Debug Start ---
-            dev_type_str = device.device_type.name if device else "None"
-            debug_logger.debug(f"[Rung {self.grid_y} Col {i}] Power before: {power}, Device: {dev_type_str}")
-            # --- Debug End ---
-
-            if not device or device.device_type == DeviceType.EMPTY:
-                if i > 0: # 0列目(HOTバス)はチェック対象外
-                    # 空白グリッドは電力を遮断（ただし、直前が通電中のワイヤーなら継続）
-                    prev_device = self.grid_manager.get_device(i - 1, self.grid_y)
-                    if not (prev_device and prev_device.device_type == DeviceType.WIRE_H and prev_device.wire_energized):
-                        power = False
-                # --- Debug Start ---
-                debug_logger.debug(f"[Rung {self.grid_y} Col {i}] Empty grid. Power after: {power}")
-                # --- Debug End ---
-                continue
-
-            # 現在の電力状態とデバイスの種類に応じて処理
-            if power:
-                # 電力が供給されている場合
-                if device.device_type == DeviceType.WIRE_H:
-                    device.wire_energized = True
-                    device.active = True
-                    # ワイヤーは電力をそのまま伝える
-                elif device.device_type == DeviceType.TYPE_A:
-                    power = power and device.contact_state
-                    device.active = power
-                elif device.device_type == DeviceType.TYPE_B:
-                    power = power and not device.contact_state
-                    device.active = power
-                elif device.device_type in [DeviceType.COIL, DeviceType.INCOIL, DeviceType.OUTCOIL_REV, DeviceType.TIMER, DeviceType.COUNTER]:
-                    # コイルやタイマー/カウンターは電力を消費するが、電力の流れは継続する
-                    device.active = True 
-                    if device.device_type == DeviceType.COIL:
-                        device.coil_energized = True
-                    elif device.device_type == DeviceType.INCOIL:
-                        device.coil_energized = True
-                    elif device.device_type == DeviceType.OUTCOIL_REV:
-                        device.coil_energized = True # REVの反転ロジックは同期処理に任せる
-                    elif device.device_type == DeviceType.TIMER:
-                        self._process_timer_logic(device, True)
-                    elif device.device_type == DeviceType.COUNTER:
-                        self._process_counter_logic(device, True)
-                    # 重要: powerはTrueのまま維持（電力の流れを継続）
-                elif device.device_type in [DeviceType.LINK_UP, DeviceType.LINK_DOWN]:
-                    # 縦方向結線デバイスは電力の流れを継続
-                    device.active = True
-                # その他の未定義デバイスは電力を遮断しない（デフォルト動作）
-            else:
-                # 電力が供給されていない場合
-                device.active = False
-                if hasattr(device, 'wire_energized'):
-                    device.wire_energized = False
-                if device.device_type == DeviceType.TIMER:
-                    self._process_timer_logic(device, False)
-                # カウンターは入力が切れてもリセットされない
-        # --- Debug Start ---
-        debug_logger.debug(f"[Rung {self.grid_y} Col {i}] Power after: {power}, Device Active: {device.active}")
-        # --- Debug End ---
+            power = self._process_grid_position(i, device, power)
+        
+        self.is_energized = power
+        return power
+    
+    def _log_power_flow_start(self, initial_power: bool):
+        """電力フロー計算開始のログ出力"""
+        device_info = [(d.grid_x, d.device_type.name) for _, d in self.devices]
+        debug_logger.debug(f"[Rung {self.grid_y}] Calculating power flow. Initial power: {initial_power}. Devices: {device_info}")
+    
+    def _reset_device_states(self):
+        """ラング内の全デバイスの通電状態をリセット"""
+        for _, device in self.devices:
+            DeviceStateUtils.reset_device_electrical_state(device)
+    
+    def _process_grid_position(self, grid_x: int, device, current_power: bool) -> bool:
+        """グリッド位置での電力処理"""
+        dev_type_str = device.device_type.name if device else "None"
+        debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] Power before: {current_power}, Device: {dev_type_str}")
+        
+        if not device or device.device_type == DeviceType.EMPTY:
+            return self._handle_empty_grid(grid_x, current_power)
+        
+        if current_power:
+            return self._process_powered_device(grid_x, device, current_power)
+        else:
+            return self._process_unpowered_device(device)
+    
+    def _handle_empty_grid(self, grid_x: int, current_power: bool) -> bool:
+        """空のグリッド位置での電力処理"""
+        if grid_x > 0:  # 0列目(HOTバス)はチェック対象外
+            # 空白グリッドは電力を遮断（ただし、直前が通電中のワイヤーなら継続）
+            prev_device = self.grid_manager.get_device(grid_x - 1, self.grid_y)
+            if not (prev_device and prev_device.device_type == DeviceType.WIRE_H and prev_device.wire_energized):
+                current_power = False
+        
+        debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] Empty grid. Power after: {current_power}")
+        return current_power
+    
+    def _process_powered_device(self, grid_x: int, device, current_power: bool) -> bool:
+        """通電状態でのデバイス処理"""
+        if device.device_type == DeviceType.WIRE_H:
+            return self._process_wire(device, current_power)
+        elif device.device_type == DeviceType.TYPE_A:
+            return self._process_contact_a(device, current_power)
+        elif device.device_type == DeviceType.TYPE_B:
+            return self._process_contact_b(device, current_power)
+        elif DeviceTypeUtils.is_load_device(device.device_type):
+            return self._process_load_device(grid_x, device, current_power)
+        elif DeviceTypeUtils.is_link(device.device_type):
+            return self._process_link_device(device, current_power)
+        
+        # その他の未定義デバイスは電力を遮断しない（デフォルト動作）
+        return current_power
+    
+    def _process_unpowered_device(self, device) -> bool:
+        """非通電状態でのデバイス処理"""
+        device.active = False
+        if hasattr(device, 'wire_energized'):
+            device.wire_energized = False
+        if device.device_type == DeviceType.TIMER:
+            self._process_timer_logic(device, False)
+        # カウンターは入力が切れてもリセットされない
+        return False
+    
+    def _process_wire(self, device, current_power: bool) -> bool:
+        """ワイヤーデバイスの処理"""
+        device.wire_energized = True
+        device.active = True
+        return current_power  # ワイヤーは電力をそのまま伝える
+    
+    def _process_contact_a(self, device, current_power: bool) -> bool:
+        """A接点の処理"""
+        power = current_power and device.contact_state
+        device.active = power
+        return power
+    
+    def _process_contact_b(self, device, current_power: bool) -> bool:
+        """B接点の処理"""
+        power = current_power and not device.contact_state
+        device.active = power
+        return power
+    
+    def _process_load_device(self, grid_x: int, device, current_power: bool) -> bool:
+        """負荷デバイス（コイル、タイマー、カウンター）の処理"""
+        # コイルやタイマー/カウンターは電力を消費するが、電力の流れは継続する
+        device.active = True
+        debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] Processing {device.device_type.name}: power={current_power} -> device.active=True")
+        
+        if device.device_type == DeviceType.COIL:
+            device.coil_energized = True
+            debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] COIL energized: {device.coil_energized}")
+        elif device.device_type == DeviceType.INCOIL:
+            device.coil_energized = True
+            debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] INCOIL energized: {device.coil_energized}")
+        elif device.device_type == DeviceType.OUTCOIL_REV:
+            device.coil_energized = True  # REVの反転ロジックは同期処理に任せる
+            debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] OUTCOIL_REV energized: {device.coil_energized}")
+        elif device.device_type == DeviceType.TIMER:
+            self._process_timer_logic(device, True)
+            debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] TIMER processed: active={device.active}")
+        elif device.device_type == DeviceType.COUNTER:
+            self._process_counter_logic(device, True)
+            debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] COUNTER processed: active={device.active}")
+        
+        # 重要: powerはTrueのまま維持（電力の流れを継続）
+        debug_logger.debug(f"[Rung {self.grid_y} Col {grid_x}] {device.device_type.name} completed: power remains {current_power} (POWER CONTINUES)")
+        return current_power
+    
+    def _process_link_device(self, device, current_power: bool) -> bool:
+        """縦方向結線デバイスの処理"""
+        device.active = True
+        return current_power  # 縦方向結線デバイスは電力の流れを継続
 
         self.is_energized = self.right_bus_connection.is_energized = power
         return power
@@ -147,6 +192,9 @@ class LadderRung:
         segments = []
         if not self.devices:
             return segments
+            
+        import logging
+        logger = logging.getLogger(__name__)
             
         # 左バスバーから最初のデバイスまで
         if self.devices:
@@ -161,6 +209,10 @@ class LadderRung:
                 current_power = current_power and device.active
             elif device.device_type == DeviceType.TYPE_B:
                 current_power = current_power and (not device.contact_state)
+            elif device.device_type in [DeviceType.COIL, DeviceType.INCOIL, DeviceType.TIMER]:
+                # コイル/タイマーは電力を消費するが通過を阻止しない
+                # current_power は変更せずそのまま継続
+                pass
             
             # 次のデバイスまでのセグメント
             if i < len(self.devices) - 1:

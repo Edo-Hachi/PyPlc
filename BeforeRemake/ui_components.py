@@ -10,6 +10,7 @@ import pyxel
 from typing import Dict, Optional, Tuple
 from config import Layout, Colors, DeviceType, SimulatorMode, PLCRunState
 from plc_logic import ContactA, ContactB, Coil, Timer, Counter
+from device_utils import DeviceAddressGenerator
 
 
 class UIRenderer:
@@ -145,10 +146,29 @@ class UIRenderer:
                         pyxel.text(px - 8, py + 6, device.device_address, Colors.TEXT)
     
     def _draw_electrical_wiring(self, electrical_system):
-        """横方向電気配線描画（手動ワイヤーのみ）"""
-        # 自動セグメント描画を無効化
-        # 代わりに明示的に配置されたワイヤーデバイスのみを描画
-        pass  # 自動線描画は無効化
+        """横方向電気配線描画（電力セグメントベース）"""
+        # 各ラングの電力セグメントを描画
+        for grid_y, rung in electrical_system.rungs.items():
+            segments = rung.get_power_segments()
+            
+            for start_x, end_x, is_energized in segments:
+                # セグメントの色を決定
+                wire_color = Colors.WIRE_ON if is_energized else Colors.WIRE_OFF
+                
+                # グリッド座標をピクセル座標に変換
+                start_pixel_x = Layout.GRID_START_X + start_x * Layout.GRID_SIZE + Layout.GRID_SIZE // 2
+                end_pixel_x = Layout.GRID_START_X + end_x * Layout.GRID_SIZE + Layout.GRID_SIZE // 2
+                pixel_y = Layout.GRID_START_Y + grid_y * Layout.GRID_SIZE + Layout.GRID_SIZE // 2
+                
+                # 横方向ラインを描画（セグメント間のみ）
+                if start_x < end_x:  # 有効なセグメントのみ描画
+                    pyxel.line(start_pixel_x, pixel_y, end_pixel_x, pixel_y, wire_color)
+                    
+                    # Col 9のデバッグ表示（赤い矩形）
+                    if start_x == 9 or end_x == 9:
+                        debug_x = Layout.GRID_START_X + 9 * Layout.GRID_SIZE + Layout.GRID_SIZE // 2 - 5
+                        debug_y = pixel_y - 5
+                        pyxel.rect(debug_x, debug_y, 10, 10, 8)  # 8 = 赤色
     
     def _draw_vertical_wiring(self, electrical_system):
         """縦方向電気配線描画"""
@@ -432,15 +452,8 @@ class MouseHandler:
     
     def _generate_device_address(self, device_type: DeviceType, grid_x: int, grid_y: int) -> Optional[str]:
         """デバイスアドレス生成"""
-        if device_type == DeviceType.TYPE_A or device_type == DeviceType.TYPE_B:
-            return f"X{grid_x:03d}"
-        elif device_type == DeviceType.COIL:
-            return f"Y{grid_x:03d}"
-        elif device_type == DeviceType.TIMER:
-            return f"T{grid_y:03d}"
-        elif device_type == DeviceType.COUNTER:
-            return f"C{grid_y:03d}"
-        return None
+        address = DeviceAddressGenerator.generate_address(device_type, grid_x, grid_y)
+        return address if address else None
     
     def handle_device_selection(self, key_pressed: int):
         """デバイス選択処理"""
