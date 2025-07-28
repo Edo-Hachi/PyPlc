@@ -5,8 +5,8 @@
     "cell_size": 16
   },
   "display": {
-    "window_width": 352,
-    "window_height": 320,
+    "window_width": 384,
+    "window_height": 384,
     "grid_origin_x": 16,
     "grid_origin_y": 32
   },

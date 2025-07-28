@@ -308,7 +308,8 @@ class PyPlcSimulator:
         # Draw right bus line (gray) / 右バスライン描画（グレー）
         # 右バスは最終列（grid_cols-1）の位置に2px幅で描画、下端のはみ出しを防ぐ
         right_bus_x = grid_x + (self.config.grid_cols - 1) * cell_size
-        pyxel.rect(right_bus_x, grid_y, 2, (self.config.grid_rows - 1) * cell_size, pyxel.COLOR_GRAY)
+        #pyxel.rect(right_bus_x, grid_y, 2, (self.config.grid_rows - 1) * cell_size, pyxel.COLOR_GRAY)
+        pyxel.rect(right_bus_x, grid_y, 2, (self.config.grid_rows - 1) * cell_size, pyxel.COLOR_LIGHT_BLUE)
     
     def _draw_devices(self) -> None:
         """Draw all devices / 全デバイス描画（交点ベース）"""
