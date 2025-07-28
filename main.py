@@ -27,9 +27,27 @@
 
 
 import pyxel
+from typing import List
 from config import PyPlcConfig, DeviceType, Layout
 from core.grid_manager import GridDeviceManager
 from core.logic_element import LogicElement
+
+# 描画定数 / Drawing Constants
+class DrawingConstants:
+    """描画関連の定数定義"""
+    DEVICE_SIZE = 8           # デバイス矩形サイズ
+    DEVICE_HALF_SIZE = 4      # デバイス中央配置用オフセット
+    SYMBOL_OFFSET = 2         # シンボル描画オフセット
+    NAME_OFFSET_Y = 10        # 名前表示Y方向オフセット
+    NAME_OFFSET_X = -4        # 名前表示X方向オフセット
+
+# デバイスシンボルマッピング / Device Symbol Mapping
+DEVICE_SYMBOLS = {
+    DeviceType.CONTACT_A: "A",
+    DeviceType.CONTACT_B: "B",
+    DeviceType.COIL: "O",
+    DeviceType.TIMER: "T"
+}
 
 class PyPlcSimulator:
     def __init__(self):
@@ -199,55 +217,63 @@ class PyPlcSimulator:
     
     def _draw_devices(self) -> None:
         """Draw all devices / 全デバイス描画（交点ベース）"""
-        grid_x = self.config.grid_origin_x
-        grid_y = self.config.grid_origin_y
-        cell_size = self.config.grid_cell_size
+        drawable_devices = self._get_drawable_devices()
         
-        all_devices = self.grid_manager.get_all_devices()
-        print(f"Drawing {len(all_devices)} devices")  # デバッグ出力
+        for device in drawable_devices:
+            self._draw_single_device(device)
+    
+    def _get_drawable_devices(self) -> List[LogicElement]:
+        """Get devices that should be drawn / 描画対象デバイス取得"""
+        return [device for device in self.grid_manager.get_all_devices() 
+                if not device.is_bus_device()]
+    
+    def _draw_single_device(self, device: LogicElement) -> None:
+        """Draw a single device / 単一デバイス描画"""
+        device_rect = self._calculate_device_rect(device)
+        color = self._get_device_color(device)
+        symbol = self._get_device_symbol(device)
         
-        for device in all_devices:
-            # バスデバイスはスキップ（グリッドラインで表現済み）
-            if device.is_bus_device():
-                print(f"Skipping bus device: {device.name}")  # デバッグ出力
-                continue
-            
-            print(f"Drawing device: {device.name} at ({device.grid_row}, {device.grid_col})")  # デバッグ出力
-            
-            # 交点座標計算（グリッドライン交差点）
-            intersection_x = grid_x + device.grid_col * cell_size
-            intersection_y = grid_y + device.grid_row * cell_size
-            
-            # 8x8ピクセルのrectを交点中央に配置
-            device_x = intersection_x - 4  # 8x8の中央なので-4
-            device_y = intersection_y - 4
-            
-            print(f"Device position: intersection({intersection_x}, {intersection_y}) -> rect({device_x}, {device_y})")  # デバッグ出力
-            
-            # デバイス状態に基づく色選択
-            color = pyxel.COLOR_GREEN if device.active else pyxel.COLOR_GRAY
-            print(f"Device color: {color} (active: {device.active})")  # デバッグ出力
-            
-            # 8x8ピクセルのrectとして描画
-            pyxel.rect(device_x, device_y, 8, 8, color)
-            
-            # デバイスシンボル描画（rect内中央）
-            symbol_x = device_x + 2
-            symbol_y = device_y + 2
-            
-            if device.device_type == DeviceType.CONTACT_A:
-                pyxel.text(symbol_x, symbol_y, "A", pyxel.COLOR_WHITE)
-            elif device.device_type == DeviceType.CONTACT_B:
-                pyxel.text(symbol_x, symbol_y, "B", pyxel.COLOR_WHITE)
-            elif device.device_type == DeviceType.COIL:
-                pyxel.text(symbol_x, symbol_y, "O", pyxel.COLOR_WHITE)
-            elif device.device_type == DeviceType.TIMER:
-                pyxel.text(symbol_x, symbol_y, "T", pyxel.COLOR_WHITE)
-            
-            # デバイス名表示（rect下部）
-            name_x = device_x - 4  # 名前を少し左にずらす
-            name_y = device_y + 10  # rect下部
-            pyxel.text(name_x, name_y, device.name, pyxel.COLOR_WHITE)
+        # デバイス本体描画
+        pyxel.rect(device_rect['x'], device_rect['y'], 
+                  DrawingConstants.DEVICE_SIZE, DrawingConstants.DEVICE_SIZE, color)
+        
+        # シンボル・名前描画
+        self._draw_device_symbol(device_rect, symbol)
+        self._draw_device_name(device_rect, device.name)
+    
+    def _calculate_device_rect(self, device: LogicElement) -> dict:
+        """Calculate device rectangle position / デバイス矩形位置計算"""
+        # 交点座標計算（グリッドライン交差点）
+        intersection_x = self.config.grid_origin_x + device.grid_col * self.config.grid_cell_size
+        intersection_y = self.config.grid_origin_y + device.grid_row * self.config.grid_cell_size
+        
+        # デバイス矩形を交点中央に配置
+        return {
+            'x': intersection_x - DrawingConstants.DEVICE_HALF_SIZE,
+            'y': intersection_y - DrawingConstants.DEVICE_HALF_SIZE,
+            'center_x': intersection_x,
+            'center_y': intersection_y
+        }
+    
+    def _get_device_color(self, device: LogicElement) -> int:
+        """Get device color based on state / デバイス状態に基づく色取得"""
+        return pyxel.COLOR_GREEN if device.active else pyxel.COLOR_GRAY
+    
+    def _get_device_symbol(self, device: LogicElement) -> str:
+        """Get device symbol / デバイスシンボル取得"""
+        return DEVICE_SYMBOLS.get(device.device_type, "?")
+    
+    def _draw_device_symbol(self, device_rect: dict, symbol: str) -> None:
+        """Draw device symbol / デバイスシンボル描画"""
+        symbol_x = device_rect['x'] + DrawingConstants.SYMBOL_OFFSET
+        symbol_y = device_rect['y'] + DrawingConstants.SYMBOL_OFFSET
+        pyxel.text(symbol_x, symbol_y, symbol, pyxel.COLOR_WHITE)
+    
+    def _draw_device_name(self, device_rect: dict, name: str) -> None:
+        """Draw device name / デバイス名描画"""
+        name_x = device_rect['x'] + DrawingConstants.NAME_OFFSET_X
+        name_y = device_rect['y'] + DrawingConstants.NAME_OFFSET_Y
+        pyxel.text(name_x, name_y, name, pyxel.COLOR_WHITE)
     
     def _draw_device_info(self) -> None:
         """Draw device information / デバイス情報描画"""
