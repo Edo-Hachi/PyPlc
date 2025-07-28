@@ -157,7 +157,7 @@ class PyPlcSimulator:
     
     def _is_editable_position(self, row: int, col: int) -> bool:
         """Check if position is editable / 位置が編集可能かチェック"""
-        # 列0（左バス）と列9（右バス）は編集不可
+        # 列0（左バス）と列終端）は編集不可
         return 1 <= col <= self.config.grid_cols - 2
     
     def draw(self) -> None:
