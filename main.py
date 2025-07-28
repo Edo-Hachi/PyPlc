@@ -41,6 +41,7 @@ from core.grid_manager import GridDeviceManager
 from core.logic_element import LogicElement
 from core.renderer import PyPlcRenderer
 from core.input_handler import PyPlcInputHandler, MouseState
+from core.plc_controller import PyPlcController, PlcScanState
 
 # アプリケーション定数 / Application Constants
 class AppConstants:
@@ -74,14 +75,13 @@ class PyPlcSimulator:
         # Initialize input handler / 入力ハンドラー初期化
         self.input_handler = PyPlcInputHandler(self.config)
         
+        # Initialize PLC controller / PLCコントローラー初期化
+        self.plc_controller = PyPlcController(self.config, AppConstants.TARGET_FPS)
+        
         # Initialize mouse state / マウス状態初期化
         self.mouse_grid_pos = None  # マウスのグリッド座標
         self.show_cursor = False    # カーソル表示フラグ
         self.snap_mode = False      # スナップモード（CTRL押下時）
-        
-        # Initialize PLC scan time management / PLCスキャンタイム管理初期化
-        self.last_scan_time = pyxel.frame_count  # 最後のスキャン実行時刻
-        self.scan_interval_frames = int(self.config.scan_time_ms * AppConstants.TARGET_FPS / 1000)  # スキャン間隔
         
         # Test: Place some devices / テスト：いくつかのデバイス配置
         self._setup_test_circuit()
@@ -139,9 +139,7 @@ class PyPlcSimulator:
         
         # PLC scan time control / PLCスキャンタイム制御
         current_frame = pyxel.frame_count
-        if current_frame - self.last_scan_time >= self.scan_interval_frames:
-            self._execute_plc_scan()
-            self.last_scan_time = current_frame
+        self.plc_controller.update_scan_cycle(current_frame, self.grid_manager)
         
         # Test device interaction / テストデバイス操作（整合性テスト用）
         if key_input['toggle_device_1']:
@@ -159,28 +157,7 @@ class PyPlcSimulator:
         #         contact.active = not contact.active
     
     # 入力系メソッドはcore/input_handler.pyに移動済み
-    
-    def _execute_plc_scan(self) -> None:
-        """Execute PLC scan cycle / PLCスキャンサイクル実行"""
-        # PLC logic execution would go here / PLCロジック実行処理をここに記述
-        # For now, just update device states / 現在はデバイス状態更新のみ
-        
-        # Example: Update all devices based on their logic / 例：全デバイスをロジックに基づいて更新
-        for device in self.grid_manager.get_all_devices():
-            if not device.is_bus_device():
-                # Placeholder for actual PLC logic / 実際のPLCロジックのプレースホルダー
-                pass
-        
-        # Debug output for scan execution / スキャン実行のデバッグ出力
-        # print(f"PLC scan executed at frame {pyxel.frame_count}")
-    
-    def _set_scan_time(self, scan_time_ms: int) -> None:
-        """Set PLC scan time dynamically / PLCスキャンタイムを動的に設定"""
-        self.config.scan_time_ms = scan_time_ms
-        # Recalculate scan interval in frames / スキャン間隔をフレーム数で再計算
-        # Use defined FPS constant / 定義されたFPS定数を使用
-        self.scan_interval_frames = int(scan_time_ms * AppConstants.TARGET_FPS / 1000)
-        print(f"PLC scan time changed to {scan_time_ms}ms ({self.scan_interval_frames} frames)")
+    # PLCロジック系メソッドはcore/plc_controller.pyに移動済み
     
 
     
