@@ -52,7 +52,7 @@ class PyPlcDataManager:
                 DeviceData(
                     row=5, col=5, 
                     device_type=DeviceType.CONTACT_A, 
-                    device_id="X001",
+                    device_id="X001B",
                     active=False
                 )
             ]
