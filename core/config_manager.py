@@ -26,7 +26,7 @@ class PyPlcConfig:
     window_width: int = 256
     window_height: int = 256
     grid_origin_x: int = 16
-    grid_origin_y: int = 32
+    grid_origin_y: int = 80  # パレット用に48px下にずらす（16+32）
     
     # デバイス設定
     auto_generate_address: bool = True
@@ -34,7 +34,7 @@ class PyPlcConfig:
     default_counter_preset: int = 5
     
     # UI設定
-    palette_y: int = 16
+    palette_y: int = 12  # パレット表示開始Y座標
     status_area_y: int = 200
     control_info_y: int = 240
     snap_threshold: float = 5.0

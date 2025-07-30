@@ -46,6 +46,7 @@ from core.logic_element import LogicElement
 from core.renderer import PyPlcRenderer
 from core.input_handler import PyPlcInputHandler, MouseState
 from core.plc_controller import PyPlcController, PlcScanState
+from core.placement_system import PlacementSystem
 
 # アプリケーション定数はcore/constants.pyに移動済み
 # 描画関連の定数はcore/renderer.pyに移動済み
@@ -82,13 +83,16 @@ class PyPlcSimulator:
         # Initialize PLC controller / PLCコントローラー初期化
         self.plc_controller = PyPlcController(self.config, AppConstants.TARGET_FPS)
         
+        # Initialize placement system / 配置システム初期化
+        self.placement_system = PlacementSystem(self.config)
+        
         # Initialize mouse state / マウス状態初期化
         self.mouse_grid_pos = None  # マウスのグリッド座標
         self.show_cursor = False    # カーソル表示フラグ
         self.snap_mode = False      # スナップモード（CTRL押下時）
         
         # Setup test circuit using data manager / データ管理システムを使用したテスト回路セットアップ
-        self.data_manager.setup_circuit_on_grid(self.grid_manager)
+        # self.data_manager.setup_circuit_on_grid(self.grid_manager)  # パレットテスト用に無効化
         
         pyxel.run(self.update, self.draw)
     
@@ -116,6 +120,9 @@ class PyPlcSimulator:
         self.show_cursor = mouse_state.show_cursor
         self.snap_mode = mouse_state.snap_mode
         
+        # Update placement system / 配置システム更新
+        self.placement_system.update()
+        
         # PLC scan time control / PLCスキャンタイム制御
         current_frame = pyxel.frame_count
         self.plc_controller.update_scan_cycle(current_frame, self.grid_manager)
@@ -142,6 +149,9 @@ class PyPlcSimulator:
     
     def draw(self) -> None:
         pyxel.cls(pyxel.COLOR_BLACK)
+        
+        # Draw placement system (device palette) / 配置システム描画（デバイスパレット）
+        self.placement_system.draw(self.renderer)
         
         # Draw grid / グリッド描画
         self.renderer.draw_grid()

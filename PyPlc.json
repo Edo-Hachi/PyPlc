@@ -8,7 +8,7 @@
     "window_width": 384,
     "window_height": 384,
     "grid_origin_x": 16,
-    "grid_origin_y": 32
+    "grid_origin_y": 80
   },
   "devices": {
     "auto_generate_address": true,
@@ -16,7 +16,7 @@
     "default_counter_preset": 5
   },
   "ui": {
-    "palette_y": 16,
+    "palette_y": 12,
     "status_area_y": 280,
     "control_info_y": 300,
     "snap_threshold": 7.0
