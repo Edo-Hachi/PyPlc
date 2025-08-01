@@ -136,6 +136,52 @@ class DeviceType(Enum):
 
 
 # =============================================================================
+# Device Palette Definitions (Ver3: 順序変更・編集可能)
+# =============================================================================
+
+# デバイスパレット定義 - この順序を変更することで画面上の配置が変わります
+DEVICE_PALETTE_DEFINITIONS = {
+    # 上段デバイス定義（通常操作・Shiftなし）
+    "top_row": [
+        # (device_type, display_name, key_bind, description)
+        (DeviceType.CONTACT_A, "[A_CNTC]", 1, "A接点"),
+        (DeviceType.CONTACT_B, "[B_CNTC]", 2, "B接点"),
+        (DeviceType.COIL_STD, "[COIL_S]", 3, "標準コイル"),
+        (DeviceType.COIL_REV, "[COIL_R]", 4, "反転コイル"),
+        (DeviceType.LINK_SIDE, "[_LINK_]", 5, "水平配線"),
+        (DeviceType.LINK_FROM_DOWN, "[LINK_v]", 6, "下から合流"),
+        (DeviceType.LINK_TO_UP, "[LINK_^]", 7, "上へ分岐"),
+        (DeviceType.EMPTY, "[______]", 8, "未定義"),
+        (DeviceType.EMPTY, "[______]", 9, "未定義"),
+        (DeviceType.DEL, "[DELETE]", 0, "削除コマンド"),
+    ],
+    
+    # 下段デバイス定義（拡張操作・Shift+キー）将来拡張用
+    "bottom_row": [
+        (DeviceType.EMPTY, "[______]", 1, "未定義（タイマー予定）"),
+        (DeviceType.EMPTY, "[______]", 2, "未定義（カウンター予定）"),
+        (DeviceType.EMPTY, "[______]", 3, "未定義"),
+        (DeviceType.EMPTY, "[______]", 4, "未定義"),
+        (DeviceType.EMPTY, "[______]", 5, "未定義"),
+        (DeviceType.EMPTY, "[______]", 6, "未定義"),
+        (DeviceType.EMPTY, "[______]", 7, "未定義"),
+        (DeviceType.EMPTY, "[______]", 8, "未定義"),
+        (DeviceType.EMPTY, "[______]", 9, "未定義"),
+        (DeviceType.EMPTY, "[______]", 0, "未定義"),
+    ]
+}
+
+# パレットレイアウト設定
+PALETTE_LAYOUT_CONFIG = {
+    "device_width": 36,      # デバイス表示幅
+    "device_height": 12,     # デバイス表示高さ
+    "row_spacing": 16,       # 行間隔
+    "palette_x": 16,         # パレット開始X座標
+    "palette_y": 12,         # パレット開始Y座標
+}
+
+
+# =============================================================================
 # Device Address Ranges
 # =============================================================================
 class DeviceAddressRanges:
