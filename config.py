@@ -128,8 +128,8 @@ class DeviceType(Enum):
     
     # 配線系（Ver3: 明示的配線システム）
     LINK_SIDE = "LINK_SIDE"    # 水平配線（Ver3新機能: 自己保持回路に必須）
-    LINK_UP = "LINK_UP"        # 上方向結線
-    LINK_DOWN = "LINK_DOWN"    # 下方向結線
+    LINK_FROM_DOWN = "LINK_FROM_DOWN" # 下の行から(FROM)電力を受け取る合流点
+    LINK_TO_UP = "LINK_TO_UP"         # 上の行へ(TO)電力を送る分岐点
     
     # システム
     DEL = "DEL"                # 削除
