@@ -86,6 +86,9 @@ class PyPlcSimulator:
         # Initialize placement system / 配置システム初期化
         self.placement_system = PlacementSystem(self.config)
         
+        # GridDeviceManagerをPlacementSystemに連携設定
+        self.placement_system.set_grid_manager(self.grid_manager)
+        
         # Initialize mouse state / マウス状態初期化
         self.mouse_grid_pos = None  # マウスのグリッド座標
         self.show_cursor = False    # カーソル表示フラグ

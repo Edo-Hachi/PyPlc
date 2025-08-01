@@ -227,6 +227,7 @@ class PlacementSystem:
         """配置システム初期化"""
         self.config = config
         self.device_palette = DevicePalette(config)
+        self.grid_manager = None  # GridDeviceManagerは後でセットされる
         
         # 配置状態管理
         self.placement_enabled = True
@@ -235,6 +236,14 @@ class PlacementSystem:
         # テスト出力管理
         self.debug_output_timer = 0
         self.last_click_info = None  # 最後のクリック情報
+        
+        # 配置結果フィードバック
+        self.placement_feedback = None  # 配置結果メッセージ
+        self.feedback_timer = 0         # フィードバック表示タイマー
+    
+    def set_grid_manager(self, grid_manager) -> None:
+        """GridDeviceManagerを設定"""
+        self.grid_manager = grid_manager
     
     def update(self) -> bool:
         """
@@ -306,14 +315,29 @@ class PlacementSystem:
                 
                 # グリッド範囲内かつ編集可能領域チェック
                 if self._is_valid_placement_position(grid_row, grid_col):
-                    # TODO: 実際のデバイス配置処理をGridDeviceManagerと連携して実装
-                    print(f"[PLACEMENT] デバイス配置可能位置: ({grid_row}, {grid_col})")
-                    
                     # 選択されているデバイス情報取得
                     selected_device = self.device_palette.get_selected_device()
-                    print(f"[PLACEMENT] 選択デバイス: {selected_device.short_name} ({selected_device.device_type})")
                     
-                    changed = True
+                    # 実際のデバイス配置処理
+                    if self.grid_manager is not None:
+                        # DELデバイスの場合は削除処理
+                        if selected_device.device_type == DeviceType.DEL:
+                            success = self.grid_manager.remove_device(grid_row, grid_col)
+                            if success:
+                                print(f"[PLACEMENT] デバイス削除成功: ({grid_row}, {grid_col})")
+                            else:
+                                print(f"[PLACEMENT] デバイス削除失敗: ({grid_row}, {grid_col})")
+                        else:
+                            # 通常デバイスの配置処理
+                            success = self.grid_manager.place_device(grid_row, grid_col, selected_device.device_type)
+                            if success:
+                                print(f"[PLACEMENT] デバイス配置成功: {selected_device.short_name} at ({grid_row}, {grid_col})")
+                            else:
+                                print(f"[PLACEMENT] デバイス配置失敗: {selected_device.short_name} at ({grid_row}, {grid_col})")
+                        
+                        changed = True
+                    else:
+                        print(f"[PLACEMENT] GridDeviceManager未設定")
                 else:
                     print(f"[PLACEMENT] 配置不可能位置: ({grid_row}, {grid_col})")
         
