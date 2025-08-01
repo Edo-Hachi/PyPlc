@@ -107,39 +107,39 @@ class PyPlcInputHandler:
         
         return None
     
-    def screen_to_grid_legacy(self, screen_x: int, screen_y: int) -> Optional[Tuple[int, int]]:
-        """
-        スクリーン座標をグリッド座標に変換（旧版）
-        Convert screen coordinates to grid coordinates (Legacy version)
+    # def screen_to_grid_legacy(self, screen_x: int, screen_y: int) -> Optional[Tuple[int, int]]:
+    #     """
+    #     スクリーン座標をグリッド座標に変換（旧版）
+    #     Convert screen coordinates to grid coordinates (Legacy version)
         
-        Args:
-            screen_x: スクリーンX座標
-            screen_y: スクリーンY座標
+    #     Args:
+    #         screen_x: スクリーンX座標
+    #         screen_y: スクリーンY座標
             
-        Returns:
-            Optional[Tuple[int, int]]: グリッド座標 (row, col) または None
+    #     Returns:
+    #         Optional[Tuple[int, int]]: グリッド座標 (row, col) または None
             
-        Note:
-            参考実装として保持。通常は screen_to_grid() を使用。
-            Kept as reference implementation. Normally use screen_to_grid().
-        """
-        grid_x = self.config.grid_origin_x
-        grid_y = self.config.grid_origin_y
-        cell_size = self.config.grid_cell_size
+    #     Note:
+    #         参考実装として保持。通常は screen_to_grid() を使用。
+    #         Kept as reference implementation. Normally use screen_to_grid().
+    #     """
+    #     grid_x = self.config.grid_origin_x
+    #     grid_y = self.config.grid_origin_y
+    #     cell_size = self.config.grid_cell_size
         
-        # マウスがグリッド範囲内かチェック / Check if mouse is within grid bounds
-        if (grid_x <= screen_x <= grid_x + self.config.grid_cols * cell_size and
-            grid_y <= screen_y <= grid_y + self.config.grid_rows * cell_size):
+    #     # マウスがグリッド範囲内かチェック / Check if mouse is within grid bounds
+    #     if (grid_x <= screen_x <= grid_x + self.config.grid_cols * cell_size and
+    #         grid_y <= screen_y <= grid_y + self.config.grid_rows * cell_size):
             
-            # 最も近いグリッド交点を計算 / Calculate nearest grid intersection
-            col = round((screen_x - grid_x) / cell_size)
-            row = round((screen_y - grid_y) / cell_size)
+    #         # 最も近いグリッド交点を計算 / Calculate nearest grid intersection
+    #         col = round((screen_x - grid_x) / cell_size)
+    #         row = round((screen_y - grid_y) / cell_size)
             
-            # 有効範囲内かチェック / Ensure within valid range
-            if 0 <= row < self.config.grid_rows and 0 <= col < self.config.grid_cols:
-                return (row, col)  # grid[row][col] # [y座標][x座標] の順序 / [y,x] order
+    #         # 有効範囲内かチェック / Ensure within valid range
+    #         if 0 <= row < self.config.grid_rows and 0 <= col < self.config.grid_cols:
+    #             return (row, col)  # grid[row][col] # [y座標][x座標] の順序 / [y,x] order
         
-        return None
+    #     return None
     
     def is_editable_position(self, row: int, col: int) -> bool:
         """

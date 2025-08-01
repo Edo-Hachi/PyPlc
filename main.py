@@ -7,16 +7,20 @@
 
 ## 実行環境は .vscode/ 以下のファイルに定義してあります
 
+# For AI Support
+# _Ver3_definition.md  を参考にプロジェクト設計を進めてください
+
 # 返答は日本語でお願いします
 # pythonとはいえ、型はちゃんと宣言してください
 # コメントも日本語でつけて下さい
 # ステップバイステップで作業をしながら git にチェックインしながらすすめるので、ユーザーに都度確認してください。
 # ですので、ドンドンとコードを書いて進めないで下さい
 
-# 配列関係の処理をする時は  grid[row][col]  # [y座標][x座標] の順序 って書いておいてくれると、僕がわかりやすいです　
+# 配列関係の処理をする時は  grid[row][col]  # [y座標][x座標] の順序 って書いておいてくれると、僕がわかりやすいです
 
 import pyxel
 from config import DisplayConfig, SystemInfo
+from core.grid_system import GridSystem
 
 
 class PyPlcVer3:
@@ -28,19 +32,23 @@ class PyPlcVer3:
         pyxel.init(
             DisplayConfig.WINDOW_WIDTH,
             DisplayConfig.WINDOW_HEIGHT,
-            title=f"PyPlc Ver{SystemInfo.VERSION} - Hello World",
+            title=f"PyPlc Ver{SystemInfo.VERSION} - Visual Foundation",
             fps=DisplayConfig.TARGET_FPS
         )
         
         # マウスカーソル表示
         pyxel.mouse(True)
         
+        # --- モジュールのインスタンス化 ---
+        # GridSystemをインスタンス化
+        self.grid_system = GridSystem()
+        
         # アプリケーション開始
         pyxel.run(self.update, self.draw)
     
     def update(self) -> None:
         """フレーム更新処理"""
-        # ESCキーで終了
+        # QキーまたはESCキーで終了
         if pyxel.btnp(pyxel.KEY_Q) or pyxel.btnp(pyxel.KEY_ESCAPE):
             pyxel.quit()
     
@@ -49,18 +57,13 @@ class PyPlcVer3:
         # 背景をクリア（黒）
         pyxel.cls(pyxel.COLOR_BLACK)
         
-        # Hello World テキスト表示
-        pyxel.text(
-            DisplayConfig.WINDOW_WIDTH // 2 - 30,  # 中央に配置
-            DisplayConfig.WINDOW_HEIGHT // 2 - 4,   # 中央に配置
-            "Hello World",
-            pyxel.COLOR_WHITE
-        )
+        # GridSystemにグリッド描画を委譲
+        self.grid_system.draw()
         
         # Ver3開始メッセージ
         pyxel.text(
             10, 10,
-            f"PyPlc Ver{SystemInfo.VERSION} - Clean Start",
+            f"PyPlc Ver{SystemInfo.VERSION} - Stage 1: Grid System",
             pyxel.COLOR_GREEN
         )
         
