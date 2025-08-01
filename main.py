@@ -3,10 +3,10 @@
 # 目標: PLC標準仕様完全準拠ラダー図シミュレーター
 
 import pyxel
-from typing import Optional
 from config import DisplayConfig, SystemInfo, UIConfig, DeviceType
 from core.grid_system import GridSystem
 from core.input_handler import InputHandler, MouseState
+from core.circuit_analyzer import CircuitAnalyzer
 
 class PyPlcVer3:
     """PyPlc Ver3 - PLC標準仕様準拠シミュレーター"""
@@ -16,52 +16,45 @@ class PyPlcVer3:
         pyxel.init(
             DisplayConfig.WINDOW_WIDTH,
             DisplayConfig.WINDOW_HEIGHT,
-            title=f"PyPlc Ver{SystemInfo.VERSION} - Device Placement",
+            title=f"PyPlc Ver{SystemInfo.VERSION} - Circuit Solver",
             fps=DisplayConfig.TARGET_FPS
         )
         pyxel.mouse(True)
         
+        # --- モジュールのインスタンス化 ---
         self.grid_system = GridSystem()
         self.input_handler = InputHandler(self.grid_system)
+        self.circuit_analyzer = CircuitAnalyzer(self.grid_system)
+        
         self.mouse_state: MouseState = MouseState()
         
         pyxel.run(self.update, self.draw)
     
     def update(self) -> None:
         """フレーム更新処理"""
+        # 1. 入力処理
         self.mouse_state = self.input_handler.update_mouse_state()
-        
         if self.input_handler.check_quit_command():
             pyxel.quit()
-
-        # --- デバイス操作ロジック ---
         self._handle_device_placement()
+
+        # 2. 論理演算 (通電解析)
+        self.circuit_analyzer.solve_ladder()
 
     def _handle_device_placement(self) -> None:
         """マウス入力に基づき、デバイスの配置・削除・状態変更を行う"""
-        # --- ガード節 (早期リターン) ---
-        # 1. ホバー位置がなければ、何もできないので終了
-        if self.mouse_state.hovered_pos is None:
-            return
-        
-        # 2. スナップしていない、または編集不可エリアなら、操作対象外なので終了
-        if not self.mouse_state.is_snapped or not self.mouse_state.on_editable_area:
+        if self.mouse_state.hovered_pos is None or not self.mouse_state.is_snapped or not self.mouse_state.on_editable_area:
             return
 
-        # --- 操作実行 --- 
-        # ガード節を通過したので、hovered_posは確実にタプル型
         row, col = self.mouse_state.hovered_pos
 
-        # 左クリックで配置/削除
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
             device = self.grid_system.get_device(row, col)
             if device:
                 self.grid_system.remove_device(row, col)
             else:
-                # 仮としてA接点を配置
                 self.grid_system.place_device(row, col, DeviceType.CONTACT_A, f"X{row}{col}")
         
-        # 右クリックで状態をトグル
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
             device = self.grid_system.get_device(row, col)
             if device:
@@ -69,6 +62,7 @@ class PyPlcVer3:
 
     def draw(self) -> None:
         """描画処理"""
+        # 3. 描画処理
         pyxel.cls(pyxel.COLOR_BLACK)
         self.grid_system.draw()
         self._draw_cursor_and_status()
@@ -99,7 +93,7 @@ class PyPlcVer3:
 
     def _draw_header_footer(self) -> None:
         """ヘッダーとフッターの情報を描画する"""
-        pyxel.text(10, 10, f"PyPlc Ver{SystemInfo.VERSION} - Stage 3: Device Logic", pyxel.COLOR_GREEN)
+        pyxel.text(10, 10, f"PyPlc Ver{SystemInfo.VERSION} - Stage 4: Solver", pyxel.COLOR_GREEN)
         pyxel.text(10, DisplayConfig.WINDOW_HEIGHT - 20, "L-Click:Place/Del R-Click:Toggle Q:Quit", pyxel.COLOR_GRAY)
 
 if __name__ == "__main__":
