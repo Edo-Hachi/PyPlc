@@ -144,30 +144,30 @@ DEVICE_PALETTE_DEFINITIONS = {
     # 上段デバイス定義（通常操作・Shiftなし）
     "top_row": [
         # (device_type, display_name, key_bind, description)
-        (DeviceType.CONTACT_A, "[A_CNTC]", 1, "A接点"),
-        (DeviceType.CONTACT_B, "[B_CNTC]", 2, "B接点"),
-        (DeviceType.COIL_STD, "[COIL_S]", 3, "標準コイル"),
-        (DeviceType.COIL_REV, "[COIL_R]", 4, "反転コイル"),
-        (DeviceType.LINK_SIDE, "[_LINK_]", 5, "水平配線"),
-        (DeviceType.LINK_FROM_DOWN, "[LINK_v]", 6, "下から合流"),
-        (DeviceType.LINK_TO_UP, "[LINK_^]", 7, "上へ分岐"),
-        (DeviceType.EMPTY, "[______]", 8, "未定義"),
-        (DeviceType.EMPTY, "[______]", 9, "未定義"),
-        (DeviceType.DEL, "[DELETE]", 0, "削除コマンド"),
+        (DeviceType.CONTACT_A, "A_CNTC", 1, "A接点"),
+        (DeviceType.CONTACT_B, "B_CNTC", 2, "B接点"),
+        (DeviceType.COIL_STD, "COIL_S", 3, "標準コイル"),
+        (DeviceType.COIL_REV, "COIL_R", 4, "反転コイル"),
+        (DeviceType.LINK_SIDE, "_LINK_", 5, "水平配線"),
+        (DeviceType.LINK_FROM_DOWN, "LINK_v", 6, "下から合流"),
+        (DeviceType.LINK_TO_UP, "LINK_^", 7, "上へ分岐"),
+        (DeviceType.EMPTY, "", 8, "未定義"),
+        (DeviceType.EMPTY, "", 9, "未定義"),
+        (DeviceType.DEL, "DELETE", 0, "削除コマンド"),
     ],
     
     # 下段デバイス定義（拡張操作・Shift+キー）将来拡張用
     "bottom_row": [
-        (DeviceType.EMPTY, "[______]", 1, "未定義（タイマー予定）"),
-        (DeviceType.EMPTY, "[______]", 2, "未定義（カウンター予定）"),
-        (DeviceType.EMPTY, "[______]", 3, "未定義"),
-        (DeviceType.EMPTY, "[______]", 4, "未定義"),
-        (DeviceType.EMPTY, "[______]", 5, "未定義"),
-        (DeviceType.EMPTY, "[______]", 6, "未定義"),
-        (DeviceType.EMPTY, "[______]", 7, "未定義"),
-        (DeviceType.EMPTY, "[______]", 8, "未定義"),
-        (DeviceType.EMPTY, "[______]", 9, "未定義"),
-        (DeviceType.EMPTY, "[______]", 0, "未定義"),
+        (DeviceType.EMPTY, "", 1, "未定義（タイマー予定）"),
+        (DeviceType.EMPTY, "", 2, "未定義（カウンター予定）"),
+        (DeviceType.EMPTY, "", 3, "未定義"),
+        (DeviceType.EMPTY, "", 4, "未定義"),
+        (DeviceType.EMPTY, "", 5, "未定義"),
+        (DeviceType.EMPTY, "", 6, "未定義"),
+        (DeviceType.EMPTY, "", 7, "未定義"),
+        (DeviceType.EMPTY, "", 8, "未定義"),
+        (DeviceType.EMPTY, "", 9, "未定義"),
+        (DeviceType.EMPTY, "", 0, "未定義"),
     ]
 }
 

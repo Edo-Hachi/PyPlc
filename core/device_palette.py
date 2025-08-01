@@ -160,9 +160,9 @@ class DevicePalette:
     
     def _draw_palette_background(self) -> None:
         """パレット背景描画"""
-        # パレット全体の背景（薄いグレー）
-        palette_width = self.device_width * 5  # 5個×2列
-        palette_height = self.device_height * 2 + self.row_spacing
+        # パレット全体の背景（10個×2行）
+        palette_width = self.device_width * 10  # 10個分
+        palette_height = self.device_height * 2 + 4  # 2行 + 間隔
         
         pyxel.rect(
             self.palette_x - 2, 
@@ -173,87 +173,69 @@ class DevicePalette:
         )
     
     def _draw_devices(self) -> None:
-        """デバイス描画"""
-        for row_idx, device_row in enumerate(self.devices):
-            y = self.palette_y + row_idx * (self.device_height + self.row_spacing)
-            
-            for col_idx in range(5):  # 最初の5個だけ表示（1-5キー）
-                if col_idx < len(device_row):
-                    device = device_row[col_idx]
-                    x = self.palette_x + col_idx * self.device_width
-                    
-                    # デバイス背景色決定
-                    if device.device_type == DeviceType.EMPTY:
-                        bg_color = pyxel.COLOR_GRAY
-                        text_color = pyxel.COLOR_DARK_BLUE
-                    elif device.device_type == DeviceType.DEL:
-                        bg_color = pyxel.COLOR_RED
-                        text_color = pyxel.COLOR_WHITE
-                    else:
-                        bg_color = pyxel.COLOR_WHITE
-                        text_color = pyxel.COLOR_BLACK
-                    
-                    # デバイス枠描画
-                    pyxel.rect(x, y, self.device_width - 2, self.device_height, bg_color)
-                    pyxel.rectb(x, y, self.device_width - 2, self.device_height, pyxel.COLOR_BLACK)
-                    
-                    # キー番号表示
-                    key_text = str(device.key_bind)
-                    pyxel.text(x + 2, y + 1, key_text, pyxel.COLOR_DARK_BLUE)
-                    
-                    # デバイス名表示（短縮版）
-                    display_text = device.display_name[:7]  # 7文字まで
-                    pyxel.text(x + 2, y + 7, display_text, text_color)
+        """デバイス描画（1行に10個のシンプル表示）"""
+        # 上段（行0）: 1-0キー（10個）
+        for i in range(10):
+            device = self.devices[0][i]
+            x = self.palette_x + i * self.device_width
+            y = self.palette_y
+            self._draw_single_device(device, x, y)
         
-        # 6-0キーのデバイス描画（2行目）
-        for row_idx, device_row in enumerate(self.devices):
-            y = self.palette_y + row_idx * (self.device_height + self.row_spacing)
-            
-            for col_idx in range(5, 10):  # 6-0キー（インデックス5-9）
-                if col_idx < len(device_row):
-                    device = device_row[col_idx]
-                    x = self.palette_x + (col_idx - 5) * self.device_width
-                    y = y + self.device_height  # 下の行
-                    
-                    # デバイス背景色決定
-                    if device.device_type == DeviceType.EMPTY:
-                        bg_color = pyxel.COLOR_GRAY
-                        text_color = pyxel.COLOR_DARK_BLUE
-                    elif device.device_type == DeviceType.DEL:
-                        bg_color = pyxel.COLOR_RED
-                        text_color = pyxel.COLOR_WHITE
-                    else:
-                        bg_color = pyxel.COLOR_WHITE
-                        text_color = pyxel.COLOR_BLACK
-                    
-                    # デバイス枠描画
-                    pyxel.rect(x, y, self.device_width - 2, self.device_height, bg_color)
-                    pyxel.rectb(x, y, self.device_width - 2, self.device_height, pyxel.COLOR_BLACK)
-                    
-                    # キー番号表示
-                    key_text = str(device.key_bind) if device.key_bind != 0 else "0"
-                    pyxel.text(x + 2, y + 1, key_text, pyxel.COLOR_DARK_BLUE)
-                    
-                    # デバイス名表示（短縮版）
-                    display_text = device.display_name[:7]  # 7文字まで
-                    pyxel.text(x + 2, y + 7, display_text, text_color)
+        # 下段（行1）: 1-0キー（10個）
+        for i in range(10):
+            device = self.devices[1][i]
+            x = self.palette_x + i * self.device_width
+            y = self.palette_y + self.device_height + 4  # 少し間隔をあける
+            self._draw_single_device(device, x, y)
+    
+    def _draw_single_device(self, device, x: int, y: int) -> None:
+        """単一デバイスの描画"""
+        # デバイス背景色決定
+        if device.device_type == DeviceType.EMPTY:
+            bg_color = pyxel.COLOR_GRAY
+            text_color = pyxel.COLOR_DARK_BLUE
+        elif device.device_type == DeviceType.DEL:
+            bg_color = pyxel.COLOR_RED
+            text_color = pyxel.COLOR_WHITE
+        else:
+            bg_color = pyxel.COLOR_WHITE
+            text_color = pyxel.COLOR_BLACK
+        
+        # デバイス枠描画
+        pyxel.rect(x, y, self.device_width - 2, self.device_height, bg_color)
+        pyxel.rectb(x, y, self.device_width - 2, self.device_height, pyxel.COLOR_BLACK)
+        
+        # デバイス名表示（[]と数字を除去してクリーンに）
+        clean_name = self._clean_device_name(device.display_name)
+        if clean_name:  # 空でない場合のみ表示
+            pyxel.text(x + 2, y + 4, clean_name, text_color)
+    
+    def _clean_device_name(self, display_name: str) -> str:
+        """デバイス名から数字と[]を除去してクリーンに"""
+        # []を除去
+        clean = display_name.replace('[', '').replace(']', '')
+        
+        # アンダースコアのみの場合は空文字に
+        if clean == '______':
+            return ''
+        
+        # その他の場合はそのまま返す
+        return clean
     
     def _draw_selection_indicator(self) -> None:
         """選択状態インジケーター描画"""
-        # 現在の行インジケーター
-        row_indicator_y = self.palette_y + self.state.current_row * (self.device_height + self.row_spacing)
-        pyxel.text(self.palette_x - 10, row_indicator_y + 4, ">", pyxel.COLOR_YELLOW)
+        # 現在の行インジケーター（>マーク）
+        row_y = self.palette_y + self.state.current_row * (self.device_height + 4) + 4
+        pyxel.text(self.palette_x - 10, row_y, ">", pyxel.COLOR_YELLOW)
         
         # 選択されたデバイスのハイライト
-        selected_device_x = self.palette_x + (self.state.selected_index % 5) * self.device_width
-        selected_device_y = self.palette_y + self.state.current_row * (self.device_height + self.row_spacing)
-        if self.state.selected_index >= 5:  # 6-0キーの場合
-            selected_device_y += self.device_height
+        selected_x = self.palette_x + self.state.selected_index * self.device_width
+        selected_y = self.palette_y + self.state.current_row * (self.device_height + 4)
         
         # 黄色い枠でハイライト
         pyxel.rectb(
-            selected_device_x - 1, 
-            selected_device_y - 1, 
+            selected_x - 1, 
+            selected_y - 1, 
             self.device_width, 
             self.device_height + 2, 
             pyxel.COLOR_YELLOW

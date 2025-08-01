@@ -7,6 +7,7 @@ from config import DisplayConfig, SystemInfo, UIConfig, DeviceType
 from core.grid_system import GridSystem
 from core.input_handler import InputHandler, MouseState
 from core.circuit_analyzer import CircuitAnalyzer
+from core.device_palette import DevicePalette
 
 class PyPlcVer3:
     """PyPlc Ver3 - PLC標準仕様準拠シミュレーター"""
@@ -25,6 +26,7 @@ class PyPlcVer3:
         self.grid_system = GridSystem()
         self.input_handler = InputHandler(self.grid_system)
         self.circuit_analyzer = CircuitAnalyzer(self.grid_system)
+        self.device_palette = DevicePalette()  # デバイスパレット追加
         
         self.mouse_state: MouseState = MouseState()
         
@@ -36,6 +38,10 @@ class PyPlcVer3:
         self.mouse_state = self.input_handler.update_mouse_state()
         if self.input_handler.check_quit_command():
             pyxel.quit()
+        
+        # デバイスパレット入力処理
+        self.device_palette.update_input()
+        
         self._handle_device_placement()
 
         # 2. 論理演算 (通電解析)
@@ -50,10 +56,26 @@ class PyPlcVer3:
 
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
             device = self.grid_system.get_device(row, col)
+            
+            # 選択されたデバイスタイプを取得
+            selected_device_type = self.device_palette.get_selected_device_type()
+            
             if device:
-                self.grid_system.remove_device(row, col)
+                # 既存デバイスがある場合
+                if selected_device_type == DeviceType.DEL:
+                    # 削除コマンドの場合は削除
+                    self.grid_system.remove_device(row, col)
+                else:
+                    # 削除以外の場合は置き換え
+                    self.grid_system.remove_device(row, col)
+                    if selected_device_type != DeviceType.EMPTY:
+                        address = f"X{row}{col}"  # 仮のアドレス生成
+                        self.grid_system.place_device(row, col, selected_device_type, address)
             else:
-                self.grid_system.place_device(row, col, DeviceType.CONTACT_A, f"X{row}{col}")
+                # 空きセルの場合、選択されたデバイスを配置
+                if selected_device_type not in [DeviceType.DEL, DeviceType.EMPTY]:
+                    address = f"X{row}{col}"  # 仮のアドレス生成
+                    self.grid_system.place_device(row, col, selected_device_type, address)
         
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
             device = self.grid_system.get_device(row, col)
@@ -64,7 +86,14 @@ class PyPlcVer3:
         """描画処理"""
         # 3. 描画処理
         pyxel.cls(pyxel.COLOR_BLACK)
+        
+        # デバイスパレット描画（最初に描画）
+        self.device_palette.draw()
+        
+        # グリッドシステム描画
         self.grid_system.draw()
+        
+        # UI情報描画
         self._draw_cursor_and_status()
         self._draw_header_footer()
 
@@ -93,7 +122,7 @@ class PyPlcVer3:
 
     def _draw_header_footer(self) -> None:
         """ヘッダーとフッターの情報を描画する"""
-        pyxel.text(10, 10, f"PyPlc Ver{SystemInfo.VERSION} - Stage 4: Solver", pyxel.COLOR_GREEN)
+        #pyxel.text(10, 10, f"PyPlc Ver{SystemInfo.VERSION} - Stage 4: Solver", pyxel.COLOR_GREEN)
         pyxel.text(10, DisplayConfig.WINDOW_HEIGHT - 20, "L-Click:Place/Del R-Click:Toggle Q:Quit", pyxel.COLOR_GRAY)
 
 if __name__ == "__main__":
