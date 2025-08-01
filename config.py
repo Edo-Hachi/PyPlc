@@ -127,7 +127,7 @@ class DeviceType(Enum):
     COUNTER = "COUNTER"        # カウンター
     
     # 配線系（Ver3: 明示的配線システム）
-    LINK_SIDE = "LINK_SIDE"    # 水平配線（Ver3新機能）
+    LINK_SIDE = "LINK_SIDE"    # 水平配線（Ver3新機能: 自己保持回路に必須）
     LINK_UP = "LINK_UP"        # 上方向結線
     LINK_DOWN = "LINK_DOWN"    # 下方向結線
     
