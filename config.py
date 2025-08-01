@@ -119,7 +119,7 @@ class DeviceType(Enum):
     CONTACT_B = "CONTACT_B"    # B接点（ノーマルクローズ）-|/|-
     
     # コイル系（PLC標準: 出力結果表現）
-    COIL = "COIL"              # 通常コイル -( )-
+    COIL_STD = "COIL_STD"      # 標準コイル -( )-
     COIL_REV = "COIL_REV"      # 反転コイル -(/)-
     
     # 機能系
