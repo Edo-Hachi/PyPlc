@@ -73,7 +73,11 @@ class CircuitAnalyzer:
         if device.device_type in [DeviceType.LINK_SIDE, DeviceType.LINK_FROM_DOWN, DeviceType.LINK_TO_UP]:
             return True
 
-        # コイルやバスバーは電力の終端なので、電気を通さない
+        # L_SIDE（左バス）は電源なので常時導通
+        if device.device_type == DeviceType.L_SIDE:
+            return True
+
+        # R_SIDE（右バス）とコイルは電力の終端なので、電気を通さない
         return False
 
     # 不要でバグの原因となっていたプライベートメソッドは完全に削除
