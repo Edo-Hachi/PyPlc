@@ -449,13 +449,23 @@ COLOR_BG       = 0      # 黒（背景）
 - **三菱PLC仕様**: デバイス体系とラダー命令の参考
 
 ## Running the Project
+
+### 実行環境設定
+- **VSCode設定**: `.vscode/launch.json` と `.vscode/settings.json` で仮想環境を指定
+- **仮想環境パス**: `./venv/bin/python` (Ubuntu用設定)
+- **デバッグ実行**: VSCode の "Python デバッガー: 現在のファイル" で main.py を実行
+
+### コマンドライン実行
 ```bash
-# 仮想環境での実行
+# 仮想環境での実行（推奨）
 ./venv/bin/python main.py
 
 # または直接実行 (pyxelインストール済み環境)
 python main.py
 ```
+
+### 重要: 
+AIアシスタントは毎回 `./venv/bin/python main.py` で実行してください。実行環境は .vscode/ 以下に定義済みです。
 
 ## Development Environment & Setup
 

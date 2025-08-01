@@ -3,150 +3,104 @@ PyPlc-v2 Configuration Module
 設定定数・制約・定義管理
 """
 
-from typing import Optional
 from enum import Enum
-from dataclasses import dataclass
-import json
 
 
-@dataclass
-class PyPlcConfig:
-    """PyPlc設定クラス - PyPlc.jsonの完全管理"""
-    # グリッド設定
-    grid_rows: int = 10
-    grid_cols: int = 10
-    grid_cell_size: int = 16
+# =============================================================================
+# Grid Configuration
+# =============================================================================
+class GridConfig:
+    """グリッド設定定数"""
+    GRID_ROWS = 15
+    GRID_COLS = 20
+    GRID_CELL_SIZE = 16
+
+
+# =============================================================================
+# Display Configuration  
+# =============================================================================
+class DisplayConfig:
+    """表示設定定数"""
+    WINDOW_WIDTH = 384
+    WINDOW_HEIGHT = 384
+    GRID_ORIGIN_X = 16
+    GRID_ORIGIN_Y = 80
+
+
+# =============================================================================
+# Device Configuration
+# =============================================================================
+class DeviceConfig:
+    """デバイス設定定数"""
+    AUTO_GENERATE_ADDRESS = True
+    DEFAULT_TIMER_PRESET = 3.0
+    DEFAULT_COUNTER_PRESET = 5
+
+
+# =============================================================================
+# UI Configuration
+# =============================================================================
+class UIConfig:
+    """UI設定定数"""
+    PALETTE_Y = 12
+    STATUS_AREA_Y = 280
+    CONTROL_INFO_Y = 300
+    SNAP_THRESHOLD = 7.0
+
+
+# =============================================================================
+# Performance Configuration
+# =============================================================================
+class PerformanceConfig:
+    """パフォーマンス設定定数"""
+    TARGET_FPS = 60
+    MAX_DEVICES = 100
+    SCAN_TIME_MS = 100
+
+
+# =============================================================================
+# Grid Constraints
+# =============================================================================
+class GridConstraints:
+    """グリッド配置制約管理"""
     
-    # 表示設定
-    window_width: int = 256
-    window_height: int = 256
-    grid_origin_x: int = 16
-    grid_origin_y: int = 32
+    @staticmethod
+    def get_left_bus_col() -> int:
+        """左バス列取得（常に0列目）"""
+        return 0
     
-    # デバイス設定
-    auto_generate_address: bool = True
-    default_timer_preset: float = 3.0
-    default_counter_preset: int = 5
+    @staticmethod
+    def get_right_bus_col() -> int:
+        """右バス列取得（常に最終列）"""
+        return GridConfig.GRID_COLS - 1
     
-    # UI設定
-    palette_y: int = 16
-    status_area_y: int = 200
-    control_info_y: int = 240
-    snap_threshold: float = 5.0
+    @staticmethod
+    def is_editable_position(row: int, col: int) -> bool:
+        """編集可能位置判定"""
+        # 行は全て編集可能、列は1〜(cols-2)のみ編集可能
+        return 1 <= col <= GridConfig.GRID_COLS - 2
     
-    # パフォーマンス設定
-    target_fps: int = 60
-    max_devices: int = 100
-    scan_time_ms: int = 100  # PLCスキャンタイム（ミリ秒）
-    
-    @classmethod
-    def load_from_file(cls, config_path: str = "PyPlc.json") -> 'PyPlcConfig':
-        """設定ファイルから読み込み"""
-        try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
-            # 各セクションからデータ抽出
-            grid = data.get('grid', {})
-            display = data.get('display', {})
-            devices = data.get('devices', {})
-            ui = data.get('ui', {})
-            performance = data.get('performance', {})
-            
-            return cls(
-                # グリッド設定
-                grid_rows=grid.get('rows', 10),
-                grid_cols=grid.get('cols', 10),
-                grid_cell_size=grid.get('cell_size', 16),
-                
-                # 表示設定
-                window_width=display.get('window_width', 256),
-                window_height=display.get('window_height', 256),
-                grid_origin_x=display.get('grid_origin_x', 16),
-                grid_origin_y=display.get('grid_origin_y', 32),
-                
-                # デバイス設定
-                auto_generate_address=devices.get('auto_generate_address', True),
-                default_timer_preset=devices.get('default_timer_preset', 3.0),
-                default_counter_preset=devices.get('default_counter_preset', 5),
-                
-                # UI設定
-                palette_y=ui.get('palette_y', 16),
-                status_area_y=ui.get('status_area_y', 200),
-                control_info_y=ui.get('control_info_y', 240),
-                snap_threshold=ui.get('snap_threshold', 5),
-                
-                # パフォーマンス設定
-                target_fps=performance.get('target_fps', 60),
-                max_devices=performance.get('max_devices', 100),
-                scan_time_ms=performance.get('scan_time_ms', 100)
-            )
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            print(f"設定ファイル読み込みエラー: {e}")
-            print("デフォルト設定を使用します")
-            return cls()
-    
-    def save_to_file(self, config_path: str = "PyPlc.json") -> bool:
-        """設定ファイルに保存"""
-        try:
-            data = {
-                "grid": {
-                    "rows": self.grid_rows,
-                    "cols": self.grid_cols,
-                    "cell_size": self.grid_cell_size
-                },
-                "display": {
-                    "window_width": self.window_width,
-                    "window_height": self.window_height,
-                    "grid_origin_x": self.grid_origin_x,
-                    "grid_origin_y": self.grid_origin_y
-                },
-                "devices": {
-                    "auto_generate_address": self.auto_generate_address,
-                    "default_timer_preset": self.default_timer_preset,
-                    "default_counter_preset": self.default_counter_preset
-                },
-                "ui": {
-                    "palette_y": self.palette_y,
-                    "status_area_y": self.status_area_y,
-                    "control_info_y": self.control_info_y,
-                    "snap_threshold": self.snap_threshold
-                },
-                "performance": {
-                    "target_fps": self.target_fps,
-                    "max_devices": self.max_devices,
-                    "scan_time_ms": self.scan_time_ms
-                }
-            }
-            
-            with open(config_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
-            
-            print(f"設定ファイル保存完了: {config_path}")
-            return True
-            
-        except Exception as e:
-            print(f"設定ファイル保存エラー: {e}")
-            return False
-    
-    def update_grid_size(self, rows: int, cols: int) -> bool:
-        """グリッドサイズ更新（妥当性チェック付き）"""
-        if rows < 3 or cols < 3:
-            print("グリッドサイズは最低3x3必要です")
-            return False
+    @staticmethod
+    def validate_device_placement(row: int, col: int, device_type: 'DeviceType') -> bool:
+        """デバイス配置妥当性検証"""
+        # L_SIDEは0列目のみ
+        if device_type == DeviceType.L_SIDE:
+            return col == 0
         
-        if rows > 50 or cols > 50:
-            print("グリッドサイズは最大50x50です")
-            return False
+        # R_SIDEは最終列のみ
+        if device_type == DeviceType.R_SIDE:
+            return col == GridConfig.GRID_COLS - 1
         
-        self.grid_rows = rows
-        self.grid_cols = cols
-        print(f"グリッドサイズ更新: {rows}x{cols}")
-        return True
+        # その他のデバイスは編集可能領域のみ
+        if device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
+            return GridConstraints.is_editable_position(row, col)
+        
+        return False
     
-    def get_editable_area(self) -> tuple[int, int, int, int]:
+    @staticmethod
+    def get_editable_area() -> tuple[int, int, int, int]:
         """編集可能領域取得 (start_col, end_col, start_row, end_row)"""
-        return (1, self.grid_cols - 2, 0, self.grid_rows - 1)
+        return (1, GridConfig.GRID_COLS - 2, 0, GridConfig.GRID_ROWS - 1)
 
 
 class DeviceType(Enum):
@@ -312,5 +266,4 @@ class DeviceAddressRanges:
         return f"{device_type}{address_num:03d}"
 
 
-# モジュール初期化時にグリッド設定読み込み
-DEFAULT_CONFIG = PyPlcConfig.load_from_file()
+# シンプルな定数ベース設定 - JSONファイル不要
