@@ -1,0 +1,88 @@
+{
+  "meta": {
+    "sprite_size": 8,
+    "resource_file": "./my_resource.pyxres",
+    "created_by": "SpriteDefiner",
+    "version": "3.0"
+  },
+  "sprites": {
+    "8_0": {
+      "x": 8,
+      "y": 0,
+      "NAME": "CONTACT_A",
+      "ACT_NAME": "TRUE"
+    },
+    "16_0": {
+      "x": 16,
+      "y": 0,
+      "NAME": "CONTACT_A",
+      "ACT_NAME": "FALSE"
+    },
+    "24_0": {
+      "x": 24,
+      "y": 0,
+      "NAME": "CONTACT_B",
+      "ACT_NAME": "TRUE"
+    },
+    "32_0": {
+      "x": 32,
+      "y": 0,
+      "NAME": "CONTACT_B",
+      "ACT_NAME": "FALSE"
+    },
+    "40_0": {
+      "x": 40,
+      "y": 0,
+      "NAME": "COIL_STD",
+      "ACT_NAME": "TRUE"
+    },
+    "48_0": {
+      "x": 48,
+      "y": 0,
+      "NAME": "COIL_STD",
+      "ACT_NAME": "FALSE"
+    },
+    "8_8": {
+      "x": 8,
+      "y": 8,
+      "NAME": "LINK_TO_UP",
+      "ACT_NAME": "TRUE"
+    },
+    "16_8": {
+      "x": 16,
+      "y": 8,
+      "NAME": "LINK_TO_UP",
+      "ACT_NAME": "FALSE"
+    },
+    "24_8": {
+      "x": 24,
+      "y": 8,
+      "NAME": "LINK_FROM_DOWN",
+      "ACT_NAME": "TRUE"
+    },
+    "32_8": {
+      "x": 32,
+      "y": 8,
+      "NAME": "LINK_FROM_DOWN",
+      "ACT_NAME": "FALSE"
+    },
+    "40_8": {
+      "x": 40,
+      "y": 8,
+      "NAME": "LINK_SIDE",
+      "ACT_NAME": "TRUE"
+    },
+    "48_8": {
+      "x": 48,
+      "y": 8,
+      "NAME": "LINK_SIDE",
+      "ACT_NAME": "FALSE"
+    },
+    "8_16": {
+      "x": 8,
+      "y": 16,
+      "NAME": "DEL",
+      "ACT_NAME": "DEL"
+    }
+  }
+}

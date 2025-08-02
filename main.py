@@ -8,6 +8,7 @@ from core.grid_system import GridSystem
 from core.input_handler import InputHandler, MouseState
 from core.circuit_analyzer import CircuitAnalyzer
 from core.device_palette import DevicePalette
+from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 
 class PyPlcVer3:
     """PyPlc Ver3 - PLC標準仕様準拠シミュレーター"""
@@ -21,6 +22,10 @@ class PyPlcVer3:
             fps=DisplayConfig.TARGET_FPS
         )
         pyxel.mouse(True)
+        
+        # SpriteManagerからリソースファイルをロード
+        if sprite_manager.resource_file:
+            pyxel.load(sprite_manager.resource_file)
         
         # --- モジュールのインスタンス化 ---
         self.grid_system = GridSystem()
