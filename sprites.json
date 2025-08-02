@@ -42,6 +42,18 @@
       "NAME": "COIL_STD",
       "ACT_NAME": "FALSE"
     },
+    "56_0": {
+      "x": 56,
+      "y": 0,
+      "NAME": "COIL_REV",
+      "ACT_NAME": "TRUE"
+    },
+    "64_0": {
+      "x": 64,
+      "y": 0,
+      "NAME": "COIL_REV",
+      "ACT_NAME": "FALSE"
+    },
     "8_8": {
       "x": 8,
       "y": 8,
@@ -83,6 +95,12 @@
       "y": 16,
       "NAME": "DEL",
       "ACT_NAME": "DEL"
+    },
+    "16_16": {
+      "x": 16,
+      "y": 16,
+      "NAME": "EMPTY",
+      "ACT_NAME": "EMPTY"
     }
   }
 }

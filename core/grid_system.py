@@ -9,6 +9,7 @@ from typing import Optional, Tuple, List
 
 from config import GridConfig, GridConstraints, DeviceType
 from core.device_base import PLCDevice
+from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 
 class GridSystem:
     """
@@ -95,44 +96,51 @@ class GridSystem:
 
     def draw(self) -> None:
         """グリッド線、バスバー、そして配置されたデバイスを描画する"""
-        self._draw_grid_lines()
+        self._draw_grid_lines() # 背景グリッド線を先に描画
         self._draw_devices()
 
     def _draw_grid_lines(self) -> None:
-        """グリッド線とバスバーを描画する"""
-        for col in range(self.cols):
-            x = self.origin_x + col * self.cell_size
-            y_start, y_end = self.origin_y, self.origin_y + (self.rows - 1) * self.cell_size
-            if not (col == GridConstraints.get_left_bus_col() or col == GridConstraints.get_right_bus_col()):
-                 pyxel.line(x, y_start, x, y_end, pyxel.COLOR_DARK_BLUE)
-
-        for row in range(self.rows):
-            y = self.origin_y + row * self.cell_size
-            x_start, x_end = self.origin_x, self.origin_x + (self.cols - 1) * self.cell_size
-            pyxel.line(x_start, y, x_end, y, pyxel.COLOR_DARK_BLUE)
+        """グリッド線を描画する"""
+        # 水平線
+        for r in range(self.rows):
+            y = self.origin_y + r * self.cell_size
+            x1 = self.origin_x + (GridConstraints.get_left_bus_col()) * self.cell_size
+            x2 = self.origin_x + (GridConstraints.get_right_bus_col()) * self.cell_size
+            pyxel.line(x1, y, x2, y, pyxel.COLOR_NAVY)
+        
+        # 垂直線
+        for c in range(GridConstraints.get_left_bus_col() + 1, GridConstraints.get_right_bus_col()):
+            x = self.origin_x + c * self.cell_size
+            y1 = self.origin_y
+            y2 = self.origin_y + (self.rows - 1) * self.cell_size
+            pyxel.line(x, y1, x, y2, pyxel.COLOR_NAVY)
 
     def _draw_devices(self) -> None:
-        """グリッド上のすべてのデバイスを描画する"""
+        """グリッド上のすべてのデバイスをスプライトで描画する"""
+        sprite_size = sprite_manager.sprite_size
+        
         for r in range(self.rows):
             for c in range(self.cols):
                 device = self.get_device(r, c)
                 if device:
-                    x = self.origin_x + c * self.cell_size
-                    y = self.origin_y + r * self.cell_size
-                    
+                    draw_x = self.origin_x + c * self.cell_size - sprite_size // 2
+                    draw_y = self.origin_y + r * self.cell_size - sprite_size // 2
+
+                    # --- バスバーは当面の間、旧描画方式を維持 ---
                     if device.device_type == DeviceType.L_SIDE:
-                        pyxel.rect(x, y - self.cell_size // 2, 2, self.cell_size, pyxel.COLOR_YELLOW)
+                        # バスバーの描画位置をグリッド線に合わせる
+                        bar_x = self.origin_x + c * self.cell_size
+                        pyxel.rect(bar_x -1, self.origin_y-8, 3, (self.rows) * self.cell_size, pyxel.COLOR_YELLOW)
+                        continue
                     elif device.device_type == DeviceType.R_SIDE:
-                        pyxel.rect(x, y - self.cell_size // 2, 2, self.cell_size, pyxel.COLOR_LIGHT_BLUE)
+                        bar_x = self.origin_x + c * self.cell_size
+                        pyxel.rect(bar_x - 1, self.origin_y-8, 3, (self.rows) * self.cell_size, pyxel.COLOR_LIGHT_BLUE)
+                        continue
+                    
+                    # --- デバイスのスプライト描画 ---
+                    coords = sprite_manager.get_sprite_coords(device.device_type, device.is_energized)
+                    if coords:
+                        pyxel.blt(draw_x, draw_y, 0, coords[0], coords[1], sprite_size, sprite_size, 0)
                     else:
-                        # --- 描画ロジックの修正 ---
-                        # 全てのデバイスの色は、is_energized（通電状態）のみを正とする
-                        color = pyxel.COLOR_GREEN if device.is_energized else pyxel.COLOR_RED
-                        
-                        # 仮のデバイス描画
-                        pyxel.rect(x - 3, y - 3, 7, 7, color)
-                        
-                        # (デバッグ用) 接点のstateを文字で表示
-                        if device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
-                            state_char = "T" if device.state else "F"
-                            pyxel.text(x - 8, y - 4, state_char, 13)
+                        # スプライトが見つからない場合のフォールバック
+                        pyxel.rect(draw_x, draw_y, sprite_size, sprite_size, pyxel.COLOR_PINK)

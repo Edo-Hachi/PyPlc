@@ -59,9 +59,11 @@ class SpriteManager:
         target_name = device_type.name
         target_act_name = "TRUE" if is_energized else "FALSE"
 
-        # DELのような特殊なケースに対応
+        # DELやEMPTYのような特殊なケースに対応
         if target_name == "DEL":
             target_act_name = "DEL"
+        elif target_name == "EMPTY":
+            target_act_name = "DEFAULT"
 
         for key, sprite_info in self._sprite_map.items():
             if sprite_info.get("NAME") == target_name and sprite_info.get("ACT_NAME") == target_act_name:
