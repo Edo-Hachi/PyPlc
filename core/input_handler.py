@@ -20,6 +20,7 @@ class MouseState:
     hovered_pos: Optional[Tuple[int, int]] = None  # ホバー中のグリッド座標 (row, col)
     is_snapped: bool = False                      # グリッド交点にスナップしているか
     on_editable_area: bool = False                # 編集可能領域にいるか
+    snap_mode: bool = False                       # スナップモード状態（CTRLキー制御）
 
 
 class InputHandler:
@@ -38,15 +39,26 @@ class InputHandler:
         self.snap_threshold_sq = UIConfig.SNAP_THRESHOLD ** 2
 
     def update_mouse_state(self) -> MouseState:
-        """マウスの状態を更新し、MouseStateオブジェクトとして返す"""
+        """
+        マウスの状態を更新し、MouseStateオブジェクトとして返す
+        Ver2準拠: CTRLキーによるスナップモード制御とパフォーマンス最適化
+        """
         mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
         
+        # CTRLキー状態チェック（Ver2準拠のスナップモード制御）
+        snap_mode = pyxel.btn(pyxel.KEY_CTRL)
+        
+        if not snap_mode:
+            # スナップモード無効時は座標変換を行わない（パフォーマンス向上）
+            return MouseState(snap_mode=False)
+        
+        # スナップモード有効時のみ座標変換実行
         # 1. スクリーン座標をグリッド座標に変換
         hovered_pos = self._screen_to_grid(mouse_x, mouse_y)
         
         if hovered_pos is None:
-            # グリッド範囲外の場合は、どの状態にもないと判断
-            return MouseState()
+            # グリッド範囲外の場合もスナップモード状態は保持
+            return MouseState(snap_mode=True)
 
         # 2. スナップ状態を判定
         is_snapped = self._is_snapped(mouse_x, mouse_y, hovered_pos)
@@ -57,7 +69,8 @@ class InputHandler:
         return MouseState(
             hovered_pos=hovered_pos,
             is_snapped=is_snapped,
-            on_editable_area=on_editable_area
+            on_editable_area=on_editable_area,
+            snap_mode=True
         )
 
     def _screen_to_grid(self, screen_x: int, screen_y: int) -> Optional[Tuple[int, int]]:

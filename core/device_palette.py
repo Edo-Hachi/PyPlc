@@ -103,6 +103,37 @@ class DevicePalette:
         selected_device = self.get_selected_device()
         return f"Row:{self.state.current_row} Index:{self.state.selected_index} Device:{selected_device.display_name}"
     
+    def _get_device_position_from_mouse(self) -> Optional[Tuple[int, int]]:
+        """マウス座標からパレット内の(row, index)を取得（シンプル設計）"""
+        mouse_x = pyxel.mouse_x
+        mouse_y = pyxel.mouse_y
+        
+        # パレット設定を取得（可読性のため変数に展開）
+        palette_x = self.palette_layout_config["palette_x"]
+        palette_y = self.palette_layout_config["palette_y"]
+        device_width = self.palette_layout_config["device_width"]
+        device_height = self.palette_layout_config["device_height"]
+        row_spacing = self.palette_layout_config["row_spacing"]
+        
+        # X座標チェック（10個のデバイス範囲内か）
+        if not (palette_x <= mouse_x < palette_x + device_width * 10):
+            return None
+        
+        # Y座標チェック（上段・下段のどちらか）
+        if palette_y <= mouse_y < palette_y + device_height:
+            row = 0  # 上段
+        elif palette_y + device_height + row_spacing <= mouse_y < palette_y + device_height * 2 + row_spacing:
+            row = 1  # 下段
+        else:
+            return None  # パレット領域外
+        
+        # インデックス計算（0-9）
+        index = (mouse_x - palette_x) // device_width
+        if 0 <= index < 10:
+            return (row, index)
+        
+        return None
+    
     def update_input(self) -> bool:
         """
         入力処理（キーボード・マウス）
@@ -113,8 +144,41 @@ class DevicePalette:
         # キーボード入力処理
         if self._handle_keyboard_input():
             changed = True
+        
+        # マウス入力処理
+        if self._handle_mouse_input():
+            changed = True
             
         return changed
+    
+    def _handle_mouse_input(self) -> bool:
+        """
+        マウス入力処理（シンプル設計）
+        戻り値: 選択状態が変更された場合True
+        """
+        # 左クリックが押された時のみ処理
+        if not pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            return False
+        
+        # マウス位置からパレット内のデバイス位置を取得
+        mouse_position = self._get_device_position_from_mouse()
+        if mouse_position is None:
+            return False  # パレット領域外なので何もしない
+        
+        row, index = mouse_position
+        
+        # クリック位置のデバイスを取得
+        clicked_device = self.devices[row][index]
+        
+        # EMPTYデバイスの場合は選択しない
+        if clicked_device.device_type == DeviceType.EMPTY:
+            return False
+        
+        # 選択状態を直接更新（Ver2準拠のシンプル設計）
+        self.state.current_row = row
+        self.state.selected_index = index
+        
+        return True  # 選択状態が変更された
     
     def _handle_keyboard_input(self) -> bool:
         """
@@ -225,6 +289,42 @@ class DevicePalette:
             self.palette_layout_config["device_width"], 
             self.palette_layout_config["device_height"] + 2, 
             pyxel.COLOR_YELLOW
+        )
+        
+        # マウスホバーエフェクト（シンプル設計）
+        self._draw_mouse_hover_effect()
+    
+    def _draw_mouse_hover_effect(self) -> None:
+        """マウスホバーエフェクト描画（可読性重視のシンプル実装）"""
+        # マウス位置からパレット内位置を取得
+        hover_position = self._get_device_position_from_mouse()
+        if hover_position is None:
+            return  # パレット領域外なので何もしない
+        
+        hover_row, hover_index = hover_position
+        
+        # ホバー位置のデバイスを取得
+        hover_device = self.devices[hover_row][hover_index]
+        
+        # EMPTYデバイスの場合はホバーエフェクトを表示しない
+        if hover_device.device_type == DeviceType.EMPTY:
+            return
+        
+        # 現在選択中と同じ位置の場合は何もしない（重複を避ける）
+        if hover_row == self.state.current_row and hover_index == self.state.selected_index:
+            return
+        
+        # ホバー位置の座標計算
+        hover_x = self.palette_layout_config["palette_x"] + hover_index * self.palette_layout_config["device_width"]
+        hover_y = self.palette_layout_config["palette_y"] + hover_row * (self.palette_layout_config["device_height"] + self.palette_layout_config["row_spacing"])
+        
+        # 薄い枠でホバー表示
+        pyxel.rectb(
+            hover_x - 1, 
+            hover_y - 1, 
+            self.palette_layout_config["device_width"], 
+            self.palette_layout_config["device_height"] + 2, 
+            pyxel.COLOR_WHITE
         )
     
     def _draw_help_text(self) -> None:

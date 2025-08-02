@@ -98,27 +98,73 @@ class PyPlcVer3:
         self._draw_header_footer()
 
     def _draw_cursor_and_status(self) -> None:
-        """マウスカーソルと関連情報を描画する"""
-        if self.mouse_state.hovered_pos is None: return
-        row, col = self.mouse_state.hovered_pos
+        """
+        マウスカーソルと詳細ステータス情報を描画する
+        Ver2準拠: 詳細情報表示、スナップモード状態、操作ガイダンス
+        """
+        # ステータスバー背景描画（Ver2準拠の拡張表示領域）
+        status_y = DisplayConfig.WINDOW_HEIGHT - 40  # 高さ拡張（20→40）
+        pyxel.rect(0, status_y, DisplayConfig.WINDOW_WIDTH, 40, pyxel.COLOR_BLACK)
         
-        if not self.mouse_state.on_editable_area:
-            cursor_color, area_color = pyxel.COLOR_RED, pyxel.COLOR_RED
+        # スナップモード状態表示（Ver2準拠）
+        mode_text = "SNAP MODE" if self.mouse_state.snap_mode else "FREE MODE"
+        mode_color = pyxel.COLOR_YELLOW if self.mouse_state.snap_mode else pyxel.COLOR_WHITE
+        pyxel.text(200, status_y + 2, mode_text, mode_color)
+        
+        # マウスカーソル描画とステータス情報
+        if self.mouse_state.hovered_pos is not None:
+            # カーソル描画
+            self._draw_detailed_cursor()
+            
+            # マウス位置詳細情報（Ver2準拠）
+            row, col = self.mouse_state.hovered_pos
+            position_text = f"Grid Position: Row={row}, Col={col} [grid[{row}][{col}]]"
+            pyxel.text(10, status_y + 5, position_text, pyxel.COLOR_WHITE)
+            
+            # 編集可能性詳細表示（Ver2準拠の色分け）
+            if self.mouse_state.on_editable_area:
+                pyxel.text(10, status_y + 15, "Editable: YES", pyxel.COLOR_GREEN)
+            else:
+                pyxel.text(10, status_y + 15, "Editable: NO (Bus area)", pyxel.COLOR_RED)
+                
+            # スナップ状態詳細表示
+            snap_text = f"Snap: {'ON' if self.mouse_state.is_snapped else 'OFF'}"
+            snap_color = pyxel.COLOR_YELLOW if self.mouse_state.is_snapped else pyxel.COLOR_GRAY
+            pyxel.text(10, status_y + 25, snap_text, snap_color)
         else:
-            area_color = pyxel.COLOR_GREEN
-            cursor_color = pyxel.COLOR_YELLOW if self.mouse_state.is_snapped else pyxel.COLOR_WHITE
-
+            # スナップ範囲外時の詳細メッセージ（Ver2準拠）
+            mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+            if self.mouse_state.snap_mode:
+                pyxel.text(10, status_y + 5, f"Mouse: ({mouse_x}, {mouse_y}) - No snap target", pyxel.COLOR_GRAY)
+                pyxel.text(10, status_y + 15, "Move closer to grid intersection", pyxel.COLOR_CYAN)
+            else:
+                pyxel.text(10, status_y + 5, f"Mouse: ({mouse_x}, {mouse_y}) - Free movement", pyxel.COLOR_GRAY)
+                pyxel.text(10, status_y + 15, "Hold CTRL to enable snap mode", pyxel.COLOR_CYAN)
+    
+    def _draw_detailed_cursor(self) -> None:
+        """
+        詳細マウスカーソル描画（Ver2準拠）
+        十字線付きの視覚的に分かりやすいカーソル
+        """
+        if not self.mouse_state.snap_mode or not self.mouse_state.hovered_pos:
+            return
+        
+        row, col = self.mouse_state.hovered_pos
         x = self.grid_system.origin_x + col * self.grid_system.cell_size
         y = self.grid_system.origin_y + row * self.grid_system.cell_size
         
-        pyxel.line(x - 4, y, x + 4, y, cursor_color)
-        pyxel.line(x, y - 4, x, y + 4, cursor_color)
+        # カーソル色決定
+        if not self.mouse_state.on_editable_area:
+            cursor_color = pyxel.COLOR_RED
+        elif self.mouse_state.is_snapped:
+            cursor_color = pyxel.COLOR_YELLOW
+        else:
+            cursor_color = pyxel.COLOR_WHITE
         
-        status_text = f"Grid:({row},{col}) Snap:{'ON' if self.mouse_state.is_snapped else 'OFF'}"
-        area_text = f"Area:{'EDITABLE' if self.mouse_state.on_editable_area else 'PROTECTED'}"
-        
-        pyxel.text(10, UIConfig.STATUS_AREA_Y, status_text, cursor_color)
-        pyxel.text(180, UIConfig.STATUS_AREA_Y, area_text, area_color)
+        # 十字線付き詳細カーソル（Ver2準拠）
+        pyxel.circb(x, y, 3, cursor_color)
+        pyxel.line(x - 5, y, x + 5, y, cursor_color)
+        pyxel.line(x, y - 5, x, y + 5, cursor_color)
 
     def _draw_header_footer(self) -> None:
         """ヘッダーとフッターの情報を描画する"""
