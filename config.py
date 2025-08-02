@@ -173,9 +173,9 @@ DEVICE_PALETTE_DEFINITIONS = {
 
 # パレットレイアウト設定
 PALETTE_LAYOUT_CONFIG = {
-    "device_width": 36,      # デバイス表示幅
-    "device_height": 12,     # デバイス表示高さ
-    "row_spacing": 16,       # 行間隔
+    "device_width": 28,      # デバイス表示幅
+    "device_height": 10,     # デバイス表示高さ
+    "row_spacing": 3,       # 行間隔
     "palette_x": 16,         # パレット開始X座標
     "palette_y": 12,         # パレット開始Y座標
 }

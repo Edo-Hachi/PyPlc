@@ -156,6 +156,9 @@ class DevicePalette:
     
     def _draw_palette_background(self) -> None:
         """パレット背景描画"""
+        # メイン背景はBLACK
+        pyxel.cls(pyxel.COLOR_BLACK)
+
         # パレット全体の背景（10個×2行）
         palette_width = self.palette_layout_config["device_width"] * 10  # 10個分
         palette_height = self.palette_layout_config["device_height"] * 2 + self.palette_layout_config["row_spacing"] + 4  # 2行 + 間隔
@@ -163,8 +166,8 @@ class DevicePalette:
         pyxel.rect(
             self.palette_layout_config["palette_x"] - 2, 
             self.palette_layout_config["palette_y"] - 2, 
-            palette_width + 4, 
-            palette_height + 4, 
+            palette_width +2, 
+            palette_height , 
             pyxel.COLOR_DARK_BLUE
         )
     
@@ -194,12 +197,12 @@ class DevicePalette:
             bg_color = pyxel.COLOR_RED
             text_color = pyxel.COLOR_WHITE
         else:
-            bg_color = pyxel.COLOR_WHITE
-            text_color = pyxel.COLOR_BLACK
+            bg_color = pyxel.COLOR_NAVY  # 通常デバイスの背景色をNAVYに変更
+            text_color = pyxel.COLOR_WHITE # 通常デバイスのテキスト色をWHITEに変更
         
         # デバイス枠描画
         pyxel.rect(x, y, self.palette_layout_config["device_width"] - 2, self.palette_layout_config["device_height"], bg_color)
-        pyxel.rectb(x, y, self.palette_layout_config["device_width"] - 2, self.palette_layout_config["device_height"], pyxel.COLOR_BLACK)
+        pyxel.rectb(x, y, self.palette_layout_config["device_width"] - 2, self.palette_layout_config["device_height"], pyxel.COLOR_DARK_BLUE) # ボーダー色をDARK_BLUEに変更
         
         # デバイス名表示
         if device.display_name:  # 空でない場合のみ表示
@@ -226,18 +229,25 @@ class DevicePalette:
     
     def _draw_help_text(self) -> None:
         """ヘルプテキスト描画"""
-        help_y = self.palette_layout_config["palette_y"] + 50
+        help_y = self.palette_layout_config["palette_y"] + 30
         
+        # ヘルプテキスト領域の背景
+        help_bg_x = self.palette_layout_config["palette_x"] - 2
+        help_bg_y = help_y - 2
+        help_bg_width = 200 # 適当な幅
+        help_bg_height = 20 # 適当な高さ
+        pyxel.rect(help_bg_x, help_bg_y, help_bg_width, help_bg_height, pyxel.COLOR_DARK_BLUE)
+
         # 基本操作説明
         pyxel.text(self.palette_layout_config["palette_x"], help_y, "1-0:Select Device", pyxel.COLOR_WHITE)
         pyxel.text(self.palette_layout_config["palette_x"], help_y + 8, "SHIFT:Switch Row", pyxel.COLOR_WHITE)
         
         # 現在の状態表示
         shift_status = "ON" if self.state.is_shift_pressed else "OFF"
-        pyxel.text(self.palette_layout_config["palette_x"] + 120, help_y, f"SHIFT:{shift_status}", pyxel.COLOR_GREEN)
+        pyxel.text(self.palette_layout_config["palette_x"] + 120, help_y, f"SHIFT:{shift_status}", pyxel.COLOR_YELLOW)
         
         selected_device = self.get_selected_device()
-        pyxel.text(self.palette_layout_config["palette_x"] + 120, help_y + 8, f"Selected:{selected_device.display_name}", pyxel.COLOR_CYAN)
+        pyxel.text(self.palette_layout_config["palette_x"] + 120, help_y + 8, f"Selected:{selected_device.display_name}", pyxel.COLOR_YELLOW)
 
 
 # For AI Support - このコメントは消さないでください
