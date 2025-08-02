@@ -11,7 +11,7 @@ from dataclasses import dataclass
 # core.grid_systemからGridSystemをインポート
 from core.grid_system import GridSystem
 # configからUI設定とグリッド制約をインポート
-from config import UIConfig, GridConstraints
+from config import UIConfig, UIBehaviorConfig, GridConstraints
 
 
 @dataclass
@@ -41,12 +41,15 @@ class InputHandler:
     def update_mouse_state(self) -> MouseState:
         """
         マウスの状態を更新し、MouseStateオブジェクトとして返す
-        Ver2準拠: CTRLキーによるスナップモード制御とパフォーマンス最適化
+        設定可能: 常時スナップモード or CTRL切り替えモード
         """
         mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
         
-        # CTRLキー状態チェック（Ver2準拠のスナップモード制御）
-        snap_mode = pyxel.btn(pyxel.KEY_CTRL)
+        # スナップモード制御（設定による切り替え）
+        if UIBehaviorConfig.ALWAYS_SNAP_MODE:
+            snap_mode = True  # 常時スナップモード
+        else:
+            snap_mode = pyxel.btn(pyxel.KEY_CTRL)  # CTRL切り替えモード
         
         if not snap_mode:
             # スナップモード無効時は座標変換を行わない（パフォーマンス向上）

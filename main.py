@@ -3,7 +3,7 @@
 # 目標: PLC標準仕様完全準拠ラダー図シミュレーター
 
 import pyxel
-from config import DisplayConfig, SystemInfo, UIConfig, DeviceType
+from config import DisplayConfig, SystemInfo, UIConfig, UIBehaviorConfig, DeviceType
 from core.grid_system import GridSystem
 from core.input_handler import InputHandler, MouseState
 from core.circuit_analyzer import CircuitAnalyzer
@@ -48,7 +48,15 @@ class PyPlcVer3:
         self.circuit_analyzer.solve_ladder()
 
     def _handle_device_placement(self) -> None:
-        """マウス入力に基づき、デバイスの配置・削除・状態変更を行う"""
+        """
+        マウス入力に基づき、デバイスの配置・削除・状態変更を行う
+        設定対応: 常時スナップモード or CTRL切り替えモード
+        """
+        # スナップモードが有効でない場合は何もしない（設定により判定）
+        if not self.mouse_state.snap_mode:
+            return
+            
+        # スナップ状態でない、または編集可能領域でない場合は何もしない
         if self.mouse_state.hovered_pos is None or not self.mouse_state.is_snapped or not self.mouse_state.on_editable_area:
             return
 
@@ -106,9 +114,13 @@ class PyPlcVer3:
         status_y = DisplayConfig.WINDOW_HEIGHT - 40  # 高さ拡張（20→40）
         pyxel.rect(0, status_y, DisplayConfig.WINDOW_WIDTH, 40, pyxel.COLOR_BLACK)
         
-        # スナップモード状態表示（Ver2準拠）
-        mode_text = "SNAP MODE" if self.mouse_state.snap_mode else "FREE MODE"
-        mode_color = pyxel.COLOR_YELLOW if self.mouse_state.snap_mode else pyxel.COLOR_WHITE
+        # スナップモード状態表示（設定対応）
+        if UIBehaviorConfig.ALWAYS_SNAP_MODE:
+            mode_text = "ALWAYS SNAP"
+            mode_color = pyxel.COLOR_GREEN
+        else:
+            mode_text = "SNAP MODE" if self.mouse_state.snap_mode else "FREE MODE"
+            mode_color = pyxel.COLOR_YELLOW if self.mouse_state.snap_mode else pyxel.COLOR_WHITE
         pyxel.text(200, status_y + 2, mode_text, mode_color)
         
         # マウスカーソル描画とステータス情報
@@ -169,7 +181,13 @@ class PyPlcVer3:
     def _draw_header_footer(self) -> None:
         """ヘッダーとフッターの情報を描画する"""
         #pyxel.text(10, 10, f"PyPlc Ver{SystemInfo.VERSION} - Stage 4: Solver", pyxel.COLOR_GREEN)
-        pyxel.text(10, DisplayConfig.WINDOW_HEIGHT - 20, "L-Click:Place/Del R-Click:Toggle Q:Quit", pyxel.COLOR_GRAY)
+        
+        # フッター操作ガイド（設定に応じて表示切り替え）
+        footer_y = DisplayConfig.WINDOW_HEIGHT - 20
+        if UIBehaviorConfig.ALWAYS_SNAP_MODE:
+            pyxel.text(10, footer_y, "L-Click:Place/Del R-Click:Toggle Q:Quit", pyxel.COLOR_GRAY)
+        else:
+            pyxel.text(10, footer_y, "CTRL:Snap L-Click:Place/Del R-Click:Toggle Q:Quit", pyxel.COLOR_GRAY)
 
 if __name__ == "__main__":
     PyPlcVer3()
