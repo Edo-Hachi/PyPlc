@@ -57,6 +57,9 @@ class PyPlcVer3:
         # F6キーでの全システムリセット (Ver1実装継承)
         self._handle_full_system_reset()
         
+        # CSV保存・読み込み操作
+        self._handle_csv_operations()
+        
         # デバイスパレット入力処理（EDITモードでのみ有効）
         if self.current_mode == SimulatorMode.EDIT:
             self.device_palette.update_input()
@@ -307,7 +310,7 @@ class PyPlcVer3:
             pyxel.text(plc_x + len(plc_text) * 4, status_bar_y + 2, hint_text, pyxel.COLOR_CYAN)
         
         # TABキーヒント表示（左端）
-        tab_hint = "TAB:Mode F6:Reset"
+        tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load"
         pyxel.text(10, status_bar_y + 2, tab_hint, pyxel.COLOR_WHITE)
 
     def _handle_plc_control(self) -> None:
@@ -364,6 +367,154 @@ class PyPlcVer3:
                     # デバイスの個別状態を初期値に戻す
                     device.state = False  # 接点のON/OFF状態をOFFに
                     # 将来的にタイマー・カウンターの現在値もリセット
+
+    def _handle_csv_operations(self) -> None:
+        """
+        CSV保存・読み込み操作処理
+        Ctrl+S: 保存, Ctrl+O: 読み込み
+        """
+        # Ctrl+S: CSV保存
+        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
+            self._save_circuit_to_csv()
+        
+        # Ctrl+O: CSV読み込み
+        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
+            self._load_circuit_from_csv()
+
+    def _save_circuit_to_csv(self) -> None:
+        """
+        現在の回路をCSVファイルに保存
+        """
+        try:
+            # CSVデータ生成
+            csv_data = self.grid_system.to_csv()
+            
+            # ファイル名生成（簡易版）
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"circuit_{timestamp}.csv"
+            
+            # ファイル保存
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(csv_data)
+            
+            # 成功メッセージ
+            self._show_message(f"Saved: {filename}", "success")
+            print(f"Circuit saved to {filename}")
+            
+        except Exception as e:
+            # エラーメッセージ
+            self._show_message(f"Save failed: {str(e)}", "error")
+            print(f"Save error: {e}")
+
+    def _load_circuit_from_csv(self) -> None:
+        """
+        CSVファイルから回路を読み込み（簡易版: 最新ファイル自動選択）
+        """
+        try:
+            import glob
+            import os
+            
+            # CSVファイル検索
+            csv_files = glob.glob("circuit_*.csv")
+            if not csv_files:
+                self._show_message("No CSV files found", "error")
+                return
+            
+            # 最新ファイル選択
+            latest_file = max(csv_files, key=os.path.getctime)
+            
+            # ファイル読み込み
+            with open(latest_file, 'r', encoding='utf-8') as f:
+                csv_data = f.read()
+            
+            # グリッドに読み込み
+            if self.grid_system.from_csv(csv_data):
+                print(f"📁 CSV読み込み成功: {latest_file}")
+                
+                # EDITモードに切り替え（回路編集可能状態に）
+                old_mode = self.current_mode
+                self.current_mode = SimulatorMode.EDIT
+                self.plc_run_state = PLCRunState.STOPPED
+                print(f"🔄 Mode switched: {old_mode.value} → {self.current_mode.value}")
+                
+                # システムリセット（状態初期化）
+                self._reset_all_systems()
+                print("🔄 Systems reset completed")
+                
+                # 接続情報を再構築（重要）
+                self._rebuild_all_connections()
+                print("🔄 Connections rebuilt")
+                
+                # 画面の強制再描画を促す
+                self._force_screen_refresh()
+                
+                # 成功メッセージ
+                self._show_message(f"Loaded: {latest_file}", "success")
+                print(f"✅ Circuit loaded from {latest_file}")
+            else:
+                self._show_message("Load failed: Invalid CSV format", "error")
+                print("❌ CSV format validation failed")
+            
+        except Exception as e:
+            # エラーメッセージ
+            self._show_message(f"Load failed: {str(e)}", "error")
+            print(f"Load error: {e}")
+
+    def _show_message(self, message: str, msg_type: str) -> None:
+        """
+        一時的なメッセージ表示（簡易版）
+        将来的にはより高度なメッセージシステムに拡張予定
+        """
+        # 現在は print() で表示、将来的には画面上にメッセージ表示
+        if msg_type == "success":
+            print(f"✅ {message}")
+        elif msg_type == "error":
+            print(f"❌ {message}")
+        else:
+            print(f"ℹ️ {message}")
+
+    def _rebuild_all_connections(self) -> None:
+        """
+        全デバイスの接続情報を再構築
+        CSV読み込み後に接続情報が失われるため、再計算が必要
+        """
+        for row in range(self.grid_system.rows):
+            for col in range(self.grid_system.cols):
+                device = self.grid_system.get_device(row, col)
+                if device:
+                    # 接続情報をクリア
+                    device.connections = {}
+                    # 接続情報を再構築
+                    self.grid_system._update_connections(device)
+
+    def _force_screen_refresh(self) -> None:
+        """
+        画面の強制再描画処理
+        CSV読み込み後に即座に画面に反映させる
+        """
+        # デバッグメッセージ
+        print("🔄 Force screen refresh: グリッドシステムの状態を確認中...")
+        
+        # グリッドシステムの状態確認（デバッグ用）
+        device_count = 0
+        for row in range(self.grid_system.rows):
+            for col in range(self.grid_system.cols):
+                device = self.grid_system.get_device(row, col)
+                if device and device.device_type.value not in ['L_SIDE', 'R_SIDE']:
+                    device_count += 1
+                    print(f"  📍 Device found: [{row}][{col}] = {device.device_type.value}")
+        
+        print(f"✅ Total user devices loaded: {device_count}")
+        
+        # Pyxelの描画システムを明示的にリフレッシュ
+        # 次のフレームで確実に再描画されるよう、描画フラグをセット
+        if hasattr(self, '_needs_redraw'):
+            self._needs_redraw = True
+        
+        # グリッドシステム側のキャッシュクリア（もしあれば）
+        # 現在の実装では必要ないが、将来の拡張に備えて
+        pass
 
     def _draw_palette_disabled_message(self) -> None:
         """

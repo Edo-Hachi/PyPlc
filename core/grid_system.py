@@ -5,6 +5,9 @@ PyPlc Ver3 Grid System Module
 """
 
 import pyxel
+import csv
+import io
+from datetime import datetime
 from typing import Optional, Tuple, List
 
 from config import GridConfig, GridConstraints, DeviceType
@@ -140,6 +143,9 @@ class GridSystem:
         """グリッド上のすべてのデバイスをスプライトで描画する"""
         sprite_size = sprite_manager.sprite_size
         
+        # デバッグ用: 描画されるデバイス数をカウント（開発用、本来は不要）
+        device_count = 0
+        
         for r in range(self.rows):
             for c in range(self.cols):
                 device = self.get_device(r, c)
@@ -164,6 +170,119 @@ class GridSystem:
                     coords = sprite_manager.get_sprite_coords(device.device_type, display_energized)
                     if coords:
                         pyxel.blt(draw_x, draw_y, 0, coords[0], coords[1], sprite_size, sprite_size, 0)
+                        device_count += 1  # 描画カウント
                     else:
                         # スプライトが見つからない場合のフォールバック
                         pyxel.rect(draw_x, draw_y, sprite_size, sprite_size, pyxel.COLOR_PINK)
+                        device_count += 1  # 描画カウント（フォールバックも含む）
+        
+        # デバッグ用描画情報（画面下部に表示）
+        if device_count > 2:  # バスバー以外のデバイスがある場合のみ表示
+            pyxel.text(10, 360, f"Drawing {device_count} devices", pyxel.COLOR_WHITE)
+
+    def to_csv(self) -> str:
+        """
+        現在のグリッド状態をCSV形式の文字列として出力
+        バスバー（L_SIDE/R_SIDE）は除外し、配置されたデバイスのみを出力
+        """
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # ヘッダー情報（コメント形式）
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        output.write(f"# PyPlc Ver3 Circuit Data\n")
+        output.write(f"# Format: row,col,device_type,address,state\n")
+        output.write(f"# Created: {current_time}\n")
+        
+        # CSVヘッダー
+        writer.writerow(['row', 'col', 'device_type', 'address', 'state'])
+        
+        # デバイスデータ出力（バスバー除外）
+        for row in range(self.rows):
+            for col in range(self.cols):
+                device = self.get_device(row, col)
+                if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
+                    writer.writerow([
+                        row,
+                        col, 
+                        device.device_type.value,
+                        device.address,
+                        device.state
+                    ])
+        
+        return output.getvalue()
+
+    def from_csv(self, csv_data: str) -> bool:
+        """
+        CSV形式の文字列からグリッド状態を復元
+        現在のグリッドをクリアしてからデータを読み込む
+        """
+        try:
+            print(f"📥 CSV Import Started - Data length: {len(csv_data)} chars")
+            
+            # 現在のグリッドをクリア（バスバー以外）
+            self._clear_user_devices()
+            print("🧹 User devices cleared")
+            
+            # CSV読み込み（コメント行を事前除去）
+            lines = csv_data.strip().split('\n')
+            csv_lines = []
+            for line in lines:
+                if not line.strip().startswith('#'):
+                    csv_lines.append(line)
+            
+            # コメント除去後のCSVデータを再構築
+            clean_csv_data = '\n'.join(csv_lines)
+            print(f"🧹 Clean CSV data (after comment removal): {len(clean_csv_data)} chars")
+            
+            input_stream = io.StringIO(clean_csv_data)
+            reader = csv.DictReader(input_stream, skipinitialspace=True)
+            
+            loaded_count = 0
+            for line_num, row_data in enumerate(reader, start=1):
+                try:
+                    # データ解析
+                    row = int(row_data['row'])
+                    col = int(row_data['col'])
+                    device_type_str = row_data['device_type']
+                    address = row_data['address']
+                    state_str = row_data['state']
+                    
+                    print(f"📋 Processing line {line_num}: [{row}][{col}] = {device_type_str}")
+                    
+                    # DeviceType変換
+                    device_type = DeviceType(device_type_str)
+                    
+                    # state変換（True/False文字列をboolに）
+                    state = state_str.lower() == 'true'
+                    
+                    # デバイス配置
+                    new_device = self.place_device(row, col, device_type, address)
+                    if new_device:
+                        new_device.state = state
+                        loaded_count += 1
+                        print(f"  ✅ Device placed: {device_type_str} at [{row}][{col}] state={state}")
+                    else:
+                        print(f"  ❌ Failed to place device at [{row}][{col}]")
+                    
+                except (ValueError, KeyError) as e:
+                    print(f"⚠️  Warning: CSV line {line_num} skipped due to error: {e}")
+                    print(f"    Row data: {row_data}")
+                    continue
+            
+            print(f"📊 CSV Import Complete - {loaded_count} devices loaded")
+            return True
+            
+        except Exception as e:
+            print(f"Error loading CSV data: {e}")
+            return False
+
+    def _clear_user_devices(self) -> None:
+        """
+        ユーザー配置デバイスをクリア（バスバーは保持）
+        """
+        for row in range(self.rows):
+            for col in range(self.cols):
+                device = self.get_device(row, col)
+                if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
+                    self.grid_data[row][col] = None
