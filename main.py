@@ -2,6 +2,12 @@
 # 作成日: 2025-01-29
 # 目標: PLC標準仕様完全準拠ラダー図シミュレーター
 
+#Todo
+#LINK_FROM_DOWN,LINK_TO_UPの間に一行挟んだ場合はちゃんとLINK_VIRTを挟んで結合チェックしているのか？テスト
+#Save,Load時のファイル名のDLGを実装する（Ver2で実装したDLGシステムを参考に）
+#SpraiteDefinerわりとバグ多いので、どっかで見直す
+
+
 import pyxel
 from config import DisplayConfig, SystemInfo, UIConfig, UIBehaviorConfig, DeviceType, SimulatorMode, PLCRunState
 from core.grid_system import GridSystem

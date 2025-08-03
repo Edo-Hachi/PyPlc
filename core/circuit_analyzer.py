@@ -29,6 +29,9 @@ class CircuitAnalyzer:
                 # 右隣のデバイスからトレースを開始
                 self._trace_power_flow(left_bus.connections.get('right'))
 
+        # 3. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
+        self._update_contact_states_from_coils()
+
     def _trace_power_flow(self, start_pos: Optional[Tuple[int, int]], visited: Optional[Set[Tuple[int, int]]] = None) -> None:
         """指定された位置から電力の流れを再帰的にトレースする（深さ優先探索）"""
         if visited is None:
@@ -119,5 +122,55 @@ class CircuitAnalyzer:
             self._is_conductive(below_device)):
             # 下からの電力供給が確認できたので、合流点から右に電力を流す
             self._trace_power_flow(device.connections.get('right'), visited)
+
+    def _update_contact_states_from_coils(self) -> None:
+        """
+        PLC標準動作の実装: コイル状態に応じて同一アドレス接点を自動更新
+        
+        実PLC動作原理:
+        - コイル Y001 が励磁されると、すべての Y001 接点が自動的にON状態になる
+        - コイル Y001 が非励磁になると、すべての Y001 接点が自動的にOFF状態になる
+        - これにより自己保持回路やSTOP動作が正常に動作する
+        """
+        # 1. 全コイルアドレスと励磁状態を取得
+        all_coil_addresses = set()
+        energized_coil_addresses = set()
+        
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                device = self.grid.get_device(row, col)
+                if (device and 
+                    device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV] and
+                    device.address and
+                    device.address != "WIRE"):  # アドレス指定されたコイルのみ
+                    all_coil_addresses.add(device.address)
+                    if device.is_energized:
+                        energized_coil_addresses.add(device.address)
+        
+        # 2. 全コイルアドレスについて対応する接点の状態を更新
+        for coil_address in all_coil_addresses:
+            is_coil_energized = coil_address in energized_coil_addresses
+            
+            for row in range(self.grid.rows):
+                for col in range(self.grid.cols):
+                    device = self.grid.get_device(row, col)
+                    if (device and 
+                        device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B] and
+                        device.address == coil_address):
+                        # PLC標準: コイル状態に応じて同一アドレス接点を自動更新
+                        old_state = device.state
+                        device.state = is_coil_energized
+                        
+                        if old_state != device.state:
+                            status = "activated" if device.state else "deactivated"
+                            print(f"  📍 Contact [{row}][{col}] {device.address} auto-{status} (coil energized: {is_coil_energized})")
+        
+        if energized_coil_addresses:
+            print(f"🔗 PLC Standard Operation: Energized coils: {energized_coil_addresses}")
+        
+        # 非励磁になったコイルがある場合の情報出力
+        de_energized_coils = all_coil_addresses - energized_coil_addresses
+        if de_energized_coils:
+            print(f"🔗 PLC Standard Operation: De-energized coils: {de_energized_coils}")
 
     # 不要でバグの原因となっていたプライベートメソッドは完全に削除
