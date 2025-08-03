@@ -179,3 +179,45 @@ PLCは物理的な配線をそのままシミュレートするのではなく�
     *   `CLAUDE.md` の「Ver3デバイスパレットシステム設計完了」セクションでは、モジュール構成として `core/device_palette.py` (状態管理・ロジック)、`core/palette_renderer.py` (描画専用)、`core/palette_input.py` (入力処理専用) との役割分担が計画されている。
     *   しかし、現在の `core/device_palette.py` は `update_input` (入力処理) と `draw` (描画処理) の両方を直接含んでおり、計画されているモジュール分割がまだ行われていない。
     *   このままでは、将来的に `palette_renderer.py` や `palette_input.py` を作成する際に、現在の `DevicePalette` クラスからこれらのロジックを切り出すリファクタリングが必要になる。
+
+### 2025-08-03: 配線デバイスの名称統一と垂直配線(LINK_VIRT)の再導入
+
+#### 目的
+- 水平配線デバイスの名称を `LINK_SIDE` から `LINK_HORZ` へ統一し、コードベース全体の整合性を向上させる。
+- 視覚的な結線の明確化のため、垂直配線デバイス `LINK_VIRT` を再導入する。
+
+#### 作業内容
+1.  **`LINK_SIDE` から `LINK_HORZ` への名称統一**: 
+    -   `config.py`: `DeviceType` および `DEVICE_PALETTE_DEFINITIONS` 内の `LINK_SIDE` を `LINK_HORZ` に変更。
+    -   `core/circuit_analyzer.py`: `_is_conductive` メソッド内の `DeviceType.LINK_SIDE` を `DeviceType.LINK_HORZ` に変更。
+    -   `sprites.json`: `NAME` が `LINK_SIDE` のスプライト定義を `LINK_HORZ` に変更（既に変更済みであったことを確認）。
+    -   `New_Docs/DeviceSelectMenu.txt`: パレット定義の `LINK_SIDE` を `LINK_HORZ` に変更。
+    -   `CLAUDE.md`, `_Ver3_Definition.md`: ドキュメント内の `LINK_SIDE` を `LINK_HORZ` に変更。
+
+2.  **垂直配線デバイス `LINK_VIRT` の再導入**:
+    -   **背景**: ユーザーからのフィードバックにより、一行空いた場合の結線が視覚的に分かりにくいという課題が提示されたため、明示的な垂直配線要素の必要性が再認識された。
+    -   `config.py`: `DeviceType` に `LINK_VIRT` を追加し、`DEVICE_PALETTE_DEFINITIONS` の `top_row` (キーバインド8番) に `LINK_VIRT` を割り当て。
+    -   `core/circuit_analyzer.py`: `_is_conductive` メソッドに `DeviceType.LINK_VIRT` を追加し、導通可能とする。
+    -   `sprites.json`: 既存の `LINE_VIRT` の `NAME` を `LINK_VIRT` に変更。
+    -   `New_Docs/DeviceSelectMenu.txt`: `LINK_VIRTICAL` の記述を `LINK_VIRT` に変更し、コメントを整理。
+    -   `_Ver3_Definition.md`: 垂直配線に関する記述を `LINK_VIRT` に合わせて更新。
+
+#### 発生したトラブルと解決策
+-   **`config.py` の置換エラー**: `DEVICE_PALETTE_DEFINITIONS` 内の `EMPTY` が複数存在するため、`replace` コマンドが失敗。より具体的な `old_string` を指定することで解決。
+-   **`core/circuit_analyzer.py` の置換エラー**: `config.py` の変更が先行したため、`DeviceType.LINK_SIDE` が解決できずエラー。`config.py` の変更を反映した正しい `old_string` を指定して解決。
+-   **`LINK_VIRT` スプライトの表示問題**: `LINK_VIRT` を選択しても `LINK_HORZ` のスプライトが表示される問題が発生。
+    -   `core/SpriteManager.py` にデバッグログを追加し、`get_sprite_coords` が正しい座標を返していることを確認。
+    -   原因は `my_resource.pyxres` 内のスプライトデータ自体が誤っていたことと判明。Pyxel Editor で `(56, 8)` と `(64, 8)` のスプライトを正しい縦線のものに修正することで解決。
+    -   `core/SpriteManager.py` の `EMPTY` の `ACT_NAME` の不整合も修正。
+
+#### 現状
+-   水平配線デバイスの名称統一が完了し、コードベース全体で `LINK_HORZ` が使用されている。
+-   垂直配線デバイス `LINK_VIRT` がシステムに導入され、パレットからの選択、グリッドへの配置、通電ロジック、スプライト表示が正しく機能するようになった。
+-   これにより、複雑な回路における視覚的な結線がより明確になった。
+
+#### 今後のプラン
+1.  **並列回路合流ロジックの完成**: `core/circuit_analyzer.py` の `_trace_power_flow` メソッド内の `LINK_FROM_DOWN` の TODO 部分を実装し、並列回路の通電解析を正確に行えるようにする。
+2.  **タイマー・カウンターの実装**: `config.py` に定義されている `TIMER` と `COUNTER` デバイスのロジックを実装する。
+3.  **デバイスパレットのマウス選択機能の強化**: `core/device_palette.py` のマウス入力処理を実装し、ユーザーがマウスで直接パレット上のデバイスを選択できるようにする。
+4.  **デバッグ・検証機能の強化**: 回路の状態やデバイスのプロパティをリアルタイムで確認できるようなデバッグ機能を追加する。
+5.  **UI/UXの改善**: デバイス表示の改善やステータス表示の拡張など、全体的なユーザーインターフェースとユーザーエクスペリエンスの向上を図る。
