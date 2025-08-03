@@ -63,14 +63,13 @@ class SpriteManager:
         if target_name == "DEL":
             target_act_name = "DEL"
         elif target_name == "EMPTY":
-            target_act_name = "DEFAULT"
+            target_act_name = "EMPTY"
 
         for key, sprite_info in self._sprite_map.items():
             if sprite_info.get("NAME") == target_name and sprite_info.get("ACT_NAME") == target_act_name:
                 return (sprite_info["x"], sprite_info["y"])
         
         # 見つからなかった場合
-        # print(f"警告: {target_name} の状態 {target_act_name} に対応するスプライトが見つかりません。")
         return None
 
 # --- グローバルインスタンス ---

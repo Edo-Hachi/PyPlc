@@ -55,7 +55,7 @@ COIL_REV = "COIL_REV"      # 反転コイル -(/)-
 - [x] 基本接点・コイル実装
 
 ### **Phase 3: 電気的継続性システム（✅完了）**
-- [x] LINK_SIDE（水平配線）実装
+- [x] LINK_HORZ（水平配線）実装
 - [x] 明示的配線トレース
 - [x] 電力フロー計算
 - [x] 自己保持回路対応
@@ -127,7 +127,7 @@ COIL_REV = "COIL_REV"      # 反転コイル -(/)-
   - `PaletteDevice` dataclass (device_type, display_name, key_bind, row)
   - `PaletteState` dataclass (current_row, selected_index, is_shift_pressed)
 - **仕様準拠**:
-  - 上段: CONTACT_A/B, COIL_STD/REV, LINK_SIDE/FROM_DOWN/TO_UP, DEL
+  - 上段: CONTACT_A/B, COIL_STD/REV, LINK_HORZ/FROM_DOWN/TO_UP, DEL
   - 下段: 将来拡張用（全てEMPTY）
 - **入力処理設計**:
   - 1-0キー選択 + Shift行切り替え

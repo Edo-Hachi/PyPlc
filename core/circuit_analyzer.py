@@ -70,7 +70,7 @@ class CircuitAnalyzer:
             return not device.state  # OFF状態なら通す
         
         # 配線系は常時通す
-        if device.device_type in [DeviceType.LINK_SIDE, DeviceType.LINK_FROM_DOWN, DeviceType.LINK_TO_UP]:
+        if device.device_type in [DeviceType.LINK_HORZ, DeviceType.LINK_FROM_DOWN, DeviceType.LINK_TO_UP, DeviceType.LINK_VIRT]:
             return True
 
         # L_SIDE（左バス）は電源なので常時導通

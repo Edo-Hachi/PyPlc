@@ -18,10 +18,10 @@ Ver2にて実装していた機能を継承
 2,            [B_CNTC],      B接点,       CONTACT_B, B接点
 3,            [COIL_S],      コイル(STD), COIL_STD, 標準コイル
 4,            [COIL_R],      コイル(REV), COIL_REV, 反転コイル
-5,            [_LINK_],      ライン,      LINK_SIDE, 水平配線。横方向にデバイスを接続（─）
-6,            [LINK_v],      ライン↓,    LINK_FROM_DOWN, 下の行から(FROM)電力を受け取る合流点(記号: ┬)
-7,            [LINK_^],      ライン↑,    LINK_TO_UP, 上の行へ(TO)電力を送る分岐点(記号: ┴)
-8,            [______],      未定義,     EMPTY, 未定義
+5,            [LINK -],      ライン(HORZ),      LINK_HORZ, 水平配線。横方向にデバイスを接続（─）
+6,            [LINK v],      ライン↓,    LINK_FROM_DOWN, 下の行から(FROM)電力を受け取る合流点(記号: ┬)
+7,            [LINK ^],      ライン↑,    LINK_TO_UP, 上の行へ(TO)電力を送る分岐点(記号: ┴)
+8,            [LINK |],      ライン (VIRT),   LINK_VIRT, 垂直配線。縦方向にデバイスを接続（|）
 9,            [______],      未定義,     EMPTY, 未定義
 0,            [DELETE],      デリート,   DEL, 削除コマンド
 ---------------------------------

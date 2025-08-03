@@ -94,14 +94,12 @@ class CircuitConnection:
     """Ver3: すべての配線を明示的オブジェクト化"""
     
     # 水平配線（Ver3新機能）
-    LINK_SIDE: str = "LINK_SIDE"
+    LINK_HORZ: str = "LINK_HORZ"
     purpose: str = "デバイス間の水平接続を明示的に表現"
     necessity: str = "自己保持回路の正確な動作に必須"
     
-    # 垂直配線（Ver2から継承）
-    LINK_UP: str = "LINK_UP"      # 上方向接続点
-    LINK_DOWN: str = "LINK_DOWN"  # 下方向接続点
-    pairing: str = "LINK_UP ↔ LINK_DOWN ペアで垂直接続形成"
+    # 垂直配線
+    LINK_VIRT: str = "LINK_VIRT"  # 垂直方向の接続を明示的に表現
 ```
 
 #### **Ver2の問題点と解決**
@@ -118,9 +116,9 @@ class CircuitConnection:
 ```python
 # ✅ Ver3の明示的配線（自己保持回路が正確に動作）
 """
-[X001]--[LINK_SIDE]--[Y001_COIL]--[LINK_SIDE]--[Y001_CONTACT]--[LINK_SIDE]--[X002]
-   |                                                                              |
-   +--[LINK_SIDE]--[LINK_SIDE]--[LINK_SIDE]--[LINK_SIDE]--[LINK_SIDE]--[LINK_SIDE]+
+   [X001]--[LINK_HORZ]--[Y001_COIL]--[LINK_HORZ]--[Y001_CONTACT]--[LINK_HORZ]--[X002]
+   |
+   +--[LINK_HORZ]--[LINK_HORZ]--[LINK_HORZ]--[LINK_HORZ]--[LINK_HORZ]--[LINK_HORZ]+
    
 解決: 明示的LINK_SIDEにより電気的経路を完全にトレース可能
 ```
@@ -225,7 +223,7 @@ class Ver3DataFlow:
 KEY_MAPPING = {
     1: "A接点",         # Ver2: TYPE_A（継承）
     2: "B接点",         # Ver2: TYPE_B（継承） 
-    3: "水平配線",      # Ver3: LINK_SIDE（新規）
+    3: "水平配線",      # Ver3: LINK_HORZ（新規）
     4: "通常コイル",    # Ver3: COIL（Ver2のOUTCOIL_NMLから名称変更）
     5: "反転コイル",    # Ver3: COIL_REV（Ver2のOUTCOIL_REVから名称変更）
     6: "タイマー",      # Ver2: TIMER（継承・3状態システム維持）
@@ -390,7 +388,7 @@ bad_patterns = [
 # 開発優先順位（リスク管理重要）
 Priority1: "基本動作の確保"          # Ver2機能保持
 Priority2: "概念の正しい実装"        # PLC標準準拠
-Priority3: "新機能の追加"           # LINK_SIDE等
+Priority3: "新機能の追加"           # LINK_HORZ等
 Priority4: "最適化・改良"           # パフォーマンス向上
 ```
 

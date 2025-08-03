@@ -140,9 +140,10 @@ class DeviceType(Enum):
     COUNTER = "COUNTER"        # カウンター
     
     # 配線系（Ver3: 明示的配線システム）
-    LINK_SIDE = "LINK_SIDE"    # 水平配線（Ver3新機能: 自己保持回路に必須）
+    LINK_HORZ = "LINK_HORZ"    # 水平配線（Ver3新機能: 自己保持回路に必須）
     LINK_FROM_DOWN = "LINK_FROM_DOWN" # 下の行から(FROM)電力を受け取る合流点
     LINK_TO_UP = "LINK_TO_UP"         # 上の行へ(TO)電力を送る分岐点
+    LINK_VIRT = "LINK_VIRT"           # 垂直配線
     
     # システム
     DEL = "DEL"                # 削除
@@ -161,10 +162,10 @@ DEVICE_PALETTE_DEFINITIONS = {
         (DeviceType.CONTACT_B, "B_CNTC", 2, "B接点"),
         (DeviceType.COIL_STD, "COIL_S", 3, "標準コイル"),
         (DeviceType.COIL_REV, "COIL_R", 4, "反転コイル"),
-        (DeviceType.LINK_SIDE, "_LINK_", 5, "水平配線"),
-        (DeviceType.LINK_FROM_DOWN, "LINK_v", 6, "下から合流"),
-        (DeviceType.LINK_TO_UP, "LINK_^", 7, "上へ分岐"),
-        (DeviceType.EMPTY, "", 8, "未定義"),
+        (DeviceType.LINK_HORZ, "LINK -", 5, "水平配線"),
+        (DeviceType.LINK_FROM_DOWN, "LINK v", 6, "下から合流"),
+        (DeviceType.LINK_TO_UP, "LINK ^", 7, "上へ分岐"),
+        (DeviceType.LINK_VIRT, "LINK |", 8, "垂直配線"),
         (DeviceType.EMPTY, "", 9, "未定義"),
         (DeviceType.DEL, "DELETE", 0, "削除コマンド"),
     ],
@@ -264,7 +265,7 @@ class SystemInfo:
     # Ver2からの主要変更点
     MAJOR_CHANGES = [
         "PLC標準準拠のデバイス体系",
-        "明示的配線システム（LINK_SIDE）",
+        "明示的配線システム（LINK_HORZ）",
         "接点/コイル概念の正しい実装",
         "30FPS最適化",
     ]

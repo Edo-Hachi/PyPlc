@@ -77,17 +77,30 @@
       "y": 8,
       "NAME": "LINK_FROM_DOWN",
       "ACT_NAME": "FALSE"
+      
     },
     "40_8": {
       "x": 40,
       "y": 8,
-      "NAME": "LINK_SIDE",
+      "NAME": "LINK_HORZ",
       "ACT_NAME": "TRUE"
     },
     "48_8": {
       "x": 48,
       "y": 8,
-      "NAME": "LINK_SIDE",
+      "NAME": "LINK_HORZ",
+      "ACT_NAME": "FALSE"
+    },
+    "56_8": {
+      "x": 56,
+      "y": 8,
+      "NAME": "LINK_VIRT",
+      "ACT_NAME": "TRUE"
+    },
+    "64_8": {
+      "x": 64,
+      "y": 8,
+      "NAME": "LINK_VIRT",
       "ACT_NAME": "FALSE"
     },
     "8_16": {
