@@ -86,13 +86,34 @@ class GridSystem:
         reverses = {'up': 'down', 'down': 'up', 'left': 'right', 'right': 'left'}
         return reverses[direction]
 
+    def _calculate_display_state(self, device: PLCDevice) -> bool:
+        """
+        デバイスの表示状態を計算（PLC標準準拠）
+        接点：論理状態と通電状態の組み合わせで点灯判定
+        その他：通電状態をそのまま使用
+        """
+        if device.device_type == DeviceType.CONTACT_A:
+            # A接点: ONかつ通電時のみ点灯
+            return device.state and device.is_energized
+        elif device.device_type == DeviceType.CONTACT_B:
+            # B接点: OFFかつ通電時のみ点灯  
+            return (not device.state) and device.is_energized
+        else:
+            # その他のデバイス（コイル、配線等）: 通電状態をそのまま表示
+            return device.is_energized
+
     def reset_all_energized_states(self) -> None:
-        """バスバーを除く全デバイスの通電状態をリセットする"""
-        for r in range(self.rows):
-            for c in range(self.cols):
-                device = self.get_device(r, c)
+        """全デバイスの通電状態をリセット（配置は維持）"""
+        for row in range(self.rows):
+            for col in range(self.cols):
+                device = self.get_device(row, col)
                 if device:
-                    device.is_energized = (device.device_type == DeviceType.L_SIDE)
+                    device.is_energized = False
+        # 左バスバー（電源）のみTrueに設定
+        for row in range(self.rows):
+            left_bus = self.get_device(row, GridConstraints.get_left_bus_col())
+            if left_bus:
+                left_bus.is_energized = True
 
     def draw(self) -> None:
         """グリッド線、バスバー、そして配置されたデバイスを描画する"""
@@ -138,7 +159,9 @@ class GridSystem:
                         continue
                     
                     # --- デバイスのスプライト描画 ---
-                    coords = sprite_manager.get_sprite_coords(device.device_type, device.is_energized)
+                    # 接点の表示状態は論理状態と通電状態の組み合わせで決定
+                    display_energized = self._calculate_display_state(device)
+                    coords = sprite_manager.get_sprite_coords(device.device_type, display_energized)
                     if coords:
                         pyxel.blt(draw_x, draw_y, 0, coords[0], coords[1], sprite_size, sprite_size, 0)
                     else:
