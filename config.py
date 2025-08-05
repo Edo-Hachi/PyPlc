@@ -144,10 +144,6 @@ class DeviceType(Enum):
     LINK_BRANCH = "LINK_BRANCH" # 分岐点（右・上・下の3方向分配）
     LINK_VIRT = "LINK_VIRT"           # 垂直配線（上下双方向伝播）
     
-    # 段階的廃止対象（Phase 4で削除予定）
-    LINK_FROM_DOWN = "LINK_FROM_DOWN" # 下の行から(FROM)電力を受け取る合流点
-    LINK_TO_UP = "LINK_TO_UP"         # 上の行へ(TO)電力を送る分岐点
-    
     # システム
     DEL = "DEL"                # 削除
 

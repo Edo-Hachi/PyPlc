@@ -1,22 +1,24 @@
-# PyPlc Ver3 LINK_VIRT Test Circuit - 1行空けパターン
+# PyPlc Ver3 LINK_BRANCH + LINK_VIRT Test Circuit - 1行空けパターン
 # Format: row,col,device_type,address,state
-# Created: 2025-08-05 LINK_VIRT Connection Test
+# Created: 2025-08-05 Updated for LINK_BRANCH architecture
 # 
-# テスト目的: LINK_TO_UP → LINK_VIRT → LINK_FROM_DOWN の1行空け結線テスト
+# テスト目的: LINK_BRANCH → LINK_VIRT の1行空け結線テスト
 # 
-# 回路構成:
-# 行1: [X001接点] - [LINK_TO_UP]     ← 上の並列回路
-# 行2:              [LINK_VIRT]       ← 1行空けた垂直配線
-# 行3:              [LINK_FROM_DOWN] - [Y001コイル]  ← 下の並列回路
+# 回路構成（新LINK_BRANCHアーキテクチャ）:
+# 行1: [X001接点] - [LINK_BRANCH]     ← 上の並列回路（分岐点）
+# 行2:                    ↓
+# 行3:              [LINK_VIRT]       ← 1行空けた垂直配線
+# 行4:                    ↓
+# 行5:              [LINK_VIRT] - [Y001コイル]  ← 下の並列回路
 #
-# 期待動作: X001がONの時、Y001コイルが励磁される
+# 期待動作: X001がONの時、LINK_BRANCHから下方向に電力が流れ、LINK_VIRTを通じてY001コイルが励磁される
 #
 row,col,device_type,address,state
 1,1,CONTACT_A,X001,False
 1,2,LINK_HORZ,WIRE,False
-1,3,LINK_TO_UP,BRANCH,False
+1,3,LINK_BRANCH,BRANCH,False
 2,3,LINK_VIRT,VWIRE,False
-3,3,LINK_FROM_DOWN,MERGE,False
+3,3,LINK_VIRT,VWIRE2,False
 3,4,LINK_HORZ,WIRE,False
 3,5,LINK_HORZ,WIRE,False
 3,6,LINK_HORZ,WIRE,False

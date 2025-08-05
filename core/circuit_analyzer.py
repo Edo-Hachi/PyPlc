@@ -68,18 +68,9 @@ class CircuitAnalyzer:
                 if next_pos and next_pos not in visited:
                     self._trace_power_flow(next_pos, visited)
         
-        # 旧システム（Phase 4で削除予定）
-        elif device.device_type == DeviceType.LINK_TO_UP:
-            self._trace_power_flow(device.connections.get('up'), visited)
-        
         # 標準デバイス（右方向のみ）
         else:
             self._trace_power_flow(device.connections.get('right'), visited)
-
-            # 旧システム（Phase 4で削除予定）
-            if device.device_type == DeviceType.LINK_FROM_DOWN:
-                # 下の行からの電力供給をチェック
-                self._handle_parallel_convergence(device, visited)
 
     def _is_conductive(self, device: PLCDevice) -> bool:
         """デバイスが現在、電気を通す状態にあるかを判定する"""
@@ -89,8 +80,7 @@ class CircuitAnalyzer:
             return not device.state  # OFF状態なら通す
         
         # 配線系は常時通す
-        if device.device_type in [DeviceType.LINK_HORZ, DeviceType.LINK_BRANCH, DeviceType.LINK_VIRT, 
-                                  DeviceType.LINK_FROM_DOWN, DeviceType.LINK_TO_UP]:  # 旧システム併存
+        if device.device_type in [DeviceType.LINK_HORZ, DeviceType.LINK_BRANCH, DeviceType.LINK_VIRT]:
             return True
 
         # L_SIDE（左バス）は電源なので常時導通
