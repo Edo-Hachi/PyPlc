@@ -53,14 +53,30 @@ class CircuitAnalyzer:
             return # 通さないなら、この先のトレースは行わない
 
         # --- 次に電力を流す先を決定 ---
-        # LINK_TO_UP は上の行に電力を送る特殊なデバイス（並列回路の分岐点）
-        if device.device_type == DeviceType.LINK_TO_UP:
+        # 新アーキテクチャ: LINK_BRANCH による3方向分配（右・上・下）
+        if device.device_type == DeviceType.LINK_BRANCH:
+            # 確定仕様: 右・上・下の3方向に電力分配（左は除外）
+            for direction in ['right', 'up', 'down']:
+                next_pos = device.connections.get(direction)
+                if next_pos and next_pos not in visited:
+                    self._trace_power_flow(next_pos, visited)
+        
+        elif device.device_type == DeviceType.LINK_VIRT:
+            # 上下双方向に電力伝播
+            for direction in ['up', 'down']:
+                next_pos = device.connections.get(direction)
+                if next_pos and next_pos not in visited:
+                    self._trace_power_flow(next_pos, visited)
+        
+        # 旧システム（Phase 4で削除予定）
+        elif device.device_type == DeviceType.LINK_TO_UP:
             self._trace_power_flow(device.connections.get('up'), visited)
-        # それ以外のデバイスは、原則として右に流す
+        
+        # 標準デバイス（右方向のみ）
         else:
             self._trace_power_flow(device.connections.get('right'), visited)
 
-            # LINK_FROM_DOWN は下の行からも電力を受け取る
+            # 旧システム（Phase 4で削除予定）
             if device.device_type == DeviceType.LINK_FROM_DOWN:
                 # 下の行からの電力供給をチェック
                 self._handle_parallel_convergence(device, visited)
@@ -73,7 +89,8 @@ class CircuitAnalyzer:
             return not device.state  # OFF状態なら通す
         
         # 配線系は常時通す
-        if device.device_type in [DeviceType.LINK_HORZ, DeviceType.LINK_FROM_DOWN, DeviceType.LINK_TO_UP, DeviceType.LINK_VIRT]:
+        if device.device_type in [DeviceType.LINK_HORZ, DeviceType.LINK_BRANCH, DeviceType.LINK_VIRT, 
+                                  DeviceType.LINK_FROM_DOWN, DeviceType.LINK_TO_UP]:  # 旧システム併存
             return True
 
         # L_SIDE（左バス）は電源なので常時導通
