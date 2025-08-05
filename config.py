@@ -141,9 +141,12 @@ class DeviceType(Enum):
     
     # 配線系（Ver3: 明示的配線システム）
     LINK_HORZ = "LINK_HORZ"    # 水平配線（Ver3新機能: 自己保持回路に必須）
+    LINK_BRANCH = "LINK_BRANCH" # 分岐点（右・上・下の3方向分配）
+    LINK_VIRT = "LINK_VIRT"           # 垂直配線（上下双方向伝播）
+    
+    # 段階的廃止対象（Phase 4で削除予定）
     LINK_FROM_DOWN = "LINK_FROM_DOWN" # 下の行から(FROM)電力を受け取る合流点
     LINK_TO_UP = "LINK_TO_UP"         # 上の行へ(TO)電力を送る分岐点
-    LINK_VIRT = "LINK_VIRT"           # 垂直配線
     
     # システム
     DEL = "DEL"                # 削除
@@ -178,8 +181,8 @@ DEVICE_PALETTE_DEFINITIONS = {
         (DeviceType.COIL_STD, "COIL_S", 3, "標準コイル"),
         (DeviceType.COIL_REV, "COIL_R", 4, "反転コイル"),
         (DeviceType.LINK_HORZ, "LINK -", 5, "水平配線"),
-        (DeviceType.LINK_FROM_DOWN, "LINK v", 6, "下から合流"),
-        (DeviceType.LINK_TO_UP, "LINK ^", 7, "上へ分岐"),
+        (DeviceType.LINK_BRANCH, "BRANCH", 6, "リンクブランチポイント"),
+        (DeviceType.EMPTY, "", 7, "未定義"),
         (DeviceType.LINK_VIRT, "LINK |", 8, "垂直配線"),
         (DeviceType.EMPTY, "", 9, "未定義"),
         (DeviceType.DEL, "DELETE", 0, "削除コマンド"),
