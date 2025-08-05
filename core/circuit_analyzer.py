@@ -100,45 +100,8 @@ class CircuitAnalyzer:
         # R_SIDE（右バス）とコイルは電力の終端なので、電気を通さない
         return False
 
-    def _handle_parallel_convergence(self, device: PLCDevice, visited: Set[Tuple[int, int]]) -> None:
-        """
-        並列回路の合流ロジック - LINK_FROM_DOWNが下の行からの電力を受け取る処理
-        
-        PLCの動作原理に従い、下の行の並列回路から電力供給があるかをチェックし、
-        電力供給がある場合は合流点から右に電力を流す。
-        
-        Args:
-            device: LINK_FROM_DOWNデバイス
-            visited: 既に訪問済みの位置のセット
-        """
-        current_row, current_col = device.position
-        
-        # 下の行の並列回路をスキャンして、LINK_TO_UPを探す
-        below_row = current_row + 1
-        if below_row >= self.grid.rows:
-            return  # グリッドの範囲外
-            
-        # 下の行から直接接続されているLINK_TO_UPデバイスをチェック
-        down_connection = device.connections.get('down')
-        if down_connection:
-            # 直接接続されている下のデバイスをチェック
-            below_device = self.grid.get_device(down_connection[0], down_connection[1])
-            if (below_device and 
-                below_device.device_type == DeviceType.LINK_TO_UP and
-                below_device.is_energized and
-                self._is_conductive(below_device)):
-                # 下からの電力供給が確認できたので、合流点から右に電力を流す
-                self._trace_power_flow(device.connections.get('right'), visited)
-                return
-        
-        # 直接接続がない場合は、下の行の同じ列でLINK_TO_UPを探す（後方互換性）
-        below_device = self.grid.get_device(below_row, current_col)
-        if (below_device and 
-            below_device.device_type == DeviceType.LINK_TO_UP and
-            below_device.is_energized and
-            self._is_conductive(below_device)):
-            # 下からの電力供給が確認できたので、合流点から右に電力を流す
-            self._trace_power_flow(device.connections.get('right'), visited)
+    # 旧_handle_parallel_convergence()メソッドは削除済み
+    # LINK_BRANCHアーキテクチャにより、複雑な合流ロジックは不要になりました
 
     def _update_contact_states_from_coils(self) -> None:
         """

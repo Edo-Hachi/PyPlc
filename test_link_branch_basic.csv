@@ -1,0 +1,19 @@
+# PyPlc Ver3 LINK_BRANCH Basic Test Circuit - 基本分岐テスト
+# Format: row,col,device_type,address,state
+# Created: 2025-08-05 LINK_BRANCH 3方向分配テスト
+# 
+# テスト目的: LINK_BRANCH の基本3方向分配（右・上・下）動作確認
+# 
+# 回路構成:
+# 行0: [X001接点] - [LINK_BRANCH] - [Y001コイル] ← 右方向分配テスト
+# 行1:                   |                        ← 下方向分配
+# 行2:              [Y002コイル]                   ← 下方向受信テスト
+#
+# 期待動作: X001がONの時、LINK_BRANCHから右（Y001）と下（Y002）に電力分配
+#
+row,col,device_type,address,state
+0,1,CONTACT_A,X001,False
+0,2,LINK_BRANCH,BRANCH1,False
+0,3,COIL_STD,Y001,False
+1,2,LINK_VIRT,WIRE,False
+2,2,COIL_STD,Y002,False
