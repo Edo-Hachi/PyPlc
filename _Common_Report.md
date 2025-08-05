@@ -1831,3 +1831,192 @@ WindSurf AI AssistantによるこのレビューレポートA+評価は、PyPlc 
 *最終更新: 2025-08-03*  
 *次回更新: タイマー・カウンター実装完了時*  
 *データソース: CLAUDE.md, GEMINI.md, _Ver3_Definition.md, _Development_Plan_Update.md, _Edit_Run_Mode_Implementation_Plan.md, Claude_Coding_20250803_1328.md, CSV機能実装セッション, コイル-接点連動システム実装セッション, **_WindSurf_LogicReview.md（第三者専門評価）***
+
+## 🚨 **重要：縦方向結線アーキテクチャの課題と改修提案（2025-08-05追記）**
+
+### **現状の問題点**
+
+#### **1. LINK_TO_UP/LINK_FROM_DOWN実装の課題**
+**発見された問題**:
+- 直接接続パターン（LINK_TO_UP → LINK_FROM_DOWN）が動作しない
+- 過去の設計議論と実装の不整合
+- 実際のPLC設計思想との乖離
+
+**技術的詳細**:
+```python
+# 現在の実装（circuit_analyzer.py）
+if device.device_type == DeviceType.LINK_TO_UP:
+    self._trace_power_flow(device.connections.get('up'), visited)  # 上方向
+
+# 過去の設計仕様（_Common_Report.md）
+LINK_TO_UP     # 下の行に配置、上の行へ論理を送る
+LINK_FROM_DOWN # 上の行に配置、下の行からの論理を受け取る
+```
+
+**根本的課題**:
+- 「上から下」「下から上」の2方向概念の複雑性
+- 実際のPLCには存在しない人工的な概念
+- テストケース作成時の混乱（配置位置と動作方向の不一致）
+
+#### **2. 実際のPLC設計思想との比較**
+**実PLC**:
+- 並列回路は物理的な分岐・合流で実現
+- 電気的には双方向、論理的には単純な接続
+- 「分岐点」と「垂直配線」の組み合わせ
+
+**現在の実装**:
+- 複雑な上下方向伝播ロジック
+- LINK_TO_UP/LINK_FROM_DOWNの2概念管理
+- 配置位置と動作方向の複雑な関係
+
+### **提案する改修案**
+
+#### **新アーキテクチャ：BRANCH + VIRT モデル**
+
+**基本概念**:
+```python
+# 廃止する概念
+LINK_TO_UP      # 複雑な上下方向伝播
+LINK_FROM_DOWN  # 複雑な合流ロジック
+
+# 新しいシンプルな概念
+BRANCH_POINT    # 分岐点（電力を全方向に分配）
+LINK_VIRT       # 垂直配線（物理的な縦接続）
+```
+
+**実装例**:
+```
+行1: [接点A] - [BRANCH_POINT] - [接点B] - [コイル]
+行2:              [LINK_VIRT]
+行3:              [LINK_VIRT]  
+行4:              [BRANCH_POINT] - [接点C]
+```
+
+**電力トレースロジック**:
+```python
+def _trace_power_flow(self, device):
+    if device.device_type == DeviceType.BRANCH_POINT:
+        # 全方向（右・上・下）に電力を分配
+        self._trace_power_flow(device.connections.get('right'))
+        self._trace_power_flow(device.connections.get('up'))
+        self._trace_power_flow(device.connections.get('down'))
+    
+    elif device.device_type == DeviceType.LINK_VIRT:
+        # 縦方向に電力を伝播
+        self._trace_power_flow(device.connections.get('up'))
+        self._trace_power_flow(device.connections.get('down'))
+```
+
+#### **改修の利点**
+
+**1. 概念の簡素化**:
+- 分岐点は1つの概念のみ
+- 方向性の複雑さを排除
+- 実際のPLCに近い直感的理解
+
+**2. 実装の簡素化**:
+- 複雑な上下方向ロジックが不要
+- テストケース作成が容易
+- デバッグ・保守性の向上
+
+**3. 拡張性の向上**:
+- n行をまたぐ接続が自然に実現
+- 複雑な並列回路への対応が容易
+- 将来の機能追加への柔軟性
+
+### **改修計画**
+
+#### **Phase 1: 新概念の実装**
+```python
+# config.py
+class DeviceType(Enum):
+    BRANCH_POINT = "BRANCH_POINT"  # 新規追加
+    # LINK_TO_UP = "LINK_TO_UP"     # 廃止予定
+    # LINK_FROM_DOWN = "LINK_FROM_DOWN" # 廃止予定
+```
+
+#### **Phase 2: 電力トレースロジックの書き換え**
+- `circuit_analyzer.py`の`_trace_power_flow`メソッド修正
+- `_handle_parallel_convergence`メソッドの簡素化
+- テストケースの全面書き直し
+
+#### **Phase 3: 段階的移行**
+- 既存のLINK_TO_UP/LINK_FROM_DOWNとの併存期間
+- 動作検証とテスト
+- 完全移行後の旧概念削除
+
+### **影響範囲の分析**
+
+#### **修正が必要なファイル**
+```
+core/
+├── circuit_analyzer.py     # 電力トレースロジック全面書き換え
+├── device_palette.py       # デバイス選択項目の変更
+└── grid_system.py          # 接続管理ロジックの調整
+
+config.py                   # DeviceType定義の変更
+sprites.json               # 新しいBRANCH_POINTスプライト追加
+my_resource.pyxres         # スプライトリソースの更新
+```
+
+#### **テストファイル**
+```
+test_link_direct.csv       # 全面書き直し
+test_link_virt_1row.csv    # 全面書き直し
+test_link_virt_2row.csv    # 全面書き直し
+```
+
+### **リスク評価**
+
+#### **高リスク**
+- 既存の並列回路機能の一時的な破綻
+- 大規模なコード変更による新たなバグ
+- テストケースの全面作り直し
+
+#### **中リスク**
+- スプライトリソースの整合性
+- UI表示の調整
+- 設定ファイルの互換性
+
+#### **低リスク**
+- 基本的なグリッドシステムへの影響
+- デバイス配置機能への影響
+
+### **推奨される実装戦略**
+
+#### **戦略A: 段階的移行（推奨）**
+1. 新しいBRANCH_POINTの実装
+2. 既存システムとの併存
+3. 動作検証後の段階的置き換え
+4. 旧システムの完全削除
+
+#### **戦略B: 全面書き換え（高リスク）**
+1. 現在のシステムの完全停止
+2. 新アーキテクチャの一括実装
+3. 全機能の再テスト
+
+### **AI開発支援への要請**
+
+#### **必要な専門知識**
+1. **PLC設計の専門知識**: 実際のPLCにおける並列回路の実装方法
+2. **アーキテクチャ設計**: 大規模リファクタリングの安全な実行方法
+3. **テスト戦略**: 回帰テストとバグ防止の手法
+
+#### **支援が必要な作業**
+1. **設計レビュー**: 新アーキテクチャの妥当性検証
+2. **実装計画**: 段階的移行の詳細計画策定
+3. **テストケース設計**: 包括的なテストシナリオ作成
+4. **リスク分析**: 潜在的な問題点の洗い出し
+
+### **現在の状況**
+
+**日時**: 2025-08-05 21:52  
+**状態**: 課題発見・分析完了、改修案策定完了  
+**次のステップ**: AI専門家による設計レビューと実装計画の詳細化  
+**緊急度**: 中（基本機能は動作中、並列回路機能のみ影響）  
+
+---
+
+*最終更新: 2025-08-05*  
+*次回更新: 縦方向結線アーキテクチャ改修完了時*  
+*データソース: CLAUDE.md, GEMINI.md, _Ver3_Definition.md, _Development_Plan_Update.md, _Edit_Run_Mode_Implementation_Plan.md, Claude_Coding_20250803_1328.md, CSV機能実装セッション, コイル-接点連動システム実装セッション, _WindSurf_LogicReview.md（第三者専門評価）, **縦方向結線課題分析セッション（2025-08-05）***

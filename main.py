@@ -415,20 +415,24 @@ class PyPlcVer3:
 
     def _load_circuit_from_csv(self) -> None:
         """
-        CSVファイルから回路を読み込み（簡易版: 最新ファイル自動選択）
+        CSVファイルから回路を読み込み（デバッグ用: test_link_direct.csv固定）
         """
         try:
-            import glob
-            import os
+            # デバッグ用: ファイル名固定
+            latest_file = "test_link_direct.csv"
             
-            # CSVファイル検索
-            csv_files = glob.glob("circuit_*.csv")
-            if not csv_files:
-                self._show_message("No CSV files found", "error")
-                return
-            
-            # 最新ファイル選択
-            latest_file = max(csv_files, key=os.path.getctime)
+            # 元のコード（コメントアウト）
+            # import glob
+            # import os
+            # 
+            # # CSVファイル検索
+            # csv_files = glob.glob("circuit_*.csv")
+            # if not csv_files:
+            #     self._show_message("No CSV files found", "error")
+            #     return
+            # 
+            # # 最新ファイル選択
+            # latest_file = max(csv_files, key=os.path.getctime)
             
             # ファイル読み込み
             with open(latest_file, 'r', encoding='utf-8') as f:

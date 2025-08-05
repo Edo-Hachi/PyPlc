@@ -1,0 +1,29 @@
+# PyPlc Ver3 LINK Direct Test Circuit - 直接接続パターン
+# Format: row,col,device_type,address,state
+# Created: 2025-08-05 LINK Direct Connection Test
+# 
+# テスト目的: LINK_TO_UP → LINK_FROM_DOWN の直接結線テスト（比較用）
+# 
+# 回路構成（過去の設計仕様に準拠）:
+# 行1: [X001接点] - [LINK_FROM_DOWN] - [Y001コイル]  ← 上の並列回路（合流点）
+# 行2: [X002接点] - [LINK_TO_UP]     ← 下の並列回路（分岐点）
+#
+# 期待動作: X002がONの時、LINK_TO_UPから上の行のLINK_FROM_DOWNに電力が送られ、Y001コイルが励磁される
+#
+row,col,device_type,address,state
+1,1,CONTACT_A,X001,False
+1,2,LINK_HORZ,WIRE,False
+1,3,LINK_FROM_DOWN,MERGE,False
+1,4,LINK_HORZ,WIRE,False
+1,5,LINK_HORZ,WIRE,False
+1,6,LINK_HORZ,WIRE,False
+1,7,LINK_HORZ,WIRE,False
+1,8,COIL_STD,Y001,False
+2,1,CONTACT_A,X002,False
+2,2,LINK_HORZ,WIRE,False
+2,3,LINK_TO_UP,BRANCH,False
+2,4,LINK_HORZ,WIRE,False
+2,5,LINK_HORZ,WIRE,False
+2,6,LINK_HORZ,WIRE,False
+2,7,LINK_HORZ,WIRE,False
+2,8,COIL_STD,Y001,False

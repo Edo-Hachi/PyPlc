@@ -53,7 +53,7 @@ class CircuitAnalyzer:
             return # 通さないなら、この先のトレースは行わない
 
         # --- 次に電力を流す先を決定 ---
-        # LINK_TO_UP は上の行に電力を送る特殊なデバイス
+        # LINK_TO_UP は上の行に電力を送る特殊なデバイス（並列回路の分岐点）
         if device.device_type == DeviceType.LINK_TO_UP:
             self._trace_power_flow(device.connections.get('up'), visited)
         # それ以外のデバイスは、原則として右に流す
