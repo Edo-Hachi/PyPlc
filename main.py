@@ -178,6 +178,10 @@ class PyPlcVer3:
         # グリッドシステム描画
         self.grid_system.draw()
         
+        # RUNモード時のデバイス情報表示（マウスオーバー）
+        if self.current_mode == SimulatorMode.RUN:
+            self._draw_device_info_on_hover()
+        
         # UI情報描画
         self._draw_cursor_and_status()
         self._draw_mode_status_bar()  # Edit/Runモード状態表示追加
@@ -189,7 +193,7 @@ class PyPlcVer3:
         Ver2準拠: 詳細情報表示、スナップモード状態、操作ガイダンス
         """
         # ステータスバー背景描画（Ver2準拠の拡張表示領域）
-        status_y = DisplayConfig.WINDOW_HEIGHT - 40  # 高さ拡張（20→40）
+        status_y = DisplayConfig.WINDOW_HEIGHT - (40 + 16)  # 高さ拡張（20→40）
         pyxel.rect(0, status_y, DisplayConfig.WINDOW_WIDTH, 40, pyxel.COLOR_BLACK)
         
         # スナップモード状態表示（設定対応）
@@ -266,8 +270,8 @@ class PyPlcVer3:
         """ヘッダーとフッターの情報を描画する"""
         #pyxel.text(10, 10, f"PyPlc Ver{SystemInfo.VERSION} - Stage 4: Solver", pyxel.COLOR_GREEN)
         
-        # フッター操作ガイド（設定に応じて表示切り替え）
-        footer_y = DisplayConfig.WINDOW_HEIGHT - 20
+        # フッター操作ガイド（設定に応じて表示切り替え）- 16px上に移動
+        footer_y = DisplayConfig.WINDOW_HEIGHT - 60 #36  # -20から-36に変更（16px上に移動）
         if UIBehaviorConfig.ALWAYS_SNAP_MODE:
             pyxel.text(10, footer_y, "L-Click:Place/Del R-Click:Toggle Q:Quit", pyxel.COLOR_GRAY)
         else:
@@ -440,31 +444,31 @@ class PyPlcVer3:
             
             # グリッドに読み込み
             if self.grid_system.from_csv(csv_data):
-                print(f"📁 CSV読み込み成功: {latest_file}")
+                print(f"CSV load success: {latest_file}")
                 
                 # EDITモードに切り替え（回路編集可能状態に）
                 old_mode = self.current_mode
                 self.current_mode = SimulatorMode.EDIT
                 self.plc_run_state = PLCRunState.STOPPED
-                print(f"🔄 Mode switched: {old_mode.value} → {self.current_mode.value}")
+                print(f"Mode switched: {old_mode.value} -> {self.current_mode.value}")
                 
                 # システムリセット（状態初期化）
                 self._reset_all_systems()
-                print("🔄 Systems reset completed")
+                print("Systems reset completed")
                 
                 # 接続情報を再構築（重要）
                 self._rebuild_all_connections()
-                print("🔄 Connections rebuilt")
+                print("Connections rebuilt")
                 
                 # 画面の強制再描画を促す
                 self._force_screen_refresh()
                 
                 # 成功メッセージ
                 self._show_message(f"Loaded: {latest_file}", "success")
-                print(f"✅ Circuit loaded from {latest_file}")
+                print(f"Circuit loaded from {latest_file}")
             else:
                 self._show_message("Load failed: Invalid CSV format", "error")
-                print("❌ CSV format validation failed")
+                print("CSV format validation failed")
             
         except Exception as e:
             # エラーメッセージ
@@ -478,11 +482,11 @@ class PyPlcVer3:
         """
         # 現在は print() で表示、将来的には画面上にメッセージ表示
         if msg_type == "success":
-            print(f"✅ {message}")
+            print(f"SUCCESS: {message}")
         elif msg_type == "error":
-            print(f"❌ {message}")
+            print(f"ERROR: {message}")
         else:
-            print(f"ℹ️ {message}")
+            print(f"INFO: {message}")
 
     def _rebuild_all_connections(self) -> None:
         """
@@ -504,7 +508,7 @@ class PyPlcVer3:
         CSV読み込み後に即座に画面に反映させる
         """
         # デバッグメッセージ
-        print("🔄 Force screen refresh: グリッドシステムの状態を確認中...")
+        print("Force screen refresh: Checking grid system status...")
         
         # グリッドシステムの状態確認（デバッグ用）
         device_count = 0
@@ -513,9 +517,9 @@ class PyPlcVer3:
                 device = self.grid_system.get_device(row, col)
                 if device and device.device_type.value not in ['L_SIDE', 'R_SIDE']:
                     device_count += 1
-                    print(f"  📍 Device found: [{row}][{col}] = {device.device_type.value}")
+                    print(f"  Device found: [{row}][{col}] = {device.device_type.value}")
         
-        print(f"✅ Total user devices loaded: {device_count}")
+        print(f"Total user devices loaded: {device_count}")
         
         # Pyxelの描画システムを明示的にリフレッシュ
         # 次のフレームで確実に再描画されるよう、描画フラグをセット
@@ -525,6 +529,82 @@ class PyPlcVer3:
         # グリッドシステム側のキャッシュクリア（もしあれば）
         # 現在の実装では必要ないが、将来の拡張に備えて
         pass
+
+    def _draw_device_info_on_hover(self) -> None:
+        """
+        RUNモード時のマウスオーバーデバイス情報表示
+        マウス位置のデバイス情報（アドレス、状態）を画面に表示
+        """
+        # マウス座標を取得
+        mouse_x = pyxel.mouse_x
+        mouse_y = pyxel.mouse_y
+        
+        # マウス座標をグリッド座標に変換
+        grid_x = (mouse_x - self.grid_system.origin_x) // self.grid_system.cell_size
+        grid_y = (mouse_y - self.grid_system.origin_y) // self.grid_system.cell_size
+        
+        # グリッド範囲内かチェック
+        if (0 <= grid_y < self.grid_system.rows and 
+            0 <= grid_x < self.grid_system.cols):
+            
+            # 該当位置のデバイスを取得
+            device = self.grid_system.get_device(grid_y, grid_x)
+            
+            if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
+                # デバイス情報を構築
+                device_info = []
+                
+                # Device type display
+                device_type_name = {
+                    DeviceType.CONTACT_A: "A_Contact",
+                    DeviceType.CONTACT_B: "B_Contact", 
+                    DeviceType.COIL_STD: "Std_Coil",
+                    DeviceType.COIL_REV: "Rev_Coil",
+                    DeviceType.LINK_HORZ: "H_Link",
+                    DeviceType.LINK_BRANCH: "Branch",
+                    DeviceType.LINK_VIRT: "V_Link"
+                }.get(device.device_type, device.device_type.value)
+                
+                device_info.append(f"Type: {device_type_name}")
+                
+                # アドレス表示（空でない場合のみ）
+                if device.address and device.address.strip():
+                    device_info.append(f"Address: {device.address}")
+                
+                # 状態表示
+                if device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
+                    state_text = "ON" if device.state else "OFF"
+                    device_info.append(f"State: {state_text}")
+                elif device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV]:
+                    energized_text = "Energized" if device.is_energized else "De-energized"
+                    device_info.append(f"Status: {energized_text}")
+                
+                # Power state display (all devices)
+                power_text = "Powered" if device.is_energized else "No_Power"
+                device_info.append(f"Power: {power_text}")
+                
+                # 情報ボックスの描画位置を計算
+                info_x = mouse_x + 10
+                info_y = mouse_y - 10
+                
+                # 画面端での位置調整
+                max_width = max(len(line) * 4 for line in device_info) + 8
+                if info_x + max_width > DisplayConfig.WINDOW_WIDTH:
+                    info_x = mouse_x - max_width - 10
+                
+                info_height = len(device_info) * 8 + 4
+                if info_y < 0:
+                    info_y = mouse_y + 20
+                elif info_y + info_height > DisplayConfig.WINDOW_HEIGHT:
+                    info_y = DisplayConfig.WINDOW_HEIGHT - info_height
+                
+                # 情報ボックス背景描画
+                pyxel.rect(info_x - 2, info_y - 2, max_width, info_height, pyxel.COLOR_DARK_BLUE)
+                pyxel.rectb(info_x - 2, info_y - 2, max_width, info_height, pyxel.COLOR_WHITE)
+                
+                # デバイス情報テキスト描画
+                for i, line in enumerate(device_info):
+                    pyxel.text(info_x, info_y + i * 8, line, pyxel.COLOR_WHITE)
 
     def _draw_palette_disabled_message(self) -> None:
         """

@@ -1,7 +1,7 @@
 """
 PyPlc Ver3 Configuration Module
-Ver3専用設定定数・制約・定義管理
-PLC標準仕様準拠システム用設定
+Ver3 Configuration Constants, Constraints, and Definition Management
+PLC Standard Specification Compliant System Configuration
 """
 
 from enum import Enum
@@ -11,7 +11,7 @@ from enum import Enum
 # Display Configuration  
 # =============================================================================
 class DisplayConfig:
-    """表示設定定数"""
+    """Display Configuration Constants"""
     WINDOW_WIDTH: int = 384
     WINDOW_HEIGHT: int = 384
     TARGET_FPS: int = 30  # Ver3: 30FPSで十分
@@ -21,12 +21,12 @@ class DisplayConfig:
 # Grid Configuration
 # =============================================================================
 class GridConfig:
-    """グリッド設定定数"""
+    """Grid Configuration Constants"""
     GRID_ROWS: int = 15
     GRID_COLS: int = 20
     GRID_CELL_SIZE: int = 16
     
-    # グリッド表示領域
+    # Grid display area
     GRID_ORIGIN_X: int = 16
     GRID_ORIGIN_Y: int = 80
 
@@ -35,49 +35,49 @@ class GridConfig:
 # UI Configuration
 # =============================================================================
 class UIConfig:
-    """UI設定定数"""
-    # パレット設定
+    """UI Configuration Constants"""
+    # Palette settings
     PALETTE_Y: int = 12
     
-    # ステータス表示領域
+    # Status display area
     STATUS_AREA_Y: int = 280
     CONTROL_INFO_Y: int = 300
     
     # マウス操作
-    SNAP_THRESHOLD: float = 7.0 #マウスとグリッド交点とのスナップ処理を行うためのしきい値
+    SNAP_THRESHOLD: float = 7.0 # Threshold for mouse-to-grid snap processing
 
 
 # =============================================================================
 # UI Behavior Configuration
 # =============================================================================
 class UIBehaviorConfig:
-    """UI動作設定定数"""
-    # スナップモード制御設定
-    ALWAYS_SNAP_MODE: bool = True  # True: 常時スナップモード, False: CTRL切り替えモード
+    """UI Behavior Configuration Constants"""
+    # Snap mode control settings
+    ALWAYS_SNAP_MODE: bool = True  # True: Always snap mode, False: CTRL toggle mode
     
-    # 将来の機能拡張用設定
-    SHOW_GRID_LINES: bool = True    # グリッド線表示ON/OFF
-    SHOW_DEBUG_INFO: bool = False   # デバッグ情報表示ON/OFF
+    # Future feature expansion settings
+    SHOW_GRID_LINES: bool = True    # Grid line display ON/OFF
+    SHOW_DEBUG_INFO: bool = False   # Debug info display ON/OFF
 
 
 # =============================================================================
 # Color Configuration
 # =============================================================================
-# 注意: 色はpyxel.COLOR_xxxを描画時に直接使用すること
-# 再定義は一切行わず、コード内で直接指定する
+# Note: Use pyxel.COLOR_xxx directly during rendering
+# Do not redefine, specify directly in code
 
 
 # =============================================================================
 # PLC Configuration
 # =============================================================================
 class PLCConfig:
-    """PLC動作設定定数"""
-    # スキャンタイム設定
+    """PLC Operation Configuration Constants"""
+    # Scan time settings
     DEFAULT_SCAN_TIME_MS: int = 100
     MIN_SCAN_TIME_MS: int = 50
     MAX_SCAN_TIME_MS: int = 500
     
-    # デバイス設定
+    # Device settings
     MAX_DEVICES: int = 100
     AUTO_GENERATE_ADDRESS: bool = True
     
@@ -87,10 +87,10 @@ class PLCConfig:
 
 
 # =============================================================================
-# Grid Constraints（Ver3でPLC標準準拠）
+# Grid Constraints (Ver3 PLC Standard Compliant)
 # =============================================================================
 class GridConstraints:
-    """グリッド配置制約管理"""
+    """Grid Placement Constraint Management"""
     
     @staticmethod
     def get_left_bus_col() -> int:
@@ -104,43 +104,43 @@ class GridConstraints:
     
     @staticmethod
     def is_editable_position(row: int, col: int) -> bool:
-        """編集可能位置判定"""
-        # 行は全て編集可能、列は1〜(cols-2)のみ編集可能
+        """Editable Position Check"""
+        # All rows editable, columns 1 to (cols-2) only editable
         return 1 <= col <= GridConfig.GRID_COLS - 2
     
     @staticmethod
     def get_editable_area() -> tuple[int, int, int, int]:
-        """編集可能領域取得 (start_col, end_col, start_row, end_row)"""
+        """Get Editable Area (start_col, end_col, start_row, end_row)"""
         return (1, GridConfig.GRID_COLS - 2, 0, GridConfig.GRID_ROWS - 1)
 
 
 # =============================================================================
-# Device Type Definition（Ver3: PLC標準準拠）
+# Device Type Definition (Ver3: PLC Standard Compliant)
 # =============================================================================
 class DeviceType(Enum):
-    """デバイス種別定義 - PLC標準仕様準拠"""
+    """Device Type Definition - PLC Standard Specification Compliant"""
     
-    # 基本状態
+    # Basic states
     EMPTY = "EMPTY"
     
     # バスシステム
     L_SIDE = "L_SIDE"          # 電源バス（左側）
     R_SIDE = "R_SIDE"          # ニュートラルバス（右側）
     
-    # 接点系（PLC標準: 入力条件表現）
+    # Contact series (PLC standard: input condition representation)
     CONTACT_A = "CONTACT_A"    # A接点（ノーマルオープン）-| |-
     CONTACT_B = "CONTACT_B"    # B接点（ノーマルクローズ）-|/|-
     
-    # コイル系（PLC標準: 出力結果表現）
-    COIL_STD = "COIL_STD"      # 標準コイル -( )-
+    # Coil series (PLC standard: output result representation)
+    COIL_STD = "COIL_STD"      # Standard coil -( )-
     COIL_REV = "COIL_REV"      # 反転コイル -(/)-
     
-    # 機能系
+    # Function series
     TIMER = "TIMER"            # タイマー
     COUNTER = "COUNTER"        # カウンター
     
     # 配線系（Ver3: 明示的配線システム）
-    LINK_HORZ = "LINK_HORZ"    # 水平配線（Ver3新機能: 自己保持回路に必須）
+    LINK_HORZ = "LINK_HORZ"    # Horizontal wiring (Ver3 new feature: essential for self-holding circuits)
     LINK_BRANCH = "LINK_BRANCH" # 分岐点（右・上・下の3方向分配）
     LINK_VIRT = "LINK_VIRT"           # 垂直配線（上下双方向伝播）
     
@@ -149,32 +149,32 @@ class DeviceType(Enum):
 
 
 # =============================================================================
-# Simulator Mode Definition（Ver3: Edit/Runモードシステム）
+# Simulator Mode Definition (Ver3: Edit/Run Mode System)
 # =============================================================================
 class SimulatorMode(Enum):
-    """シミュレーターモード定義 - Ver1の優秀設計を継承"""
-    EDIT = "EDIT"              # 回路構築モード（デバイス配置・編集可能）
-    RUN = "RUN"                # シミュレーション実行モード（編集ロック・PLC動作）
+    """Simulator Mode Definition - Inheriting Ver1's Excellent Design"""
+    EDIT = "EDIT"              # Circuit construction mode (device placement/editing enabled)
+    RUN = "RUN"                # Simulation execution mode (editing locked, PLC operation)
 
 
 class PLCRunState(Enum):
-    """PLC実行状態定義 - F5キーで制御"""
-    STOPPED = "STOPPED"        # 停止中（編集可能状態）
-    RUNNING = "RUNNING"        # 実行中（リアルタイム回路解析中）
+    """PLC Execution State Definition - Controlled by F5 Key"""
+    STOPPED = "STOPPED"        # Stopped (editing enabled state)
+    RUNNING = "RUNNING"        # Running (real-time circuit analysis)
 
 
 # =============================================================================
-# Device Palette Definitions (Ver3: 順序変更・編集可能)
+# Device Palette Definitions (Ver3: Order changeable/editable)
 # =============================================================================
 
-# デバイスパレット定義 - この順序を変更することで画面上の配置が変わります
+# Device Palette Definition - Changing this order changes screen layout
 DEVICE_PALETTE_DEFINITIONS = {
-    # 上段デバイス定義（通常操作・Shiftなし）
+    # Upper row device definition (normal operation, no Shift)
     "top_row": [
         # (device_type, display_name, key_bind, description)
         (DeviceType.CONTACT_A, "A_CNTC", 1, "A接点"),
         (DeviceType.CONTACT_B, "B_CNTC", 2, "B接点"),
-        (DeviceType.COIL_STD, "COIL_S", 3, "標準コイル"),
+        (DeviceType.COIL_STD, "COIL_S", 3, "Standard Coil"),
         (DeviceType.COIL_REV, "COIL_R", 4, "反転コイル"),
         (DeviceType.LINK_HORZ, "LINK -", 5, "水平配線"),
         (DeviceType.LINK_BRANCH, "BRANCH", 6, "リンクブランチポイント"),
@@ -184,11 +184,11 @@ DEVICE_PALETTE_DEFINITIONS = {
         (DeviceType.DEL, "DELETE", 0, "削除コマンド"),
     ],
     
-    # 下段デバイス定義（拡張操作・Shift+キー）将来拡張用
+    # Lower row device definition (extended operation, Shift+key) for future expansion
     "bottom_row": [
-        (DeviceType.EMPTY, "", 1, "未定義（タイマー予定）"),
-        (DeviceType.EMPTY, "", 2, "未定義（カウンター予定）"),
-        (DeviceType.EMPTY, "", 3, "未定義"),
+        (DeviceType.EMPTY, "", 1, "Undefined (Timer planned)"),
+        (DeviceType.EMPTY, "", 2, "Undefined (Counter planned)"),
+        (DeviceType.EMPTY, "", 3, "Undefined"),
         (DeviceType.EMPTY, "", 4, "未定義"),
         (DeviceType.EMPTY, "", 5, "未定義"),
         (DeviceType.EMPTY, "", 6, "未定義"),

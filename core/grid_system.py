@@ -218,11 +218,11 @@ class GridSystem:
         現在のグリッドをクリアしてからデータを読み込む
         """
         try:
-            print(f"📥 CSV Import Started - Data length: {len(csv_data)} chars")
+            print(f"CSV Import Started - Data length: {len(csv_data)} chars")
             
             # 現在のグリッドをクリア（バスバー以外）
             self._clear_user_devices()
-            print("🧹 User devices cleared")
+            print("User devices cleared")
             
             # CSV読み込み（コメント行を事前除去）
             lines = csv_data.strip().split('\n')
@@ -233,7 +233,7 @@ class GridSystem:
             
             # コメント除去後のCSVデータを再構築
             clean_csv_data = '\n'.join(csv_lines)
-            print(f"🧹 Clean CSV data (after comment removal): {len(clean_csv_data)} chars")
+            print(f"Clean CSV data (after comment removal): {len(clean_csv_data)} chars")
             
             input_stream = io.StringIO(clean_csv_data)
             reader = csv.DictReader(input_stream, skipinitialspace=True)
@@ -248,7 +248,7 @@ class GridSystem:
                     address = row_data['address']
                     state_str = row_data['state']
                     
-                    print(f"📋 Processing line {line_num}: [{row}][{col}] = {device_type_str}")
+                    print(f"Processing line {line_num}: [{row}][{col}] = {device_type_str}")
                     
                     # DeviceType変換
                     device_type = DeviceType(device_type_str)
@@ -261,16 +261,16 @@ class GridSystem:
                     if new_device:
                         new_device.state = state
                         loaded_count += 1
-                        print(f"  ✅ Device placed: {device_type_str} at [{row}][{col}] state={state}")
+                        print(f"  Device placed: {device_type_str} at [{row}][{col}] state={state}")
                     else:
-                        print(f"  ❌ Failed to place device at [{row}][{col}]")
+                        print(f"  Failed to place device at [{row}][{col}]")
                     
                 except (ValueError, KeyError) as e:
-                    print(f"⚠️  Warning: CSV line {line_num} skipped due to error: {e}")
+                    print(f"Warning: CSV line {line_num} skipped due to error: {e}")
                     print(f"    Row data: {row_data}")
                     continue
             
-            print(f"📊 CSV Import Complete - {loaded_count} devices loaded")
+            print(f"CSV Import Complete - {loaded_count} devices loaded")
             return True
             
         except Exception as e:
