@@ -172,30 +172,30 @@ DEVICE_PALETTE_DEFINITIONS = {
     # Upper row device definition (normal operation, no Shift)
     "top_row": [
         # (device_type, display_name, key_bind, description)
-        (DeviceType.CONTACT_A, "A_CNTC", 1, "A接点"),
-        (DeviceType.CONTACT_B, "B_CNTC", 2, "B接点"),
+        (DeviceType.CONTACT_A, "A_CNTC", 1, "Contact_A"),
+        (DeviceType.CONTACT_B, "B_CNTC", 2, "Contact_B"),
         (DeviceType.COIL_STD, "COIL_S", 3, "Standard Coil"),
-        (DeviceType.COIL_REV, "COIL_R", 4, "反転コイル"),
-        (DeviceType.LINK_HORZ, "LINK -", 5, "水平配線"),
-        (DeviceType.LINK_BRANCH, "BRANCH", 6, "リンクブランチポイント"),
-        (DeviceType.EMPTY, "", 7, "未定義"),
-        (DeviceType.LINK_VIRT, "LINK |", 8, "垂直配線"),
-        (DeviceType.EMPTY, "", 9, "未定義"),
-        (DeviceType.DEL, "DELETE", 0, "削除コマンド"),
+        (DeviceType.COIL_REV, "COIL_R", 4, "Reverse Coil"),
+        (DeviceType.LINK_HORZ, "LINK -", 5, "Horizontal Link"),
+        (DeviceType.LINK_BRANCH, "BRANCH", 6, "Branch Link"),
+        (DeviceType.EMPTY, "", 7, "UNDEF"),
+        (DeviceType.LINK_VIRT, "LINK |", 8, "Virtical Link"),
+        (DeviceType.EMPTY, "", 9, "UNDEF"),
+        (DeviceType.DEL, "DELETE", 0, "Delete Command"),
     ],
     
     # Lower row device definition (extended operation, Shift+key) for future expansion
     "bottom_row": [
         (DeviceType.EMPTY, "", 1, "Undefined (Timer planned)"),
         (DeviceType.EMPTY, "", 2, "Undefined (Counter planned)"),
-        (DeviceType.EMPTY, "", 3, "Undefined"),
-        (DeviceType.EMPTY, "", 4, "未定義"),
-        (DeviceType.EMPTY, "", 5, "未定義"),
-        (DeviceType.EMPTY, "", 6, "未定義"),
-        (DeviceType.EMPTY, "", 7, "未定義"),
-        (DeviceType.EMPTY, "", 8, "未定義"),
-        (DeviceType.EMPTY, "", 9, "未定義"),
-        (DeviceType.EMPTY, "", 0, "未定義"),
+        (DeviceType.EMPTY, "", 3, "UNDEF"),
+        (DeviceType.EMPTY, "", 4, "UNDEF"),
+        (DeviceType.EMPTY, "", 5, "UNDEF"),
+        (DeviceType.EMPTY, "", 6, "UNDEF"),
+        (DeviceType.EMPTY, "", 7, "UNDEF"),
+        (DeviceType.EMPTY, "", 8, "UNDEF"),
+        (DeviceType.EMPTY, "", 9, "UNDEF"),
+        (DeviceType.EMPTY, "", 0, "UNDEF"),
     ]
 }
 
@@ -273,8 +273,8 @@ class DeviceAddressRanges:
 class SystemInfo:
     """Ver3システム情報"""
     VERSION: str = "3.0"
-    BUILD_DATE: str = "2025-01-28"
-    DESCRIPTION: str = "PLC標準仕様完全準拠ラダー図シミュレーター"
+    BUILD_DATE: str = "2025-06-28"
+    DESCRIPTION: str = "PLC 標準仕様完全準拠ラダー図シミュレーター"
     
     # Ver2からの主要変更点
     MAJOR_CHANGES = [

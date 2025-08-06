@@ -179,8 +179,8 @@ class PyPlcVer3:
         self.grid_system.draw()
         
         # RUNモード時のデバイス情報表示（マウスオーバー）
-        if self.current_mode == SimulatorMode.RUN:
-            self._draw_device_info_on_hover()
+        # if self.current_mode == SimulatorMode.RUN:
+        #     self._draw_device_info_on_hover()
         
         # UI情報描画
         self._draw_cursor_and_status()
@@ -226,10 +226,11 @@ class PyPlcVer3:
             snap_color = pyxel.COLOR_YELLOW if self.mouse_state.is_snapped else pyxel.COLOR_GRAY
             pyxel.text(10, status_y + 25, snap_text, snap_color)
 
-            # デバッグ情報: ホバーしているデバイスのstateとis_energizedを表示
+            # デバイス情報表示: ホバーしているデバイスのstateとis_energizedを表示（EDIT/RUN共通）
             hovered_device = self.grid_system.get_device(row, col)
             if hovered_device:
-                device_debug_text = f"Device: {hovered_device.device_type.value} State:{hovered_device.state} Energized:{hovered_device.is_energized}"
+                device_id = hovered_device.address if hovered_device.address else "N/A"
+                device_debug_text = f"Device: {hovered_device.device_type.value} ID:{device_id} State:{hovered_device.state} Energized:{hovered_device.is_energized}"
                 pyxel.text(10, status_y + 35, device_debug_text, pyxel.COLOR_WHITE)
         else:
             # スナップ範囲外時の詳細メッセージ（Ver2準拠）
@@ -567,9 +568,9 @@ class PyPlcVer3:
                 
                 device_info.append(f"Type: {device_type_name}")
                 
-                # アドレス表示（空でない場合のみ）
-                if device.address and device.address.strip():
-                    device_info.append(f"Address: {device.address}")
+                # デバイスID表示（必ず表示）
+                device_id = device.address if device.address and device.address.strip() else "N/A"
+                device_info.append(f"ID: {device_id}")
                 
                 # 状態表示
                 if device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
