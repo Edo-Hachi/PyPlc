@@ -1,247 +1,302 @@
-# PyPlc Ver3 デバイスID入力・編集機能実装プラン
+# PyPlc Ver3 ダイアログシステム リファクタリングプラン
 
-## 📋 **実装概要**
+## 📋 **プロジェクト概要**
 
-**目標**: エディットモードでのデバイス右クリック→ID入力ダイアログ表示機能の実装  
-**アーキテクチャ**: Ver3設計思想に合致したシンプルなモーダルダイアログシステム  
-**操作方法**: マウス右クリック → デバイスID編集ダイアログ表示
+**目標**: main.pyの肥大化解消とダイアログシステムの独立モジュール化  
+**アーキテクチャ**: ダイアログ関連コードを`dialogs/`ディレクトリに分離  
+**効果**: コードの保守性・拡張性・可読性の大幅向上
 
 ---
 
-## 🎯 **Phase 1: コアダイアログシステム実装**
+## 🔍 **現状分析**
 
-### **Task 1.1: DeviceIDDialog基本クラス作成**
-**ファイル**: `core/device_id_dialog.py`（新規作成）  
-**推定時間**: 45分
+### **問題点**
+- **main.py肥大化**: 705行（ダイアログ関連65行が含まれる）
+- **責任分散**: UIロジック、ダイアログ処理、アプリ制御が混在
+- **拡張困難**: 新しいダイアログ追加時にmain.pyを修正が必要
 
-**実装内容**:
+### **ダイアログ関連ファイル現状**
 ```python
-class DeviceIDDialog:
-    """Ver3専用デバイスID編集ダイアログ"""
+# 現在の構成
+core/device_id_dialog.py     # ダイアログクラス（343行）
+config.py                    # DialogConfig設定クラス
+main.py                      # ダイアログ統合処理（65行）
+├── _show_device_id_dialog()      # 22行
+├── _generate_default_device_id()  # 20行  
+└── _draw_background_for_dialog()  # 23行
+```
+
+---
+
+## 🎯 **リファクタリング戦略**
+
+### **新しいアーキテクチャ設計**
+```
+PyPlc/
+├── dialogs/                 # ダイアログシステム独立ディレクトリ
+│   ├── __init__.py         # ダイアログシステムエクスポート
+│   ├── device_id_dialog.py # デバイスID編集ダイアログ
+│   ├── dialog_manager.py   # ダイアログ統合管理クラス
+│   └── dialog_base.py      # 将来拡張用ベースクラス
+├── core/                   # コアシステム（ダイアログ除外）
+├── main.py                 # 640行に削減（65行減少）
+└── config.py              # DialogConfig維持
+```
+
+### **責任分離設計**
+```python
+# dialogs/dialog_manager.py
+class DialogManager:
+    """ダイアログシステム統合管理"""
+    def show_device_id_dialog(device, row, col, background_func)
+    def generate_default_device_id(device_type, row, col)
     
-    def __init__(self, device_type: DeviceType, current_id: str = ""):
-        self.device_type = device_type
-        self.current_id = current_id
-        self.input_text = current_id
-        self.is_active = False
-        self.dialog_result = None  # True: OK, False: Cancel
-        
-    def show_modal(self) -> tuple[bool, str]:
-        """モーダル表示・入力処理（Pyxelループ統合）"""
-        
-    def update(self):
-        """キーボード・マウス入力処理"""
-        
-    def draw(self):
-        """ダイアログUI描画"""
-        
-    def _validate_device_id(self, device_id: str) -> bool:
-        """PLC標準準拠デバイスIDバリデーション"""
+# main.py（簡素化後）
+class PyPlcVer3:
+    def __init__(self):
+        self.dialog_manager = DialogManager()  # ダイアログ管理委譲
+    
+    def _handle_device_placement(self):
+        # 右クリック時
+        self.dialog_manager.show_device_id_dialog(
+            device, row, col, self._draw_background_for_dialog
+        )
 ```
 
-**機能仕様**:
-- モーダルウィンドウ表示（中央配置）
-- テキスト入力機能（英数字のみ）
-- OK/Cancelボタン（マウス・キー対応）
-- 背景暗転効果（モーダル感の演出）
+---
 
-### **Task 1.2: PLC標準バリデーション実装**
-**推定時間**: 30分
+## 📋 **5フェーズ実装プラン**
 
-**バリデーション仕様**:
+### **Phase 1: ディレクトリ構造作成**
+**推定時間**: 15分  
+**作業内容**:
+- `dialogs/` ディレクトリ作成
+- `dialogs/__init__.py` 作成（エクスポート定義）
+- `core/device_id_dialog.py` → `dialogs/device_id_dialog.py` 移動
+
+### **Phase 2: DialogManager作成**
+**推定時間**: 30分  
+**作業内容**:
+- `dialogs/dialog_manager.py` 新規作成
+- main.pyからダイアログ関連メソッド移動
+  - `_show_device_id_dialog()` → `DialogManager.show_device_id_dialog()`
+  - `_generate_default_device_id()` → `DialogManager.generate_default_device_id()`
+- グリッドシステム連携機能実装
+
+### **Phase 3: main.py統合修正**
+**推定時間**: 20分  
+**作業内容**:
+- DialogManager インポート・インスタンス化
+- 右クリック処理の委譲実装
+- `_draw_background_for_dialog()` の引き継ぎ
+
+### **Phase 4: インポート参照更新**
+**推定時間**: 15分  
+**作業内容**:
+- 全ファイルのインポート文修正
+- `from core.device_id_dialog` → `from dialogs`
+- パッケージ間依存関係の整理
+
+### **Phase 5: 統合テスト・品質保証**
+**推定時間**: 30分  
+**作業内容**:
+- 全機能動作確認
+- ダイアログ表示・バリデーション・ID更新テスト
+- パフォーマンス確認（背景暗転改善効果維持）
+
+---
+
+## 🏗️ **詳細実装仕様**
+
+### **DialogManager クラス設計**
 ```python
-# デバイスタイプ別ID形式
-CONTACT_A/B: X000-X377 (8進数)
-COIL/COIL_REV: Y000-Y377, M000-M7999
-TIMER: T000-T255
-COUNTER: C000-C255
-LINK系: IDなし（バリデーションスキップ）
+from typing import Callable, Optional, Tuple
+from config import DeviceType
+from .device_id_dialog import DeviceIDDialog
+
+class DialogManager:
+    """
+    ダイアログシステム統合管理クラス
+    main.pyからダイアログ関連処理を完全分離
+    """
+    
+    def show_device_id_dialog(
+        self, 
+        device, 
+        row: int, 
+        col: int, 
+        background_draw_func: Callable[[], None],
+        grid_system
+    ) -> bool:
+        """デバイスID編集ダイアログ統合処理"""
+        
+    def generate_default_device_id(
+        self, 
+        device_type: DeviceType, 
+        row: int, 
+        col: int
+    ) -> str:
+        """デバイスタイプ別デフォルトID生成"""
+        
+    def validate_device_for_id_edit(self, device) -> bool:
+        """ID編集可能デバイス判定"""
 ```
 
-**実装詳細**:
-- デバイスタイプ別のID形式チェック
-- 数値範囲バリデーション（8進数・10進数対応）
-- エラーメッセージ表示機能
-
----
-
-## 🎯 **Phase 2: Ver3統合実装**
-
-### **Task 2.1: main.py右クリック処理拡張**
-**ファイル**: `main.py`  
-**推定時間**: 20分
-
-**変更箇所**: `_handle_device_placement()`メソッド
-
-**実装内容**:
+### **dialogs/__init__.py 設計**
 ```python
-# 既存の右クリック処理を拡張
-if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
-    device = self.grid_system.get_device(row, col)
-    if device and self.current_mode == SimulatorMode.EDIT:
-        # デバイスID編集ダイアログ表示
-        self._show_device_id_dialog(device, row, col)
-    # 既存のRUNモード処理は保持
+"""
+PyPlc Ver3 ダイアログシステム
+統合ダイアログ管理とデバイスID編集機能
+"""
+
+from .dialog_manager import DialogManager
+from .device_id_dialog import DeviceIDDialog, DialogState
+
+__all__ = [
+    'DialogManager',
+    'DeviceIDDialog', 
+    'DialogState'
+]
 ```
 
-**新規メソッド**:
-- `_show_device_id_dialog()`: ダイアログ表示・結果処理
-- ダイアログ結果に基づくデバイスID更新処理
+### **main.py 簡素化後**
+```python
+# インポート簡素化
+from dialogs import DialogManager
 
-### **Task 2.2: GridSystem連携実装**
-**ファイル**: `core/grid_system.py`  
-**推定時間**: 15分
-
-**実装内容**:
-- `update_device_id(row, col, new_id)`: デバイスID更新メソッド
-- ID変更後の画面更新処理
-- デバイスアドレス管理の統合
+class PyPlcVer3:
+    def __init__(self):
+        # ダイアログシステム初期化
+        self.dialog_manager = DialogManager()
+    
+    def _handle_device_placement(self):
+        # 右クリック処理（大幅簡素化）
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
+            device = self.grid_system.get_device(row, col)
+            if device:
+                self.dialog_manager.show_device_id_dialog(
+                    device, row, col, 
+                    self._draw_background_for_dialog,
+                    self.grid_system
+                )
+```
 
 ---
 
-## 🎯 **Phase 3: UI/UX最適化**
+## 📊 **期待される効果**
 
-### **Task 3.1: ダイアログUI設計実装**
-**推定時間**: 30分
-
-**UI仕様**:
+### **コード品質向上**
 ```
-┌─────────────────────────────┐
-│     Device ID Editor        │
-├─────────────────────────────┤
-│ Device Type: CONTACT_A      │
-│ Current ID:  [X001_____]    │
-│                             │
-│ Valid Format: X000-X377     │
-│ Example: X001, X010, X100   │
-│                             │
-│   [  OK  ]     [Cancel]     │
-└─────────────────────────────┘
+main.py行数: 705行 → 640行（9%削減）
+責任分離: アプリ制御 vs ダイアログ管理の明確化
+保守性: ダイアログ機能の独立開発・テスト可能
 ```
 
-**描画仕様**:
-- ダイアログサイズ: 200x120ピクセル
-- 中央配置計算（384x384画面基準）
-- 背景暗転: 50%透明度
-- ボタンホバー効果
+### **拡張性確保**
+```python
+# 将来の機能拡張例
+dialogs/
+├── device_id_dialog.py      # 既存
+├── file_save_dialog.py      # 新規
+├── settings_dialog.py       # 新規
+└── confirmation_dialog.py   # 新規
+```
 
-### **Task 3.2: キーボード操作最適化**
-**推定時間**: 15分
-
-**操作仕様**:
-- 英数字キー: テキスト入力
-- Backspace: 文字削除
-- Enter: OK確定
-- Escape: Cancel
-- Tab: OK/Cancel間フォーカス移動
+### **開発効率向上**
+- **ダイアログ開発**: 独立したモジュールでの集中開発
+- **テスト効率**: ダイアログ機能の単体テスト容易化
+- **デバッグ効率**: 機能別の問題切り分けが明確化
 
 ---
 
-## 🎯 **Phase 4: テスト・品質保証**
+## ⚠️ **リスク分析と対策**
 
-### **Task 4.1: 機能テスト**
-**推定時間**: 20分
+### **潜在的リスク**
+1. **インポート循環参照**: dialogs ↔ core間の依存関係
+2. **機能分離の複雑化**: grid_system連携の複雑性
+3. **既存機能への影響**: リファクタリング時の機能劣化
 
-**テスト項目**:
-- 各デバイスタイプでの右クリック動作確認
-- バリデーション機能（正常・異常入力）
-- モード切り替え時の動作確認
-- キーボード・マウス操作の統合テスト
-
-### **Task 4.2: 統合テスト・バグ修正**
-**推定時間**: 20分
-
-**確認項目**:
-- 既存機能への影響なし
-- パフォーマンス（30FPS維持）
-- メモリリーク・リソース管理
-- エラーハンドリング
+### **対策**
+1. **依存関係設計**: dialog_manager → core（単方向依存）
+2. **インターフェース明確化**: 最小限の引数での連携
+3. **段階的移行**: フェーズごとの動作確認実施
 
 ---
 
-## 📊 **実装スケジュール**
+## 🧪 **テスト戦略**
+
+### **機能テスト**
+- [ ] デバイス右クリック→ダイアログ表示
+- [ ] ID入力・バリデーション・更新
+- [ ] ESCキャンセル・F12終了動作
+- [ ] 背景暗転効果（改善版）
+
+### **品質テスト**  
+- [ ] パフォーマンス（30FPS維持）
+- [ ] メモリリーク確認
+- [ ] エラーハンドリング
+
+### **統合テスト**
+- [ ] EDIT/RUNモード動作
+- [ ] 全デバイスタイプ対応確認
+- [ ] CSV保存・読み込み連携
+
+---
+
+## 📈 **成功指標**
+
+### **定量的指標**
+- main.py行数: 705行 → 640行（9%削減）
+- ダイアログ関連行数: 65行 → 5行（92%削減）
+- テスト成功率: 100%
+
+### **定性的指標**
+- コードの可読性向上
+- 新規ダイアログ追加の容易性
+- 開発チーム生産性向上
+
+---
+
+## ⏱️ **実装スケジュール**
 
 | Phase | 作業内容 | 推定時間 | 累計時間 |
 |-------|----------|----------|----------|
-| Phase 1 | コアダイアログシステム | 1時間15分 | 1時間15分 |
-| Phase 2 | Ver3統合実装 | 35分 | 1時間50分 |
-| Phase 3 | UI/UX最適化 | 45分 | 2時間35分 |
-| Phase 4 | テスト・品質保証 | 40分 | **3時間15分** |
+| Phase 1 | ディレクトリ構造作成 | 15分 | 15分 |
+| Phase 2 | DialogManager作成 | 30分 | 45分 |
+| Phase 3 | main.py統合修正 | 20分 | 1時間5分 |
+| Phase 4 | インポート参照更新 | 15分 | 1時間20分 |
+| Phase 5 | 統合テスト・品質保証 | 30分 | **1時間50分** |
 
-**総実装時間**: 約3時間15分
-
----
-
-## 🔧 **技術仕様詳細**
-
-### **デバイスIDフォーマット仕様**
-```python
-# PLC標準準拠ID形式
-DEVICE_ID_FORMATS = {
-    DeviceType.CONTACT_A: r"X[0-3][0-7][0-7]",     # X000-X377 (8進数)
-    DeviceType.CONTACT_B: r"X[0-3][0-7][0-7]",     # X000-X377 (8進数)
-    DeviceType.COIL: r"(Y[0-3][0-7][0-7]|M[0-7][0-9]{3})", # Y000-Y377, M0000-M7999
-    DeviceType.COIL_REV: r"(Y[0-3][0-7][0-7]|M[0-7][0-9]{3})",
-    DeviceType.TIMER: r"T[0-2][0-5][0-5]",         # T000-T255
-    DeviceType.COUNTER: r"C[0-2][0-5][0-5]",       # C000-C255
-    # LINK系は ID入力対象外
-}
-```
-
-### **ダイアログ状態管理**
-```python
-class DialogState(Enum):
-    INACTIVE = "inactive"    # ダイアログ非表示
-    EDITING = "editing"      # テキスト入力中
-    WAITING = "waiting"      # OK/Cancel待ち
-```
-
-### **統合インターフェース**
-```python
-# main.py での使用例
-dialog = DeviceIDDialog(device.device_type, device.address)
-result, new_id = dialog.show_modal()
-if result:  # OK押下
-    self.grid_system.update_device_id(row, col, new_id)
-```
+**総実装時間**: 約1時間50分
 
 ---
 
-## ⚠️ **実装時注意点**
+## 🔄 **Ver3設計思想との整合性**
 
-### **既存機能への影響最小化**
-- 右クリック処理の拡張（RUNモードでの状態切り替えは保持）
-- main.pyの既存コード構造維持
-- パフォーマンスへの影響なし
+### **シンプル・軽量維持**
+- 外部依存なし（Pyxelのみ）
+- モジュール単位での軽量化
+- 明確な責任分離
 
-### **Ver3設計思想準拠**
-- シンプル・軽量実装
-- モジュール化による拡張性確保
-- PLC標準準拠の教育価値重視
+### **教育価値向上**
+- コードアーキテクチャの学習効果
+- モジュール設計パターンの実践
+- 保守性重視の開発手法
 
-### **エラーハンドリング**
-- 不正入力時の適切なフィードバック
-- ダイアログ表示中の例外処理
-- メモリリーク防止
-
----
-
-## 🎯 **実装完了後の期待効果**
-
-1. **ユーザビリティ向上**: 直感的なデバイスID編集操作
-2. **PLC標準準拠**: 実際のPLCと同等のアドレス体系
-3. **教育効果**: 正しいデバイスアドレス命名の学習
-4. **Ver3品質維持**: シンプル設計思想に合致した実装
+### **PLC標準準拠継続**
+- デバイスID仕様の完全維持
+- バリデーション機能の継承
+- 操作性の一貫性確保
 
 ---
 
 **プラン作成日**: 2025-08-06  
-**推定総実装時間**: 約3時間15分  
-**実装準備**: 完了（詳細設計・技術仕様確定済み）
+**推定総実装時間**: 約1時間50分  
+**実装準備**: 完了（詳細設計・リスク分析済み）
 
 ---
 
 ## 📝 **承認待ち**
 
-このプランの確認をお願いします。  
-**OKをいただき次第、Phase 1からコーディングを開始します。**
+このリファクタリングプランをご確認ください。  
+**OKをいただき次第、Phase 1からリファクタリングを開始します。**
