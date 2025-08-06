@@ -6,7 +6,7 @@ import pyxel
 import re
 from enum import Enum
 from typing import Tuple, Optional
-from config import DeviceType, DisplayConfig
+from config import DeviceType, DisplayConfig, DialogConfig
 
 class DialogState(Enum):
     """ダイアログ状態管理"""
@@ -127,7 +127,7 @@ class DeviceIDDialog:
     def _handle_text_input(self):
         """テキスト入力処理（英数字のみ）"""
         # 文字数制限
-        if len(self.input_text) >= 8:  # デバイスID最大長
+        if len(self.input_text) >= DialogConfig.MAX_DEVICE_ID_LENGTH:
             return
             
         # A-Z文字入力
@@ -166,10 +166,9 @@ class DeviceIDDialog:
         if not self.is_active:
             return
             
-        # 背景暗転効果（50%透明度風）
+        # 背景暗転効果（横線パターンで軽量化）
         for y in range(0, DisplayConfig.WINDOW_HEIGHT, 2):
-            for x in range(0, DisplayConfig.WINDOW_WIDTH, 2):
-                pyxel.pset(x, y, pyxel.COLOR_BLACK)
+            pyxel.line(0, y, DisplayConfig.WINDOW_WIDTH, y, pyxel.COLOR_BLACK)
         
         # ダイアログウィンドウ背景
         pyxel.rect(self.dialog_x, self.dialog_y, self.dialog_width, self.dialog_height, pyxel.COLOR_DARK_BLUE)
@@ -315,7 +314,7 @@ class DeviceIDDialog:
     
     def _validate_timer_device(self, device_id: str) -> bool:
         """タイマーデバイスバリデーション (T000-T255)"""
-        pattern = r'^T([0-1][0-9]{2}|2[0-4][0-9]|25[0-5]|[0-9]{1,2})$'
+        pattern = r'^T[0-9]{3}$'  # 3桁の数字のみを許容
         if re.match(pattern, device_id):
             # 数値範囲チェック
             num = int(device_id[1:])
@@ -327,7 +326,7 @@ class DeviceIDDialog:
     
     def _validate_counter_device(self, device_id: str) -> bool:
         """カウンターデバイスバリデーション (C000-C255)"""
-        pattern = r'^C([0-1][0-9]{2}|2[0-4][0-9]|25[0-5]|[0-9]{1,2})$'
+        pattern = r'^C[0-9]{3}$'  # 3桁の数字のみを許容
         if re.match(pattern, device_id):
             # 数値範囲チェック
             num = int(device_id[1:])

@@ -59,6 +59,11 @@ class UIBehaviorConfig:
     SHOW_GRID_LINES: bool = True    # Grid line display ON/OFF
     SHOW_DEBUG_INFO: bool = False   # Debug info display ON/OFF
 
+class DialogConfig:
+    """Dialog System Configuration Constants"""
+    # Device ID input dialog settings
+    MAX_DEVICE_ID_LENGTH: int = 8  # Maximum input length for device IDs
+
 
 # =============================================================================
 # Color Configuration
