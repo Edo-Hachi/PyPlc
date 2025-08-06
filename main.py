@@ -14,6 +14,7 @@ from core.grid_system import GridSystem
 from core.input_handler import InputHandler, MouseState
 from core.circuit_analyzer import CircuitAnalyzer
 from core.device_palette import DevicePalette
+from core.device_id_dialog import DeviceIDDialog  # デバイスIDダイアログをインポート
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 
 class PyPlcVer3:
@@ -25,7 +26,8 @@ class PyPlcVer3:
             DisplayConfig.WINDOW_WIDTH,
             DisplayConfig.WINDOW_HEIGHT,
             title=f"PyPlc Ver{SystemInfo.VERSION} - Circuit Solver",
-            fps=DisplayConfig.TARGET_FPS
+            fps=DisplayConfig.TARGET_FPS,
+            quit_key=pyxel.KEY_F12  # F12キーのみで終了、ESCキー無効化
         )
         pyxel.mouse(True)
         
@@ -124,7 +126,11 @@ class PyPlcVer3:
                     address = f"X{row}{col}"  # 仮のアドレス生成
                     self.grid_system.place_device(row, col, selected_device_type, address)
         
-        # 右クリック処理は_handle_device_operation()に移動
+        # 右クリック処理: EDITモードでのデバイスID編集ダイアログ表示
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
+            device = self.grid_system.get_device(row, col)
+            if device:
+                self._show_device_id_dialog(device, row, col)
 
     def _handle_device_operation(self) -> None:
         """
@@ -274,9 +280,9 @@ class PyPlcVer3:
         # フッター操作ガイド（設定に応じて表示切り替え）- 16px上に移動
         footer_y = DisplayConfig.WINDOW_HEIGHT - 60 #36  # -20から-36に変更（16px上に移動）
         if UIBehaviorConfig.ALWAYS_SNAP_MODE:
-            pyxel.text(10, footer_y, "L-Click:Place/Del R-Click:Toggle Q:Quit", pyxel.COLOR_GRAY)
+            pyxel.text(10, footer_y, "L-Click:Place/Del R-Click:Toggle F12:Quit", pyxel.COLOR_GRAY)
         else:
-            pyxel.text(10, footer_y, "CTRL:Snap L-Click:Place/Del R-Click:Toggle Q:Quit", pyxel.COLOR_GRAY)
+            pyxel.text(10, footer_y, "CTRL:Snap L-Click:Place/Del R-Click:Toggle F12:Quit", pyxel.COLOR_GRAY)
 
     def _handle_mode_switching(self) -> None:
         """
@@ -631,6 +637,70 @@ class PyPlcVer3:
         hint_x = 16 + (palette_width - len(hint) * 4) // 2  # 中央揃え
         hint_y = palette_y + 16
         pyxel.text(hint_x, hint_y, hint, pyxel.COLOR_GRAY)
+
+    def _show_device_id_dialog(self, device, row: int, col: int) -> None:
+        """
+        デバイスID編集ダイアログ表示・処理
+        EDITモードでの右クリック時に呼び出される
+        """
+        # LINK系デバイスはID編集対象外
+        if device.device_type in [DeviceType.LINK_HORZ, DeviceType.LINK_BRANCH, DeviceType.LINK_VIRT]:
+            return
+            
+        # 現在のデバイスIDを取得（未設定の場合はデフォルト値を生成）
+        current_id = device.address if device.address else self._generate_default_device_id(device.device_type, row, col)
+        
+        # ダイアログ作成・表示
+        dialog = DeviceIDDialog(device.device_type, current_id)
+        
+        # モーダルダイアログ表示（バックグラウンド描画関数を渡す）
+        result, new_id = dialog.show_modal(self._draw_background_for_dialog)
+        
+        # OK が押された場合、デバイスIDを更新
+        if result:
+            self.grid_system.update_device_address(row, col, new_id)
+    
+    def _generate_default_device_id(self, device_type: DeviceType, row: int, col: int) -> str:
+        """
+        デバイスタイプに基づくデフォルトID生成
+        PLC標準に準拠した適切なデフォルト値を生成
+        """
+        if device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
+            # X接点は8進数系 (001, 010, 100等)
+            return f"X{row+1:03o}"  # X001, X002等（8進数）
+        elif device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV]:
+            # Y出力は8進数系、Mは10進数系のどちらでも（ここではY系を選択）
+            return f"Y{row+1:03o}"  # Y001, Y002等（8進数）
+        elif device_type == DeviceType.TIMER:
+            # タイマーは10進数系 (001, 002, 003等)
+            return f"T{row+1:03d}"  # T001, T002等（10進数）
+        elif device_type == DeviceType.COUNTER:
+            # カウンターは10進数系 (001, 002, 003等)
+            return f"C{row+1:03d}"  # C001, C002等（10進数）
+        else:
+            return ""
+    
+    def _draw_background_for_dialog(self) -> None:
+        """
+        ダイアログ表示中のバックグラウンド描画
+        ダイアログのモーダル効果のため、現在の画面状態を描画
+        """
+        # 通常の描画処理を実行（ダイアログ以外）
+        pyxel.cls(pyxel.COLOR_BLACK)
+        
+        # デバイスパレット描画
+        if self.current_mode == SimulatorMode.EDIT:
+            self.device_palette.draw()
+        else:
+            self._draw_palette_disabled_message()
+        
+        # グリッドシステム描画
+        self.grid_system.draw()
+        
+        # UI情報描画（ダイアログ以外）
+        self._draw_cursor_and_status()
+        self._draw_mode_status_bar()
+        self._draw_header_footer()
 
 if __name__ == "__main__":
     PyPlcVer3()

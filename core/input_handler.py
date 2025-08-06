@@ -116,4 +116,4 @@ class InputHandler:
     def check_quit_command(self) -> bool:
         """アプリケーションの終了コマンドが入力されたかチェックする"""
         #debug 最終的には終了前にY/Nしたいね
-        return pyxel.btnp(pyxel.KEY_Q) or pyxel.btnp(pyxel.KEY_ESCAPE)
+        return pyxel.btnp(pyxel.KEY_F12)

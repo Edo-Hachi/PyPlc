@@ -286,3 +286,24 @@ class GridSystem:
                 device = self.get_device(row, col)
                 if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
                     self.grid_data[row][col] = None
+
+    def update_device_address(self, row: int, col: int, new_address: str) -> bool:
+        """
+        指定した座標のデバイスのアドレスを更新
+        
+        Args:
+            row: 行番号
+            col: 列番号
+            new_address: 新しいデバイスアドレス
+            
+        Returns:
+            bool: 更新成功時True、失敗時False
+        """
+        device = self.get_device(row, col)
+        if device:
+            device.address = new_address
+            print(f"Device address updated: [{row}][{col}] -> {new_address}")
+            return True
+        else:
+            print(f"Error: No device found at [{row}][{col}]")
+            return False
