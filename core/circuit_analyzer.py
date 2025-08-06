@@ -133,14 +133,14 @@ class CircuitAnalyzer:
                         
                         if old_state != device.state:
                             status = "activated" if device.state else "deactivated"
-                            print(f"  📍 Contact [{row}][{col}] {device.address} auto-{status} (coil energized: {is_coil_energized})")
+                            print(f"  Contact [{row}][{col}] {device.address} auto-{status} (coil energized: {is_coil_energized})")
         
         if energized_coil_addresses:
-            print(f"🔗 PLC Standard Operation: Energized coils: {energized_coil_addresses}")
+            print(f"PLC Standard Operation: Energized coils: {energized_coil_addresses}")
         
         # 非励磁になったコイルがある場合の情報出力
         de_energized_coils = all_coil_addresses - energized_coil_addresses
         if de_energized_coils:
-            print(f"🔗 PLC Standard Operation: De-energized coils: {de_energized_coils}")
+            print(f"PLC Standard Operation: De-energized coils: {de_energized_coils}")
 
     # 不要でバグの原因となっていたプライベートメソッドは完全に削除
