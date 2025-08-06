@@ -1,8 +1,6 @@
 venv/
-../venv/
 *.pyc
 __pycache__/
-PyxelShmup/
-ChromeBlaze/
 .claude/settings.local.json
 commit.txt
+New_Docs/
