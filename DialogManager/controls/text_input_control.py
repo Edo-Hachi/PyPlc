@@ -163,6 +163,7 @@ class TextInputControl:
             self.is_focused = True
             self.cursor_blink_timer = 0
             self.cursor_visible = True
+            print(f"TextInputControl '{self.id}' focused")
             self.emit("focus")
     
     def blur(self) -> None:
@@ -206,9 +207,133 @@ class TextInputControl:
         self.set_text("")
         self.cursor_pos = 0
     
+    def update(self) -> None:
+        """
+        フレームごとの更新処理
+        キーボード入力とカーソル点滅を処理
+        """
+        if not self.is_focused:
+            return
+        
+        # カーソル点滅処理
+        self.cursor_blink_timer += 1
+        if self.cursor_blink_timer >= 30:  # 30フレーム（1秒）ごとに点滅
+            self.cursor_visible = not self.cursor_visible
+            self.cursor_blink_timer = 0
+        
+        # キーボード入力処理
+        self._handle_keyboard_input()
+    
+    def _handle_keyboard_input(self) -> None:
+        """
+        キーボード入力を処理
+        """
+        import pyxel
+        
+        # 文字入力処理
+        for key in range(pyxel.KEY_A, pyxel.KEY_Z + 1):
+            if pyxel.btnp(key):
+                char = chr(ord('A') + (key - pyxel.KEY_A))
+                if not pyxel.btn(pyxel.KEY_SHIFT):
+                    char = char.lower()
+                self._insert_char(char)
+        
+        # 数字入力処理
+        for key in range(pyxel.KEY_0, pyxel.KEY_9 + 1):
+            if pyxel.btnp(key):
+                char = chr(ord('0') + (key - pyxel.KEY_0))
+                self._insert_char(char)
+        
+        # 特殊キー処理
+        if pyxel.btnp(pyxel.KEY_BACKSPACE):
+            self._handle_backspace()
+        elif pyxel.btnp(pyxel.KEY_DELETE):
+            self._handle_delete()
+        elif pyxel.btnp(pyxel.KEY_LEFT):
+            self._move_cursor_left()
+        elif pyxel.btnp(pyxel.KEY_RIGHT):
+            self._move_cursor_right()
+        elif pyxel.btnp(pyxel.KEY_HOME):
+            self.cursor_pos = 0
+            self._update_display_offset()
+        elif pyxel.btnp(pyxel.KEY_END):
+            self.cursor_pos = len(self.text)
+            self._update_display_offset()
+        elif pyxel.btnp(pyxel.KEY_RETURN):
+            self.emit("enter")
+    
+    def _insert_char(self, char: str) -> None:
+        """
+        文字を挿入
+        
+        Args:
+            char: 挿入する文字
+        """
+        print(f"Trying to insert char: '{char}', allowed_chars: '{self.allowed_chars}', current_text: '{self.text}'")
+        if char in self.allowed_chars and len(self.text) < self.max_length:
+            old_text = self.text
+            self.text = self.text[:self.cursor_pos] + char + self.text[self.cursor_pos:]
+            self.cursor_pos += 1
+            self._update_display_offset()
+            print(f"Character inserted: '{old_text}' -> '{self.text}'")
+            self.emit("change", old_text, self.text)
+            self.validate()
+        else:
+            print(f"Character '{char}' rejected - not in allowed_chars or max_length exceeded")
+    
+    def _handle_backspace(self) -> None:
+        """
+        バックスペース処理
+        """
+        if self.cursor_pos > 0:
+            old_text = self.text
+            self.text = self.text[:self.cursor_pos-1] + self.text[self.cursor_pos:]
+            self.cursor_pos -= 1
+            self._update_display_offset()
+            self.emit("change", old_text, self.text)
+            self.validate()
+    
+    def _handle_delete(self) -> None:
+        """
+        デリート処理
+        """
+        if self.cursor_pos < len(self.text):
+            old_text = self.text
+            self.text = self.text[:self.cursor_pos] + self.text[self.cursor_pos+1:]
+            self._update_display_offset()
+            self.emit("change", old_text, self.text)
+            self.validate()
+    
+    def _move_cursor_left(self) -> None:
+        """
+        カーソルを左に移動
+        """
+        if self.cursor_pos > 0:
+            self.cursor_pos -= 1
+            self._update_display_offset()
+    
+    def _move_cursor_right(self) -> None:
+        """
+        カーソルを右に移動
+        """
+        if self.cursor_pos < len(self.text):
+            self.cursor_pos += 1
+            self._update_display_offset()
+    
+    def _update_display_offset(self) -> None:
+        """
+        表示オフセットを更新（長いテキストのスクロール用）
+        """
+        # 簡単な実装: カーソルが見える範囲に調整
+        visible_width = self.width // 6  # 文字幅を6ピクセルと仮定
+        if self.cursor_pos < self.display_offset:
+            self.display_offset = self.cursor_pos
+        elif self.cursor_pos >= self.display_offset + visible_width:
+            self.display_offset = self.cursor_pos - visible_width + 1
+    
     def handle_input(self, mouse_x: int, mouse_y: int, mouse_clicked: bool) -> None:
         """
-        入力処理
+        マウス入力処理（フォーカス制御のみ）
         
         Args:
             mouse_x, mouse_y: マウス座標
@@ -220,41 +345,51 @@ class TextInputControl:
         # マウスクリック処理（フォーカス制御）
         if mouse_clicked:
             # コントロール内クリックでフォーカス取得
-            if self.point_in_control(mouse_x, mouse_y, 0, 0):  # 相対座標での判定
+            if self._is_point_in_bounds(mouse_x, mouse_y):
+                print(f"TextInputControl '{self.id}' clicked at ({mouse_x}, {mouse_y})")
                 self.focus()
                 # カーソル位置をクリック位置に設定
                 self._set_cursor_from_mouse(mouse_x)
             else:
                 # コントロール外クリックでフォーカス解除
                 self.blur()
+    
+    def _is_point_in_bounds(self, mouse_x: int, mouse_y: int) -> bool:
+        """
+        マウス座標がコントロール内にあるか判定
         
-        # キーボード入力処理（フォーカス時のみ）
-        if self.is_focused:
-            self._handle_keyboard_input()
+        Args:
+            mouse_x, mouse_y: マウス座標（ダイアログ内のローカル座標）
+            
+        Returns:
+            コントロール内にあるかどうか
+        """
+        # BaseDialogで座標変換済みのローカル座標で判定
+        is_inside = (self.x <= mouse_x <= self.x + self.width and 
+                     self.y <= mouse_y <= self.y + self.height)
         
-        # カーソル点滅制御
-        if self.is_focused:
-            self.cursor_blink_timer += 1
-            if self.cursor_blink_timer >= self.cursor_blink_interval:
-                self.cursor_visible = not self.cursor_visible
-                self.cursor_blink_timer = 0
+        print(f"Mouse click check: local_mouse({mouse_x}, {mouse_y}), control({self.x}, {self.y}, {self.width}, {self.height}), inside: {is_inside}")
+        return is_inside
     
     def _handle_keyboard_input(self) -> None:
         """
         キーボード入力処理
         """
+        import pyxel
+        
         # 文字入力処理
-        for key in range(32, 127):  # 印刷可能文字
+        for key in range(pyxel.KEY_A, pyxel.KEY_Z + 1):
             if pyxel.btnp(key):
-                char = chr(key)
-                
-                # Shiftキー処理
-                if pyxel.btn(pyxel.KEY_SHIFT):
-                    char = self._apply_shift(char)
-                
-                # 許可文字チェック
-                if char in self.allowed_chars:
-                    self._insert_char(char)
+                char = chr(ord('A') + (key - pyxel.KEY_A))
+                if not pyxel.btn(pyxel.KEY_SHIFT):
+                    char = char.lower()
+                self._insert_char(char)
+        
+        # 数字入力処理
+        for key in range(pyxel.KEY_0, pyxel.KEY_9 + 1):
+            if pyxel.btnp(key):
+                char = chr(ord('0') + (key - pyxel.KEY_0))
+                self._insert_char(char)
         
         # 特殊キー処理
         if pyxel.btnp(pyxel.KEY_BACKSPACE):
@@ -262,9 +397,9 @@ class TextInputControl:
         elif pyxel.btnp(pyxel.KEY_DELETE):
             self._handle_delete()
         elif pyxel.btnp(pyxel.KEY_LEFT):
-            self._move_cursor(-1)
+            self._move_cursor_left()
         elif pyxel.btnp(pyxel.KEY_RIGHT):
-            self._move_cursor(1)
+            self._move_cursor_right()
         elif pyxel.btnp(pyxel.KEY_HOME):
             self.cursor_pos = 0
             self._update_display_offset()

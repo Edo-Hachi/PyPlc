@@ -255,14 +255,14 @@ class ControlFactory:
             def handle_input(self, mouse_x: int, mouse_y: int, mouse_clicked: bool) -> None:
                 import pyxel
                 
-                # ホバー状態更新
-                dialog_x, dialog_y = 0, 0  # 実際の値は描画時に設定される
-                # 簡易実装：正確な座標計算は後で改善
-                self.is_hovered = True  # 仮実装
+                # マウス座標がボタン内にあるかチェック
+                self.is_hovered = (self.x <= mouse_x <= self.x + self.width and 
+                                   self.y <= mouse_y <= self.y + self.height)
                 
-                # クリック処理
+                # クリック処理（ボタン内でのクリックのみ）
                 if mouse_clicked and self.is_hovered:
                     self.is_pressed = True
+                    print(f"Button '{self.text}' clicked at ({mouse_x}, {mouse_y})")
                     self.emit("click")
                 else:
                     self.is_pressed = False

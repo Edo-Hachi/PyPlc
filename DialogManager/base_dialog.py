@@ -167,11 +167,20 @@ class BaseDialog(ABC):
             self.close(False)
             return
         
-        # 各コントロールの入力処理
+        # 各コントロールの更新処理（TextInputControlのキーボード入力など）
+        for control_id in self.control_order:
+            control = self.controls[control_id]
+            if hasattr(control, 'update'):
+                control.update()
+        
+        # 各コントロールの入力処理（絶対座標をローカル座標に変換）
+        local_mouse_x = self.mouse_x - self.x
+        local_mouse_y = self.mouse_y - self.y
+        
         for control_id in self.control_order:
             control = self.controls[control_id]
             if hasattr(control, 'handle_input'):
-                control.handle_input(self.mouse_x, self.mouse_y, mouse_clicked)
+                control.handle_input(local_mouse_x, local_mouse_y, mouse_clicked)
         
         # カスタム入力処理
         self._handle_custom_input()
