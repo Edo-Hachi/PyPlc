@@ -15,7 +15,7 @@ from core.input_handler import InputHandler, MouseState
 from core.circuit_analyzer import CircuitAnalyzer
 from core.device_palette import DevicePalette
 from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システムをインポート
-from dialogs import DialogManager  # ダイアログシステム統合管理をインポート
+from dialogs import DialogManager, FileDialogManager  # ダイアログシステム統合管理をインポート
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 
 class PyPlcVer3:
@@ -47,6 +47,7 @@ class PyPlcVer3:
         self.device_palette = DevicePalette()  # デバイスパレット追加
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
         self.dialog_manager = DialogManager()  # ダイアログシステム統合管理
+        self.file_dialog_manager = FileDialogManager(self.csv_manager)  # ファイルダイアログ管理追加
         
         self.mouse_state: MouseState = MouseState()
         
@@ -68,13 +69,13 @@ class PyPlcVer3:
         # F6キーでの全システムリセット (Ver1実装継承)
         self._handle_full_system_reset()
         
-        # Ctrl+S: CSV保存機能
+        # Ctrl+S: ファイル保存ダイアログ表示
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
-            self.csv_manager.save_circuit_to_csv()
+            self.file_dialog_manager.show_save_dialog()
             
-        # Ctrl+O: CSV読み込み機能
+        # Ctrl+O: ファイル読み込みダイアログ表示
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
-            self.csv_manager.load_circuit_from_csv()
+            self.file_dialog_manager.show_load_dialog()
         
         # デバイスパレット入力処理（EDITモードでのみ有効）
         if self.current_mode == SimulatorMode.EDIT:

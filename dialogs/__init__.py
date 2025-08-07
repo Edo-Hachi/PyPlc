@@ -8,9 +8,11 @@ PyPlc Ver3 ダイアログシステム
 
 from .device_id_dialog import DeviceIDDialog, DialogState
 from .dialog_manager import DialogManager
+from .file_dialog_manager import FileDialogManager
 
 __all__ = [
     'DialogManager',
     'DeviceIDDialog', 
-    'DialogState'
+    'DialogState',
+    'FileDialogManager'
 ]
