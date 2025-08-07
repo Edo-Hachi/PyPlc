@@ -16,6 +16,7 @@ from core.device_palette import DevicePalette
 from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システムをインポート
 from dialogs import DialogManager, FileDialogManager  # ダイアログシステム統合管理をインポート
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
+from DialogManager.integration_test_dialog import show_integration_test_dialog  # Phase 1統合テスト用
 
 class PyPlcVer3:
     """PyPlc Ver3 - PLC標準仕様準拠シミュレーター"""
@@ -75,6 +76,12 @@ class PyPlcVer3:
         # Ctrl+O: ファイル読み込みダイアログ表示
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
             self.file_dialog_manager.show_load_dialog()
+        
+        # T: Phase 1統合テスト - 新ダイアログシステムのテスト
+        if pyxel.btnp(pyxel.KEY_T):
+            print("🚀 Phase 1 Integration Test: Showing test dialog...")
+            result = show_integration_test_dialog()
+            print(f"📋 Integration Test Result: {result}")
         
         # デバイスパレット入力処理（EDITモードでのみ有効）
         if self.current_mode == SimulatorMode.EDIT:
