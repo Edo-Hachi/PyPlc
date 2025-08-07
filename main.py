@@ -1,11 +1,10 @@
 # PyPlc Ver3 - Clean Implementation Start
-# 作成日: 2025-01-29
+# 作成日: 2025-07-29
 # 目標: PLC標準仕様完全準拠ラダー図シミュレーター
 
 #Todo
-#Virtical Curcuit > Branch CirCuitへの変更箇所をレビューする
-#Save,Load時のファイル名のDLGを実装する（Ver2で実装したDLGシステムを参考に）
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
+#Timer Counter実装
 
 
 import pyxel
