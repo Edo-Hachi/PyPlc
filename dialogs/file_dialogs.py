@@ -18,7 +18,7 @@ class FileSaveDialog:
     def __init__(self):
         self.dialog_w = 280
         self.dialog_h = 160
-        self.dialog_x = (384 - self.dialog_w) // 2  # Ver3画面サイズ対応
+        self.dialog_x = (384 - self.dialog_w) // 2
         self.dialog_y = (384 - self.dialog_h) // 2
         
         self.input_text = ""
@@ -28,6 +28,12 @@ class FileSaveDialog:
         self.save_success = False
         self.selected_filename = ""
         self.error_message = ""
+
+        # ボタン設定
+        self.ok_button_rect = (self.dialog_x + 60, self.dialog_y + self.dialog_h - 35, 50, 25)
+        self.cancel_button_rect = (self.dialog_x + 170, self.dialog_y + self.dialog_h - 35, 50, 25)
+        self.mouse_over_ok = False
+        self.mouse_over_cancel = False
         
     def show(self, default_name: str = "my_circuit") -> Tuple[bool, str]:
         """
@@ -46,8 +52,10 @@ class FileSaveDialog:
         self.save_success = False
         self.error_message = ""
         
-        # モーダルループ
+        # モーダルループ（背景描画を追加）
         while self.is_visible and not self.result_ready:
+            # 背景クリア（重要！）
+            pyxel.cls(pyxel.COLOR_BLACK)
             self._handle_input()
             self._draw()
             pyxel.flip()
@@ -55,13 +63,28 @@ class FileSaveDialog:
         return self.save_success, self.selected_filename
     
     def _handle_input(self) -> None:
-        """キーボード入力処理（Ver1準拠）"""
-        
+        """キーボード・マウス入力処理"""
+        # マウス処理
+        mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+        self.mouse_over_ok = self._point_in_rect(mouse_x, mouse_y, self.ok_button_rect)
+        self.mouse_over_cancel = self._point_in_rect(mouse_x, mouse_y, self.cancel_button_rect)
+
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            if self.mouse_over_ok:
+                self._execute_save()
+                return
+            if self.mouse_over_cancel:
+                self._handle_cancel_click()
+                return
+
+        # キーボード処理
+        self._handle_keyboard_input()
+
+    def _handle_keyboard_input(self) -> None:
+        """キーボード入力処理"""
         # ESCキー: キャンセル
         if pyxel.btnp(pyxel.KEY_ESCAPE):
-            self.is_visible = False
-            self.result_ready = True
-            self.save_success = False
+            self._handle_cancel_click()
             return
             
         # Enterキー: 保存実行
@@ -96,6 +119,12 @@ class FileSaveDialog:
             
         # 文字入力（0-9, A-Z, 記号）
         self._handle_character_input()
+
+    def _handle_cancel_click(self) -> None:
+        """キャンセル処理"""
+        self.is_visible = False
+        self.result_ready = True
+        self.save_success = False
     
     def _handle_character_input(self) -> None:
         """文字入力処理"""
@@ -206,26 +235,27 @@ class FileSaveDialog:
     def _draw_buttons(self) -> None:
         """OK/Cancelボタン描画"""
         # OKボタン
-        ok_x = self.dialog_x + 60
-        ok_y = self.dialog_y + self.dialog_h - 35
-        ok_w = 50
-        ok_h = 25
-        
-        pyxel.rect(ok_x, ok_y, ok_w, ok_h, pyxel.COLOR_GREEN)
+        ok_x, ok_y, ok_w, ok_h = self.ok_button_rect
+        ok_color = pyxel.COLOR_LIME if self.mouse_over_ok else pyxel.COLOR_GREEN
+        pyxel.rect(ok_x, ok_y, ok_w, ok_h, ok_color)
         pyxel.rectb(ok_x, ok_y, ok_w, ok_h, pyxel.COLOR_WHITE)
         pyxel.text(ok_x + 18, ok_y + 9, "OK", pyxel.COLOR_WHITE)
         
         # Cancelボタン
-        cancel_x = self.dialog_x + 170
-        cancel_y = ok_y
-        
-        pyxel.rect(cancel_x, cancel_y, ok_w, ok_h, pyxel.COLOR_RED)
-        pyxel.rectb(cancel_x, cancel_y, ok_w, ok_h, pyxel.COLOR_WHITE)
+        cancel_x, cancel_y, cancel_w, cancel_h = self.cancel_button_rect
+        cancel_color = pyxel.COLOR_PINK if self.mouse_over_cancel else pyxel.COLOR_RED
+        pyxel.rect(cancel_x, cancel_y, cancel_w, cancel_h, cancel_color)
+        pyxel.rectb(cancel_x, cancel_y, cancel_w, cancel_h, pyxel.COLOR_WHITE)
         pyxel.text(cancel_x + 10, cancel_y + 9, "Cancel", pyxel.COLOR_WHITE)
         
         # 操作ヒント
         hint_y = self.dialog_y + self.dialog_h - 10
         pyxel.text(self.dialog_x + 20, hint_y, "Enter:Save  ESC:Cancel", pyxel.COLOR_GRAY)
+
+    def _point_in_rect(self, x: int, y: int, rect: Tuple[int, int, int, int]) -> bool:
+        """点が矩形内にあるかチェック"""
+        rx, ry, rw, rh = rect
+        return rx <= x <= rx + rw and ry <= y <= ry + rh
 
 
 class FileLoadDialog:
@@ -246,6 +276,12 @@ class FileLoadDialog:
         self.result_ready = False
         self.load_success = False
         self.selected_filename = ""
+        
+        # マウスクリック処理用プロパティ
+        self.ok_button_rect = (self.dialog_x + 70, self.dialog_y + self.dialog_h - 35, 50, 25)
+        self.cancel_button_rect = (self.dialog_x + 200, self.dialog_y + self.dialog_h - 35, 50, 25)
+        self.mouse_over_ok = False
+        self.mouse_over_cancel = False
         
     def show(self) -> Tuple[bool, str]:
         """
@@ -268,8 +304,10 @@ class FileLoadDialog:
         self.result_ready = False
         self.load_success = False
         
-        # モーダルループ
+        # モーダルループ（背景描画を追加）
         while self.is_visible and not self.result_ready:
+            # 背景クリア（重要！）
+            pyxel.cls(pyxel.COLOR_BLACK)
             self._handle_input()
             self._draw()
             pyxel.flip()
@@ -277,7 +315,28 @@ class FileLoadDialog:
         return self.load_success, self.selected_filename
     
     def _handle_input(self) -> None:
-        """キーボード入力処理"""
+        """キーボード・マウス入力処理"""
+        
+        # マウス処理
+        mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+        self.mouse_over_ok = self._point_in_rect(mouse_x, mouse_y, self.ok_button_rect)
+        self.mouse_over_cancel = self._point_in_rect(mouse_x, mouse_y, self.cancel_button_rect)
+        
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            if self.mouse_over_ok:
+                # OKボタンクリック: 読み込み実行
+                if self.csv_files:
+                    self.selected_filename = self.csv_files[self.selected_index]
+                    self.load_success = True
+                    self.result_ready = True
+                    self.is_visible = False
+                return
+            elif self.mouse_over_cancel:
+                # Cancelボタンクリック: キャンセル
+                self.is_visible = False
+                self.result_ready = True
+                self.load_success = False
+                return
         
         # ESCキー: キャンセル
         if pyxel.btnp(pyxel.KEY_ESCAPE):
@@ -409,6 +468,11 @@ class FileLoadDialog:
         # 操作ヒント
         hint_y = self.dialog_y + self.dialog_h - 10
         pyxel.text(self.dialog_x + 20, hint_y, "Arrow:Select  Enter:Load  ESC:Cancel", pyxel.COLOR_GRAY)
+    
+    def _point_in_rect(self, x: int, y: int, rect: Tuple[int, int, int, int]) -> bool:
+        """点が矩形内にあるかチェック"""
+        rx, ry, rw, rh = rect
+        return rx <= x <= rx + rw and ry <= y <= ry + rh
 
 
 class OverwriteConfirmDialog:
@@ -419,6 +483,12 @@ class OverwriteConfirmDialog:
         self.dialog_h = 120
         self.dialog_x = (384 - self.dialog_w) // 2
         self.dialog_y = (384 - self.dialog_h) // 2
+        
+        # マウスクリック処理用プロパティ
+        self.overwrite_button_rect = (self.dialog_x + 50, self.dialog_y + 80, 70, 25)
+        self.cancel_button_rect = (self.dialog_x + 150, self.dialog_y + 80, 50, 25)
+        self.mouse_over_overwrite = False
+        self.mouse_over_cancel = False
         
     def show(self, filename: str) -> bool:
         """
@@ -435,7 +505,25 @@ class OverwriteConfirmDialog:
         result_ready = False
         
         while is_visible and not result_ready:
-            # 入力処理
+            # 背景クリア（重要！）
+            pyxel.cls(pyxel.COLOR_BLACK)
+            
+            # マウス処理
+            mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+            self.mouse_over_overwrite = self._point_in_rect(mouse_x, mouse_y, self.overwrite_button_rect)
+            self.mouse_over_cancel = self._point_in_rect(mouse_x, mouse_y, self.cancel_button_rect)
+            
+            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                if self.mouse_over_overwrite:
+                    # Overwriteボタンクリック: 上書き許可
+                    overwrite_confirmed = True
+                    result_ready = True
+                elif self.mouse_over_cancel:
+                    # Cancelボタンクリック: キャンセル
+                    overwrite_confirmed = False
+                    result_ready = True
+            
+            # キーボード入力処理
             if pyxel.btnp(pyxel.KEY_RETURN) or pyxel.btnp(pyxel.KEY_Y):
                 overwrite_confirmed = True
                 result_ready = True
@@ -489,6 +577,11 @@ class OverwriteConfirmDialog:
         pyxel.rect(cancel_x, button_y, 50, 25, pyxel.COLOR_RED)
         pyxel.rectb(cancel_x, button_y, 50, 25, pyxel.COLOR_WHITE)
         pyxel.text(cancel_x + 10, button_y + 9, "Cancel", pyxel.COLOR_WHITE)
+    
+    def _point_in_rect(self, x: int, y: int, rect: Tuple[int, int, int, int]) -> bool:
+        """点が矩形内にあるかチェック"""
+        rx, ry, rw, rh = rect
+        return rx <= x <= rx + rw and ry <= y <= ry + rh
 
 
 class NoFilesDialog:

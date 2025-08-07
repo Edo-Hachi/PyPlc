@@ -92,8 +92,12 @@ class DeviceIDDialog:
         self.mouse_over_ok = self._point_in_rect(mouse_x, mouse_y, self.ok_button_rect)
         self.mouse_over_cancel = self._point_in_rect(mouse_x, mouse_y, self.cancel_button_rect)
         
+        # マウスデバッグログ出力
+        self._debug_mouse_state(mouse_x, mouse_y)
+        
         # マウスクリック処理
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            self._log_mouse_click(mouse_x, mouse_y)
             if self.mouse_over_ok:
                 self._handle_ok_click()
             elif self.mouse_over_cancel:
@@ -365,3 +369,34 @@ class DeviceIDDialog:
         """点が矩形内にあるかチェック"""
         rx, ry, rw, rh = rect
         return rx <= x <= rx + rw and ry <= y <= ry + rh
+        
+    def _debug_mouse_state(self, mouse_x: int, mouse_y: int) -> None:
+        """マウス状態デバッグログ出力（フレームごと）"""
+        # 10フレームに1回だけログ出力（ログ量削減）
+        if hasattr(self, '_debug_frame_counter'):
+            self._debug_frame_counter += 1
+        else:
+            self._debug_frame_counter = 0
+            
+        if self._debug_frame_counter % 10 != 0:
+            return
+            
+        try:
+            with open("mouse_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"[MOUSE STATE] Active={self.is_active}, Pos=({mouse_x},{mouse_y})\n")
+                f.write(f"  OK_RECT={self.ok_button_rect}, Over={self.mouse_over_ok}\n")
+                f.write(f"  CANCEL_RECT={self.cancel_button_rect}, Over={self.mouse_over_cancel}\n")
+        except Exception as e:
+            print(f"Debug log error: {e}")
+            
+    def _log_mouse_click(self, mouse_x: int, mouse_y: int) -> None:
+        """マウスクリックログ出力"""
+        try:
+            with open("mouse_click.log", "a", encoding="utf-8") as f:
+                f.write(f"[CLICK] Dialog Active={self.is_active}, Pos=({mouse_x},{mouse_y})\n")
+                f.write(f"  OK Button: rect={self.ok_button_rect}, hover={self.mouse_over_ok}\n")
+                f.write(f"  Cancel Button: rect={self.cancel_button_rect}, hover={self.mouse_over_cancel}\n")
+                f.write(f"  Action: {'OK' if self.mouse_over_ok else 'Cancel' if self.mouse_over_cancel else 'None'}\n")
+                f.write("---\n")
+        except Exception as e:
+            print(f"Click log error: {e}")

@@ -55,7 +55,10 @@ class TimerCounterPresetDialog:
         return self.edit_success, self.new_preset_value
     
     def _handle_input(self) -> None:
-        """キーボード入力処理（数値入力専用）"""
+        """キーボード・マウス入力処理"""
+        
+        # マウス入力処理
+        self._handle_mouse_input()
         
         # ESCキー: キャンセル
         if pyxel.btnp(pyxel.KEY_ESCAPE):
@@ -226,6 +229,48 @@ class TimerCounterPresetDialog:
             
         # ボタン・操作ヒント
         self._draw_buttons()
+        
+    def _handle_mouse_input(self) -> None:
+        """マウス入力処理"""
+        mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+        
+        # ボタン領域定義
+        ok_rect = (self.dialog_x + 60, self.dialog_y + self.dialog_h - 30, 50, 20)
+        cancel_rect = (self.dialog_x + 150, self.dialog_y + self.dialog_h - 30, 50, 20)
+        
+        # デバッグログ出力
+        try:
+            with open("timer_mouse_debug.log", "a", encoding="utf-8") as f:
+                f.write(f"[TIMER MOUSE] Pos=({mouse_x},{mouse_y}), OK_rect={ok_rect}, Cancel_rect={cancel_rect}\n")
+        except:
+            pass
+        
+        # マウスクリック処理
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            try:
+                with open("timer_mouse_click.log", "a", encoding="utf-8") as f:
+                    f.write(f"[TIMER CLICK] Pos=({mouse_x},{mouse_y})\n")
+                    f.write(f"  OK Button: {ok_rect}, In_rect={self._point_in_rect(mouse_x, mouse_y, ok_rect)}\n")
+                    f.write(f"  Cancel Button: {cancel_rect}, In_rect={self._point_in_rect(mouse_x, mouse_y, cancel_rect)}\n")
+            except:
+                pass
+                
+            # OK ボタンクリック
+            if self._point_in_rect(mouse_x, mouse_y, ok_rect):
+                self._execute_preset_update()
+                return
+                
+            # Cancel ボタンクリック
+            if self._point_in_rect(mouse_x, mouse_y, cancel_rect):
+                self.is_visible = False
+                self.result_ready = True
+                self.edit_success = False
+                return
+                
+    def _point_in_rect(self, x: int, y: int, rect) -> bool:
+        """点が矩形内にあるかチェック"""
+        rx, ry, rw, rh = rect
+        return rx <= x <= rx + rw and ry <= y <= ry + rh
         
     def _draw_unit_and_range(self) -> None:
         """単位・範囲情報表示"""
