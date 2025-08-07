@@ -125,6 +125,30 @@
       "y": 16,
       "NAME": "EMPTY",
       "ACT_NAME": "EMPTY"
+    },
+    "72_0": {
+      "x": 72,
+      "y": 0,
+      "NAME": "TIMER",
+      "ACT_NAME": "TRUE"
+    },
+    "80_0": {
+      "x": 80,
+      "y": 0,
+      "NAME": "TIMER",
+      "ACT_NAME": "FALSE"
+    },
+    "88_0": {
+      "x": 88,
+      "y": 0,
+      "NAME": "COUNTER",
+      "ACT_NAME": "TRUE"
+    },
+    "96_0": {
+      "x": 96,
+      "y": 0,
+      "NAME": "COUNTER",
+      "ACT_NAME": "FALSE"
     }
   }
 }

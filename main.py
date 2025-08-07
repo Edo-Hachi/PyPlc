@@ -9,6 +9,10 @@
 
 
 import pyxel
+import csv
+import os
+import glob
+from datetime import datetime
 from config import DisplayConfig, SystemInfo, UIConfig, UIBehaviorConfig, DeviceType, SimulatorMode, PLCRunState
 from core.grid_system import GridSystem
 from core.input_handler import InputHandler, MouseState
@@ -66,6 +70,13 @@ class PyPlcVer3:
         # F6キーでの全システムリセット (Ver1実装継承)
         self._handle_full_system_reset()
         
+        # Ctrl+S: CSV保存機能
+        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
+            self._save_circuit_to_csv()
+            
+        # Ctrl+O: CSV読み込み機能
+        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
+            self._load_circuit_from_csv()
         
         # デバイスパレット入力処理（EDITモードでのみ有効）
         if self.current_mode == SimulatorMode.EDIT:
@@ -388,6 +399,110 @@ class PyPlcVer3:
                     device.state = False  # 接点のON/OFF状態をOFFに
                     # 将来的にタイマー・カウンターの現在値もリセット
 
+    def _save_circuit_to_csv(self) -> None:
+        """CSV形式で回路情報を保存"""
+        try:
+            # タイムスタンプ付きファイル名生成
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"circuit_{timestamp}.csv"
+            
+            with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                
+                # ヘッダー行
+                writer.writerow(['Row', 'Col', 'DeviceType', 'DeviceID', 'IsEnergized', 'State'])
+                
+                # 全デバイス情報を書き出し（バスバー除外）
+                saved_count = 0
+                total_devices = 0
+                for row in range(self.grid_system.rows):
+                    for col in range(self.grid_system.cols):
+                        device = self.grid_system.get_device(row, col)
+                        if device:
+                            total_devices += 1
+                            print(f"Debug: Found device at ({row},{col}): {device.device_type.value} - {device.address}")
+                            # バスバーとEMPTYデバイス以外を保存対象とする
+                            if device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE, DeviceType.EMPTY]:
+                                writer.writerow([
+                                    row, col, 
+                                    device.device_type.value,
+                                    device.address,  # device_id → address に修正
+                                    device.is_energized,
+                                    getattr(device, 'state', False)
+                                ])
+                                saved_count += 1
+                                print(f"Debug: Saved device: {device.device_type.value}")
+                
+                print(f"Debug: Total devices found: {total_devices}, Saved: {saved_count}")
+                
+                print(f"Circuit saved to: {filename}")
+                
+        except Exception as e:
+            print(f"Save error: {e}")
+
+    def _load_circuit_from_csv(self) -> None:
+        """CSV形式で回路情報を読み込み（最新ファイル自動選択）"""
+        try:
+            # circuit_*.csvファイルを検索
+            csv_files = glob.glob("circuit_*.csv")
+            if not csv_files:
+                print("No circuit CSV files found")
+                return
+                
+            # 最新ファイルを選択
+            latest_file = max(csv_files, key=os.path.getctime)
+            print(f"Loading from: {latest_file}")
+            
+            # 現在の回路をクリア（バスバー以外のデバイスを削除）
+            for row in range(self.grid_system.rows):
+                for col in range(self.grid_system.cols):
+                    device = self.grid_system.get_device(row, col)
+                    if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
+                        self.grid_system.remove_device(row, col)
+            
+            loaded_count = 0
+            with open(latest_file, 'r', newline='', encoding='utf-8') as csvfile:
+                reader = csv.DictReader(csvfile)
+                
+                for line_num, row_data in enumerate(reader, start=2):
+                    try:
+                        row = int(row_data['Row'])
+                        col = int(row_data['Col'])
+                        device_type_str = row_data['DeviceType']
+                        device_address = row_data['DeviceID']  # CSVのカラム名はDeviceIDだがaddressとして使用
+                        is_energized = row_data['IsEnergized'].lower() == 'true'
+                        state = row_data['State'].lower() == 'true'
+                        
+                        print(f"Debug Load: Processing ({row},{col}) {device_type_str} - {device_address}")
+                        
+                        # DeviceType変換
+                        device_type = DeviceType(device_type_str)
+                        
+                        # デバイス配置
+                        place_result = self.grid_system.place_device(row, col, device_type, device_address)
+                        print(f"Debug Load: place_device result: {place_result is not None}")
+                        
+                        if place_result:
+                            device = self.grid_system.get_device(row, col)
+                            if device:
+                                device.is_energized = is_energized
+                                if hasattr(device, 'state'):
+                                    device.state = state
+                                loaded_count += 1
+                                print(f"Debug Load: Successfully loaded {device_type_str}")
+                            else:
+                                print("Debug Load: Failed to get device after placement")
+                        else:
+                            print(f"Debug Load: Failed to place device {device_type_str}")
+                                
+                    except (ValueError, KeyError) as e:
+                        print(f"Warning: CSV line {line_num} skipped: {e}")
+                        continue
+            
+            print(f"Circuit loaded: {loaded_count} devices from {latest_file}")
+            
+        except Exception as e:
+            print(f"Load error: {e}")
 
     def _draw_device_info_on_hover(self) -> None:
         """
