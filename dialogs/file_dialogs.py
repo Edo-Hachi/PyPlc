@@ -254,8 +254,8 @@ class FileLoadDialog:
         Returns:
             Tuple[bool, str]: (success, filename)
         """
-        # CSVファイル検索
-        self.csv_files = glob.glob("circuit_*.csv")
+        # CSVファイル検索（全CSVファイル対象）
+        self.csv_files = glob.glob("*.csv")
         self.csv_files.sort(key=os.path.getctime, reverse=True)  # 新しい順
         
         if not self.csv_files:

@@ -140,9 +140,9 @@ class DeviceType(Enum):
     COIL_STD = "COIL_STD"      # Standard coil -( )-
     COIL_REV = "COIL_REV"      # 反転コイル -(/)-
     
-    # Function series
-    TIMER = "TIMER"            # タイマー
-    COUNTER = "COUNTER"        # カウンター
+    # Function series (PLC standard timer/counter)
+    TIMER_TON = "TIMER_TON"    # Timer ON-Delay (TON)
+    COUNTER_CTU = "COUNTER_CTU" # Counter UP (CTU)
     
     # 配線系（Ver3: 明示的配線システム）
     LINK_HORZ = "LINK_HORZ"    # Horizontal wiring (Ver3 new feature: essential for self-holding circuits)
@@ -189,10 +189,10 @@ DEVICE_PALETTE_DEFINITIONS = {
         (DeviceType.DEL, "DELETE", 0, "Delete Command"),
     ],
     
-    # Lower row device definition (extended operation, Shift+key) for future expansion
+    # Lower row device definition (extended operation, Shift+key) 
     "bottom_row": [
-        (DeviceType.EMPTY, "", 1, "Undefined (Timer planned)"),
-        (DeviceType.EMPTY, "", 2, "Undefined (Counter planned)"),
+        (DeviceType.TIMER_TON, "TIMER", 1, "Timer ON-Delay"),
+        (DeviceType.COUNTER_CTU, "COUNT", 2, "Counter UP"),
         (DeviceType.EMPTY, "", 3, "UNDEF"),
         (DeviceType.EMPTY, "", 4, "UNDEF"),
         (DeviceType.EMPTY, "", 5, "UNDEF"),
@@ -213,6 +213,22 @@ PALETTE_LAYOUT_CONFIG = {
     "palette_y": 12,         # パレット開始Y座標
 }
 
+# =============================================================================
+# Timer/Counter Configuration (PLC Standard)
+# =============================================================================
+class TimerConfig:
+    """タイマー設定定数（PLC標準準拠 - 1ms単位）"""
+    MIN_PRESET = 0         # 最小プリセット値（0ms）
+    MAX_PRESET = 32767     # 最大プリセット値（32767ms = 32.767秒）
+    TIME_UNIT = 1          # 時間単位（1ms）
+    DEFAULT_PRESET = 1000  # デフォルトプリセット値（1000ms = 1.0秒）
+    FRAME_THRESHOLD = 990  # 990ms超過で1秒完了判定（30FPS対応）
+
+class CounterConfig:
+    """カウンター設定定数（PLC標準準拠）"""
+    MIN_PRESET = 0         # 最小プリセット値
+    MAX_PRESET = 65535     # 最大プリセット値（16bit符号なし）
+    DEFAULT_PRESET = 10    # デフォルトプリセット値
 
 # =============================================================================
 # Device Address Ranges

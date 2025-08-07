@@ -256,8 +256,8 @@ class DeviceIDDialog:
             DeviceType.CONTACT_B: "Format: X000-X377\nExample: X001, X010", 
             DeviceType.COIL_STD: "Format: Y000-Y377, M0-M7999\nExample: Y001, M100",
             DeviceType.COIL_REV: "Format: Y000-Y377, M0-M7999\nExample: Y001, M100",
-            DeviceType.TIMER: "Format: T000-T255\nExample: T001, T050",
-            DeviceType.COUNTER: "Format: C000-C255\nExample: C001, C020"
+            DeviceType.TIMER_TON: "Format: T000-T255\nExample: T001, T050",
+            DeviceType.COUNTER_CTU: "Format: C000-C255\nExample: C001, C020"
         }
         
         return format_info.get(self.device_type, "Format: Not specified")
@@ -270,12 +270,12 @@ class DeviceIDDialog:
             
         # デバイスタイプ別バリデーション
         if self.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
-            return self._validate_x_device(device_id)
+            return self._validate_contact_device(device_id)
         elif self.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV]:
             return self._validate_y_m_device(device_id)
-        elif self.device_type == DeviceType.TIMER:
+        elif self.device_type == DeviceType.TIMER_TON:
             return self._validate_timer_device(device_id)
-        elif self.device_type == DeviceType.COUNTER:
+        elif self.device_type == DeviceType.COUNTER_CTU:
             return self._validate_counter_device(device_id)
         elif self.device_type in [DeviceType.LINK_HORZ, DeviceType.LINK_BRANCH, DeviceType.LINK_VIRT]:
             # LINK系デバイスはID不要
@@ -285,14 +285,39 @@ class DeviceIDDialog:
             self.error_message = "Unknown device type"
             return False
     
-    def _validate_x_device(self, device_id: str) -> bool:
-        """X接点デバイスバリデーション (X000-X377, 8進数)"""
-        pattern = r'^X[0-3][0-7][0-7]$'
-        if re.match(pattern, device_id):
+    def _validate_contact_device(self, device_id: str) -> bool:
+        """接点デバイスバリデーション (X000-X377, Y000-Y377, M0-M7999, T000-T255, C000-C255)"""
+        # X000-X377 (8進数)
+        if re.match(r'^X[0-3][0-7][0-7]$', device_id):
             return True
-        else:
-            self.error_message = "Format: X000-X377 (octal)"
-            return False
+            
+        # Y000-Y377 (8進数)
+        if re.match(r'^Y[0-3][0-7][0-7]$', device_id):
+            return True
+            
+        # M0-M7999 (10進数)
+        m_match = re.match(r'^M([0-9]{1,4})$', device_id)
+        if m_match:
+            num = int(m_match.group(1))
+            if 0 <= num <= 7999:
+                return True
+                
+        # T000-T255 (10進数)
+        t_match = re.match(r'^T([0-9]{3})$', device_id)
+        if t_match:
+            num = int(t_match.group(1))
+            if 0 <= num <= 255:
+                return True
+                
+        # C000-C255 (10進数)
+        c_match = re.match(r'^C([0-9]{3})$', device_id)
+        if c_match:
+            num = int(c_match.group(1))
+            if 0 <= num <= 255:
+                return True
+        
+        self.error_message = "Format: X000-X377, Y000-Y377, M0-M7999, T000-T255, C000-C255"
+        return False
     
     def _validate_y_m_device(self, device_id: str) -> bool:
         """Y出力・M内部リレーバリデーション"""

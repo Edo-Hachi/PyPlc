@@ -8,7 +8,7 @@
 
 
 import pyxel
-from config import DisplayConfig, SystemInfo, UIConfig, UIBehaviorConfig, DeviceType, SimulatorMode, PLCRunState
+from config import DisplayConfig, SystemInfo, UIConfig, UIBehaviorConfig, DeviceType, SimulatorMode, PLCRunState, TimerConfig, CounterConfig
 from core.grid_system import GridSystem
 from core.input_handler import InputHandler, MouseState
 from core.circuit_analyzer import CircuitAnalyzer
@@ -126,19 +126,31 @@ class PyPlcVer3:
                     # 削除以外の場合は置き換え
                     self.grid_system.remove_device(row, col)
                     if selected_device_type != DeviceType.EMPTY:
-                        address = f"X{row}{col}"  # 仮のアドレス生成
-                        self.grid_system.place_device(row, col, selected_device_type, address)
+                        address = self._generate_default_address(selected_device_type, row, col)
+                        new_device = self.grid_system.place_device(row, col, selected_device_type, address)
+                        
+                        # タイマー・カウンターのデフォルト値設定
+                        if new_device and selected_device_type == DeviceType.TIMER_TON:
+                            new_device.preset_value = TimerConfig.DEFAULT_PRESET
+                        elif new_device and selected_device_type == DeviceType.COUNTER_CTU:
+                            new_device.preset_value = CounterConfig.DEFAULT_PRESET
             else:
                 # 空きセルの場合、選択されたデバイスを配置
                 if selected_device_type not in [DeviceType.DEL, DeviceType.EMPTY]:
-                    address = f"X{row}{col}"  # 仮のアドレス生成
-                    self.grid_system.place_device(row, col, selected_device_type, address)
+                    address = self._generate_default_address(selected_device_type, row, col)
+                    new_device = self.grid_system.place_device(row, col, selected_device_type, address)
+                    
+                    # タイマー・カウンターのデフォルト値設定
+                    if new_device and selected_device_type == DeviceType.TIMER_TON:
+                        new_device.preset_value = TimerConfig.DEFAULT_PRESET
+                    elif new_device and selected_device_type == DeviceType.COUNTER_CTU:
+                        new_device.preset_value = CounterConfig.DEFAULT_PRESET
         
         # 右クリック処理: EDITモードでのデバイスID編集ダイアログ表示
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
             device = self.grid_system.get_device(row, col)
             if device:
-                self.dialog_manager.show_device_id_dialog(
+                self.dialog_manager.show_device_edit_dialog(
                     device, row, col, 
                     self._draw_background_for_dialog,
                     self.grid_system
@@ -180,6 +192,29 @@ class PyPlcVer3:
             # 将来的にタイマー、カウンターなども追加予定
         }
         return device.device_type in operable_types
+
+    def _generate_default_address(self, device_type: DeviceType, row: int, col: int) -> str:
+        """
+        デバイスタイプに基づくデフォルトアドレス生成（PLC標準準拠）
+        
+        Args:
+            device_type: デバイスタイプ
+            row: グリッド行座標
+            col: グリッド列座標
+            
+        Returns:
+            str: 生成されたデフォルトアドレス
+        """
+        if device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
+            return f"X{row+1:03d}"  # X001, X002等（10進数）
+        elif device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV]:
+            return f"Y{row+1:03d}"  # Y001, Y002等（10進数）
+        elif device_type == DeviceType.TIMER_TON:
+            return f"T{row+1:03d}"  # T001, T002等（10進数）
+        elif device_type == DeviceType.COUNTER_CTU:
+            return f"C{row+1:03d}"  # C001, C002等（10進数）
+        else:
+            return f"X{row}{col}"   # その他のデフォルト
 
     def draw(self) -> None:
         """描画処理"""
@@ -248,7 +283,21 @@ class PyPlcVer3:
             hovered_device = self.grid_system.get_device(row, col)
             if hovered_device:
                 device_id = hovered_device.address if hovered_device.address else "N/A"
-                device_debug_text = f"Device: {hovered_device.device_type.value} ID:{device_id} State:{hovered_device.state} Energized:{hovered_device.is_energized}"
+                
+                # タイマー・カウンター詳細表示（PLC標準準拠）
+                if hovered_device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+                    current_val = getattr(hovered_device, 'current_value', 0)
+                    preset_val = getattr(hovered_device, 'preset_value', 0)
+                    timer_active = getattr(hovered_device, 'timer_active', False)
+                    
+                    if hovered_device.device_type == DeviceType.TIMER_TON:
+                        device_debug_text = f"TIMER {device_id}: {current_val}/{preset_val} Active:{timer_active} Out:{hovered_device.state}"
+                    else:
+                        device_debug_text = f"COUNTER {device_id}: {current_val}/{preset_val} Out:{hovered_device.state}"
+                else:
+                    # 通常デバイス表示
+                    device_debug_text = f"Device: {hovered_device.device_type.value} ID:{device_id} State:{hovered_device.state} Energized:{hovered_device.is_energized}"
+                
                 pyxel.text(10, status_y + 35, device_debug_text, pyxel.COLOR_WHITE)
         else:
             # スナップ範囲外時の詳細メッセージ（Ver2準拠）

@@ -171,6 +171,10 @@ class GridSystem:
                     if coords:
                         pyxel.blt(draw_x, draw_y, 0, coords[0], coords[1], sprite_size, sprite_size, 0)
                         device_count += 1  # 描画カウント
+                        
+                        # タイマー・カウンター現在値表示（PLC標準準拠）
+                        self._draw_timer_counter_value(device, draw_x, draw_y, sprite_size)
+                        
                     else:
                         # スプライトが見つからない場合のフォールバック
                         pyxel.rect(draw_x, draw_y, sprite_size, sprite_size, pyxel.COLOR_PINK)
@@ -179,6 +183,46 @@ class GridSystem:
         # デバッグ用描画情報（画面下部に表示）
         if device_count > 2:  # バスバー以外のデバイスがある場合のみ表示
             pyxel.text(10, 360, f"Drawing {device_count} devices", pyxel.COLOR_WHITE)
+
+    def _draw_timer_counter_value(self, device: PLCDevice, draw_x: int, draw_y: int, sprite_size: int) -> None:
+        """
+        タイマー・カウンター現在値表示（PLC標準準拠）
+        現在値をデバイススプライトの下部に数値で表示
+        
+        Args:
+            device: 描画対象デバイス
+            draw_x: スプライト描画X座標
+            draw_y: スプライト描画Y座標
+            sprite_size: スプライトサイズ
+        """
+        if device.device_type not in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+            return
+        
+        # 現在値表示位置計算（スプライト下部中央）
+        value_x = draw_x + sprite_size // 4  # スプライト中央寄り
+        value_y = draw_y + sprite_size + 1   # スプライト下部に少し間隔
+        
+        # 現在値テキスト生成（半角英数字のみ）
+        if device.device_type == DeviceType.TIMER_TON:
+            # タイマー: 現在値/プリセット値形式で表示
+            current_val = getattr(device, 'current_value', 0)
+            preset_val = getattr(device, 'preset_value', 0)
+            value_text = f"{current_val}/{preset_val}"
+            text_color = pyxel.COLOR_YELLOW if device.state else pyxel.COLOR_GRAY
+            
+        elif device.device_type == DeviceType.COUNTER_CTU:
+            # カウンター: 現在値/プリセット値形式で表示
+            current_val = getattr(device, 'current_value', 0)
+            preset_val = getattr(device, 'preset_value', 0)
+            value_text = f"{current_val}/{preset_val}"
+            text_color = pyxel.COLOR_LIME if device.state else pyxel.COLOR_GRAY
+        else:
+            return
+        
+        # 現在値表示（背景付き）
+        text_width = len(value_text) * 4
+        pyxel.rect(value_x - 1, value_y - 1, text_width + 2, 7, pyxel.COLOR_BLACK)
+        pyxel.text(value_x, value_y, value_text, text_color)
 
     def to_csv(self) -> str:
         """
@@ -190,24 +234,34 @@ class GridSystem:
         
         # ヘッダー情報（コメント形式）
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        output.write(f"# PyPlc Ver3 Circuit Data\n")
-        output.write(f"# Format: row,col,device_type,address,state\n")
+        output.write(f"# PyPlc Ver3 Circuit Data (Extended Format)\n")
+        output.write(f"# Format: row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state\n")
         output.write(f"# Created: {current_time}\n")
         
-        # CSVヘッダー
-        writer.writerow(['row', 'col', 'device_type', 'address', 'state'])
+        # CSVヘッダー（拡張フォーマット）
+        writer.writerow(['row', 'col', 'device_type', 'address', 'state', 'preset_value', 'current_value', 'timer_active', 'last_input_state'])
         
         # デバイスデータ出力（バスバー除外）
         for row in range(self.rows):
             for col in range(self.cols):
                 device = self.get_device(row, col)
                 if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
+                    # タイマー・カウンター特有の値を取得（存在しない場合はデフォルト値）
+                    preset_value = getattr(device, 'preset_value', 0)
+                    current_value = getattr(device, 'current_value', 0)
+                    timer_active = getattr(device, 'timer_active', False)
+                    last_input_state = getattr(device, 'last_input_state', False)
+                    
                     writer.writerow([
                         row,
                         col, 
                         device.device_type.value,
                         device.address,
-                        device.state
+                        device.state,
+                        preset_value,
+                        current_value,
+                        timer_active,
+                        last_input_state
                     ])
         
         return output.getvalue()
@@ -218,11 +272,8 @@ class GridSystem:
         現在のグリッドをクリアしてからデータを読み込む
         """
         try:
-            print(f"CSV Import Started - Data length: {len(csv_data)} chars")
-            
             # 現在のグリッドをクリア（バスバー以外）
             self._clear_user_devices()
-            print("User devices cleared")
             
             # CSV読み込み（コメント行を事前除去）
             lines = csv_data.strip().split('\n')
@@ -233,7 +284,6 @@ class GridSystem:
             
             # コメント除去後のCSVデータを再構築
             clean_csv_data = '\n'.join(csv_lines)
-            print(f"Clean CSV data (after comment removal): {len(clean_csv_data)} chars")
             
             input_stream = io.StringIO(clean_csv_data)
             reader = csv.DictReader(input_stream, skipinitialspace=True)
@@ -241,14 +291,26 @@ class GridSystem:
             loaded_count = 0
             for line_num, row_data in enumerate(reader, start=1):
                 try:
-                    # データ解析
-                    row = int(row_data['row'])
-                    col = int(row_data['col'])
-                    device_type_str = row_data['device_type']
-                    address = row_data['address']
-                    state_str = row_data['state']
+                    # データ解析（基本フィールド - 複数フォーマット対応）
+                    # フォーマット1: row,col,device_type,address,state (Ver3標準)
+                    # フォーマット2: Row,Col,DeviceType,DeviceID,IsEnergized,State (旧フォーマット)
                     
-                    print(f"Processing line {line_num}: [{row}][{col}] = {device_type_str}")
+                    if 'row' in row_data:
+                        row = int(row_data['row'])
+                        col = int(row_data['col'])
+                        device_type_str = row_data['device_type']
+                        address = row_data['address']
+                        state_str = row_data['state']
+                    elif 'Row' in row_data:
+                        # 旧フォーマット対応
+                        row = int(row_data['Row'])
+                        col = int(row_data['Col'])
+                        device_type_str = row_data['DeviceType']
+                        address = row_data['DeviceID']
+                        state_str = row_data['State']
+                    else:
+                        # 不明なフォーマット
+                        continue
                     
                     # DeviceType変換
                     device_type = DeviceType(device_type_str)
@@ -256,25 +318,42 @@ class GridSystem:
                     # state変換（True/False文字列をboolに）
                     state = state_str.lower() == 'true'
                     
+                    # 拡張フィールド解析（後方互換性確保）
+                    preset_value = 0
+                    current_value = 0
+                    timer_active = False
+                    last_input_state = False
+                    
+                    # 拡張フィールドが存在する場合は取得
+                    if 'preset_value' in row_data:
+                        preset_value = int(row_data['preset_value']) if row_data['preset_value'] else 0
+                    if 'current_value' in row_data:
+                        current_value = int(row_data['current_value']) if row_data['current_value'] else 0
+                    if 'timer_active' in row_data:
+                        timer_active = row_data['timer_active'].lower() == 'true' if row_data['timer_active'] else False
+                    if 'last_input_state' in row_data:
+                        last_input_state = row_data['last_input_state'].lower() == 'true' if row_data['last_input_state'] else False
+                    
                     # デバイス配置
                     new_device = self.place_device(row, col, device_type, address)
                     if new_device:
                         new_device.state = state
+                        
+                        # タイマー・カウンター特有の値を設定
+                        if device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+                            new_device.preset_value = preset_value
+                            new_device.current_value = current_value
+                            new_device.timer_active = timer_active
+                            new_device.last_input_state = last_input_state
+                        
                         loaded_count += 1
-                        print(f"  Device placed: {device_type_str} at [{row}][{col}] state={state}")
-                    else:
-                        print(f"  Failed to place device at [{row}][{col}]")
                     
                 except (ValueError, KeyError) as e:
-                    print(f"Warning: CSV line {line_num} skipped due to error: {e}")
-                    print(f"    Row data: {row_data}")
                     continue
             
-            print(f"CSV Import Complete - {loaded_count} devices loaded")
             return True
             
         except Exception as e:
-            print(f"Error loading CSV data: {e}")
             return False
 
     def _clear_user_devices(self) -> None:
@@ -302,8 +381,6 @@ class GridSystem:
         device = self.get_device(row, col)
         if device:
             device.address = new_address
-            print(f"Device address updated: [{row}][{col}] -> {new_address}")
             return True
         else:
-            print(f"Error: No device found at [{row}][{col}]")
             return False

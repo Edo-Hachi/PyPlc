@@ -29,7 +29,10 @@ class CircuitAnalyzer:
                 # 右隣のデバイスからトレースを開始
                 self._trace_power_flow(left_bus.connections.get('right'))
 
-        # 3. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
+        # 3. タイマー・カウンター処理（電力フロー後）
+        self._update_timer_counter_logic()
+
+        # 4. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
         self._update_contact_states_from_coils()
 
     def _trace_power_flow(self, start_pos: Optional[Tuple[int, int]], visited: Optional[Set[Tuple[int, int]]] = None) -> None:
@@ -93,6 +96,93 @@ class CircuitAnalyzer:
     # 旧_handle_parallel_convergence()メソッドは削除済み
     # LINK_BRANCHアーキテクチャにより、複雑な合流ロジックは不要になりました
 
+    def _update_timer_counter_logic(self) -> None:
+        """
+        タイマー・カウンターロジック処理
+        PLC標準準拠のTON（Timer ON-Delay）およびCTU（Counter UP）動作を実装
+        フレームベース（30FPS）でのタイマー動作
+        """
+        import pyxel
+        
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                device = self.grid.get_device(row, col)
+                if not device:
+                    continue
+                    
+                # TON（Timer ON-Delay）処理
+                if device.device_type == DeviceType.TIMER_TON:
+                    self._process_timer_ton(device)
+                
+                # CTU（Counter UP）処理
+                elif device.device_type == DeviceType.COUNTER_CTU:
+                    self._process_counter_ctu(device)
+
+    def _process_timer_ton(self, timer_device) -> None:
+        """
+        TON（Timer ON-Delay）処理（PLC標準準拠・フレームベース）
+        30FPS動作で1フレーム約33.3ms、1ms単位カウント、990ms超過で完了
+        
+        Args:
+            timer_device: タイマーデバイス
+        """
+        from config import TimerConfig
+        
+        # 通電状態確認
+        if timer_device.is_energized:
+            if not timer_device.timer_active:
+                # タイマー開始（初回通電時）
+                timer_device.timer_active = True
+                timer_device.current_value = 0
+                print(f"[TIMER DEBUG] {timer_device.address} STARTED - preset={timer_device.preset_value}ms")
+                
+            else:
+                # フレームベースタイマー実行中（1フレーム = 約33.3ms）
+                timer_device.current_value += 33  # 30FPSで約33ms/フレーム
+                
+                print(f"[TIMER DEBUG] {timer_device.address} RUNNING - current={timer_device.current_value}ms, preset={timer_device.preset_value}ms")
+                
+                # プリセット値または閾値到達チェック（990ms超過で完了）
+                if timer_device.current_value >= timer_device.preset_value or timer_device.current_value >= TimerConfig.FRAME_THRESHOLD:
+                    timer_device.current_value = timer_device.preset_value
+                    timer_device.state = True  # タイマー出力ON
+                    print(f"[TIMER DEBUG] {timer_device.address} OUTPUT ON - reached {timer_device.preset_value}ms")
+                else:
+                    timer_device.state = False
+        else:
+            # 非通電時 - タイマーリセット
+            if timer_device.timer_active:  # 動作中だった場合のみデバッグ出力
+                print(f"[TIMER DEBUG] {timer_device.address} RESET - was active")
+            timer_device.timer_active = False
+            timer_device.current_value = 0
+            timer_device.state = False
+            
+    def _process_counter_ctu(self, counter_device) -> None:
+        """
+        CTU（Counter UP）処理
+        立ち上がりエッジでカウントアップ、設定回数到達で出力ON
+        
+        Args:
+            counter_device: カウンターデバイス
+        """
+        # 立ち上がりエッジ検出
+        current_input = counter_device.is_energized
+        previous_input = counter_device.last_input_state
+        
+        if current_input and not previous_input:
+            # 立ち上がりエッジ発生 - カウントアップ
+            counter_device.current_value += 1
+            
+            # プリセット値到達チェック
+            if counter_device.current_value >= counter_device.preset_value:
+                counter_device.current_value = counter_device.preset_value
+                counter_device.state = True  # カウンター出力ON
+            else:
+                counter_device.state = False
+                
+        # 現在の入力状態を記録（次回のエッジ検出用）
+        counter_device.last_input_state = current_input
+
     def _update_contact_states_from_coils(self) -> None:
         """
         PLC標準動作の実装: コイル状態に応じて同一アドレス接点を自動更新
@@ -110,11 +200,11 @@ class CircuitAnalyzer:
             for col in range(self.grid.cols):
                 device = self.grid.get_device(row, col)
                 if (device and 
-                    device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV] and
+                    device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.TIMER_TON, DeviceType.COUNTER_CTU] and
                     device.address and
-                    device.address != "WIRE"):  # アドレス指定されたコイルのみ
+                    device.address != "WIRE"):  # アドレス指定されたコイル・タイマー・カウンターのみ
                     all_coil_addresses.add(device.address)
-                    if device.is_energized:
+                    if device.state:  # タイマー・カウンターはstateで出力状態判定
                         energized_coil_addresses.add(device.address)
         
         # 2. 全コイルアドレスについて対応する接点の状態を更新
@@ -128,19 +218,6 @@ class CircuitAnalyzer:
                         device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B] and
                         device.address == coil_address):
                         # PLC標準: コイル状態に応じて同一アドレス接点を自動更新
-                        old_state = device.state
                         device.state = is_coil_energized
-                        
-                        if old_state != device.state:
-                            status = "activated" if device.state else "deactivated"
-                            print(f"  Contact [{row}][{col}] {device.address} auto-{status} (coil energized: {is_coil_energized})")
-        
-        if energized_coil_addresses:
-            print(f"PLC Standard Operation: Energized coils: {energized_coil_addresses}")
-        
-        # 非励磁になったコイルがある場合の情報出力
-        de_energized_coils = all_coil_addresses - energized_coil_addresses
-        if de_energized_coils:
-            print(f"PLC Standard Operation: De-energized coils: {de_energized_coils}")
 
     # 不要でバグの原因となっていたプライベートメソッドは完全に削除

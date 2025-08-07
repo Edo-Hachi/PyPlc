@@ -5,6 +5,7 @@
 from typing import Callable, Optional
 from config import DeviceType
 from .device_id_dialog import DeviceIDDialog
+from .timer_counter_dialog import TimerCounterPresetDialog
 
 class DialogManager:
     """
@@ -68,10 +69,10 @@ class DialogManager:
         elif device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV]:
             # Y出力は8進数系、Mは10進数系のどちらでも（ここではY系を選択）
             return f"Y{row+1:03o}"  # Y001, Y002等（8進数）
-        elif device_type == DeviceType.TIMER:
+        elif device_type == DeviceType.TIMER_TON:
             # タイマーは10進数系 (001, 002, 003等)
             return f"T{row+1:03d}"  # T001, T002等（10進数）
-        elif device_type == DeviceType.COUNTER:
+        elif device_type == DeviceType.COUNTER_CTU:
             # カウンターは10進数系 (001, 002, 003等)
             return f"C{row+1:03d}"  # C001, C002等（10進数）
         else:
@@ -96,3 +97,56 @@ class DialogManager:
             return False
             
         return True
+    
+    def show_timer_counter_preset_dialog(
+        self,
+        device,
+        row: int,
+        col: int,
+        grid_system
+    ) -> None:
+        """
+        タイマー・カウンタープリセット値編集ダイアログ統合処理
+        
+        Args:
+            device: 編集対象デバイス
+            row: グリッド行座標
+            col: グリッド列座標
+            grid_system: グリッドシステムインスタンス
+        """
+        # タイマー・カウンター以外は対象外
+        if device.device_type not in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+            return
+            
+        # プリセット値編集ダイアログ表示
+        dialog = TimerCounterPresetDialog()
+        result, new_preset = dialog.show(device.device_type, device.preset_value)
+        
+        # OK が押された場合、プリセット値を更新
+        if result:
+            device.preset_value = new_preset
+    
+    def show_device_edit_dialog(
+        self,
+        device,
+        row: int,
+        col: int,
+        background_draw_func: Callable[[], None],
+        grid_system
+    ) -> None:
+        """
+        デバイス編集ダイアログ統合処理（デバイス種別に応じて適切なダイアログを選択）
+        
+        Args:
+            device: 編集対象デバイス  
+            row: グリッド行座標
+            col: グリッド列座標
+            background_draw_func: バックグラウンド描画関数
+            grid_system: グリッドシステムインスタンス
+        """
+        if device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+            # タイマー・カウンターはプリセット値編集
+            self.show_timer_counter_preset_dialog(device, row, col, grid_system)
+        else:
+            # その他はデバイスID編集
+            self.show_device_id_dialog(device, row, col, background_draw_func, grid_system)
