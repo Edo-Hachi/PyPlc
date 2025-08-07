@@ -1,0 +1,84 @@
+{
+  "title": "デバイスID設定",
+  "width": 220,
+  "height": 140,
+  "controls": [
+    {
+      "id": "device_type_label",
+      "type": "label",
+      "x": 20,
+      "y": 25,
+      "width": 180,
+      "height": 15,
+      "text": "デバイスタイプ: {device_type}",
+      "color": 7
+    },
+    {
+      "id": "instruction_label",
+      "type": "label",
+      "x": 20,
+      "y": 40,
+      "width": 180,
+      "height": 15,
+      "text": "デバイスIDを入力してください:",
+      "color": 10
+    },
+    {
+      "id": "device_id_input",
+      "type": "textinput",
+      "x": 20,
+      "y": 60,
+      "width": 180,
+      "height": 20,
+      "placeholder": "例: X0, Y10, M100",
+      "value": "",
+      "max_length": 10,
+      "input_type": "device_address",
+      "color": 7,
+      "bg_color": 0,
+      "border_color": 7,
+      "focus_border_color": 10,
+      "events": ["change", "focus", "blur", "enter", "validate"],
+      "validation": {
+        "type": "required_plc_device"
+      }
+    },
+    {
+      "id": "error_label",
+      "type": "label",
+      "x": 20,
+      "y": 85,
+      "width": 180,
+      "height": 10,
+      "text": "",
+      "color": 8,
+      "visible": false
+    },
+    {
+      "id": "ok_button",
+      "type": "button",
+      "x": 20,
+      "y": 100,
+      "width": 60,
+      "height": 20,
+      "text": "OK",
+      "color": 7,
+      "bg_color": 11,
+      "hover_color": 3,
+      "events": ["click"]
+    },
+    {
+      "id": "cancel_button",
+      "type": "button",
+      "x": 140,
+      "y": 100,
+      "width": 60,
+      "height": 20,
+      "text": "Cancel",
+      "color": 7,
+      "bg_color": 8,
+      "hover_color": 2,
+      "events": ["click"]
+    }
+  ]
+}

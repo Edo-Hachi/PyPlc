@@ -7,6 +7,7 @@ JSON定義からコントロールを動的生成するファクトリーパタ�
 
 from typing import Dict, Any, Optional, Type, Callable
 from abc import ABC, abstractmethod
+from DialogManager.controls.text_input_control import TextInputControl
 
 
 class BaseControl(ABC):
@@ -295,7 +296,7 @@ class ControlFactory:
     
     def _create_textinput_control(self, definition: Dict[str, Any]) -> BaseControl:
         """
-        テキスト入力コントロールを生成
+        テキスト入力コントロールを生成（Phase 2本格実装版）
         
         Args:
             definition: コントロール定義
@@ -303,34 +304,6 @@ class ControlFactory:
         Returns:
             テキスト入力コントロール
         """
-        # 仮実装：Phase 2で本格実装予定
-        class TextInputControl(BaseControl):
-            def __init__(self, control_id: str, x: int, y: int, width: int, height: int, **kwargs):
-                super().__init__(control_id, x, y, width, height, **kwargs)
-                self.text = kwargs.get("value", "")
-                self.placeholder = kwargs.get("placeholder", "")
-                self.color = kwargs.get("color", 7)
-                self.bg_color = kwargs.get("bg_color", 0)  # pyxel.COLOR_BLACK
-                self.is_focused = False
-            
-            def handle_input(self, mouse_x: int, mouse_y: int, mouse_clicked: bool) -> None:
-                # Phase 2で本格実装予定
-                pass
-            
-            def draw(self, dialog_x: int, dialog_y: int) -> None:
-                import pyxel
-                abs_x, abs_y, w, h = self.get_absolute_rect(dialog_x, dialog_y)
-                
-                if self.visible:
-                    # 入力フィールド背景
-                    pyxel.rect(abs_x, abs_y, w, h, self.bg_color)
-                    pyxel.rectb(abs_x, abs_y, w, h, self.color)
-                    
-                    # テキスト表示
-                    display_text = self.text if self.text else self.placeholder
-                    text_color = self.color if self.text else 13  # グレー
-                    pyxel.text(abs_x + 2, abs_y + 2, display_text, text_color)
-        
         return TextInputControl(
             control_id=definition["id"],
             x=definition["x"],
@@ -339,8 +312,12 @@ class ControlFactory:
             height=definition["height"],
             value=definition.get("value", ""),
             placeholder=definition.get("placeholder", ""),
+            max_length=definition.get("max_length", 50),
+            input_type=definition.get("input_type", "text"),
             color=definition.get("color", 7),
-            bg_color=definition.get("bg_color", 0)
+            bg_color=definition.get("bg_color", 0),
+            border_color=definition.get("border_color", 7),
+            focus_border_color=definition.get("focus_border_color", 10)
         )
     
     def get_supported_types(self) -> list:
