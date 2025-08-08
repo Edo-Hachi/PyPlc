@@ -119,6 +119,7 @@ class PyPlcVer3:
         
         # デバイス配置・接点操作処理（モード別分離）
         self._handle_device_placement()
+        self._handle_link_dragging() # ドラッグ処理を呼び出す (Phase D)
         self._handle_device_operation()
 
         # 2. 論理演算 (通電解析) - PLC実行状態による制御
@@ -131,14 +132,13 @@ class PyPlcVer3:
     def _handle_device_placement(self) -> None:
         """
         マウス入力に基づき、デバイスの配置・削除・状態変更を行う
-        設定対応: 常時スナップモード or CTRL切り替えモード
-        Edit/Runモード対応: EDITモードでのみデバイス配置可能
+        LINK_HORZのドラッグ配置に対応 (Phase D)
         """
         # EDITモードでない場合はデバイス配置を無効化
         if self.current_mode != SimulatorMode.EDIT:
             return
         
-        # スナップモードが有効でない場合は何もしない（設定により判定）
+        # スナップモードが有効でない場合は何もしない
         if not self.mouse_state.snap_mode:
             return
             
@@ -147,52 +147,82 @@ class PyPlcVer3:
             return
 
         row, col = self.mouse_state.hovered_pos
+        selected_device_type = self.device_palette.get_selected_device_type()
 
+        # --- ドラッグ開始処理 (Phase D) ---
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-            device = self.grid_system.get_device(row, col)
+            if selected_device_type == DeviceType.LINK_HORZ:
+                # LINK_HORZの場合はドラッグ開始
+                self.is_dragging_link = True
+                self.drag_start_pos = (row, col)
+                self.last_drag_pos = (row, col)
+                # 始点にデバイスを配置
+                self.grid_system.place_device(row, col, selected_device_type, "")
+                return # ドラッグ開始時はここで処理を終了
             
-            # 選択されたデバイスタイプを取得
-            selected_device_type = self.device_palette.get_selected_device_type()
+            # --- 通常の単一配置処理 ---
+            device = self.grid_system.get_device(row, col)
             
             if device:
                 # 既存デバイスがある場合
                 if selected_device_type == DeviceType.DEL:
-                    # 削除コマンドの場合は削除
                     self.grid_system.remove_device(row, col)
                 else:
-                    # 削除以外の場合は置き換え
                     self.grid_system.remove_device(row, col)
                     if selected_device_type != DeviceType.EMPTY:
                         address = self._generate_default_address(selected_device_type, row, col)
                         new_device = self.grid_system.place_device(row, col, selected_device_type, address)
                         
-                        # タイマー・カウンターのデフォルト値設定
                         if new_device and selected_device_type == DeviceType.TIMER_TON:
                             new_device.preset_value = TimerConfig.DEFAULT_PRESET
                         elif new_device and selected_device_type == DeviceType.COUNTER_CTU:
                             new_device.preset_value = CounterConfig.DEFAULT_PRESET
             else:
-                # 空きセルの場合、選択されたデバイスを配置
+                # 空きセルの場合
                 if selected_device_type not in [DeviceType.DEL, DeviceType.EMPTY]:
                     address = self._generate_default_address(selected_device_type, row, col)
                     new_device = self.grid_system.place_device(row, col, selected_device_type, address)
                     
-                    # タイマー・カウンターのデフォルト値設定
                     if new_device and selected_device_type == DeviceType.TIMER_TON:
                         new_device.preset_value = TimerConfig.DEFAULT_PRESET
                     elif new_device and selected_device_type == DeviceType.COUNTER_CTU:
                         new_device.preset_value = CounterConfig.DEFAULT_PRESET
         
-        # 右クリック処理: EDITモードでのデバイスID編集ダイアログ表示
+        # 右クリック処理は変更なし
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
             device = self.grid_system.get_device(row, col)
             if device:
-                # 右クリック: 新DialogManagerシステム（Phase C完全移行）
                 self.dialog_manager.show_device_edit_dialog(
                     device, row, col, 
                     self._draw_background_for_dialog,
                     self.grid_system
                 )
+
+    def _handle_link_dragging(self) -> None:
+        """
+        LINK_HORZのドラッグ中の配置処理 (Phase D)
+        """
+        if not self.is_dragging_link:
+            return
+
+        # マウスボタンが押されている間のみ処理
+        if pyxel.btn(pyxel.MOUSE_BUTTON_LEFT):
+            if self.mouse_state.hovered_pos is not None and self.mouse_state.on_editable_area:
+                current_row, current_col = self.mouse_state.hovered_pos
+                start_row, start_col = self.drag_start_pos
+                
+                # 同じ行でのドラッグ、かつ位置が変わった場合のみ処理
+                if current_row == start_row and (current_row, current_col) != self.last_drag_pos:
+                    # 開始列と現在列の間のすべてのセルに配置
+                    col_start = min(start_col, current_col)
+                    col_end = max(start_col, current_col)
+                    
+                    for col in range(col_start, col_end + 1):
+                        # 既存デバイスがない場合のみ配置（上書きしない）
+                        if not self.grid_system.get_device(start_row, col):
+                            self.grid_system.place_device(start_row, col, DeviceType.LINK_HORZ, "")
+                    
+                    self.last_drag_pos = (current_row, current_col)
 
     def _handle_device_operation(self) -> None:
         """
