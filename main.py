@@ -134,15 +134,10 @@ class PyPlcVer3:
         マウス入力に基づき、デバイスの配置・削除・状態変更を行う
         LINK_HORZのドラッグ配置に対応 (Phase D)
         """
-        # EDITモードでない場合はデバイス配置を無効化
         if self.current_mode != SimulatorMode.EDIT:
             return
-        
-        # スナップモードが有効でない場合は何もしない
         if not self.mouse_state.snap_mode:
             return
-            
-        # スナップ状態でない、または編集可能領域でない場合は何もしない
         if self.mouse_state.hovered_pos is None or not self.mouse_state.is_snapped or not self.mouse_state.on_editable_area:
             return
 
@@ -152,43 +147,26 @@ class PyPlcVer3:
         # --- ドラッグ開始処理 (Phase D) ---
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
             if selected_device_type == DeviceType.LINK_HORZ:
-                # LINK_HORZの場合はドラッグ開始
                 self.is_dragging_link = True
                 self.drag_start_pos = (row, col)
                 self.last_drag_pos = (row, col)
-                # 始点にデバイスを配置
                 self.grid_system.place_device(row, col, selected_device_type, "")
-                return # ドラッグ開始時はここで処理を終了
-            
+                return
+
             # --- 通常の単一配置処理 ---
             device = self.grid_system.get_device(row, col)
             
             if device:
-                # 既存デバイスがある場合
                 if selected_device_type == DeviceType.DEL:
                     self.grid_system.remove_device(row, col)
                 else:
                     self.grid_system.remove_device(row, col)
                     if selected_device_type != DeviceType.EMPTY:
-                        address = self._generate_default_address(selected_device_type, row, col)
-                        new_device = self.grid_system.place_device(row, col, selected_device_type, address)
-                        
-                        if new_device and selected_device_type == DeviceType.TIMER_TON:
-                            new_device.preset_value = TimerConfig.DEFAULT_PRESET
-                        elif new_device and selected_device_type == DeviceType.COUNTER_CTU:
-                            new_device.preset_value = CounterConfig.DEFAULT_PRESET
+                        self._place_single_device(row, col, selected_device_type)
             else:
-                # 空きセルの場合
                 if selected_device_type not in [DeviceType.DEL, DeviceType.EMPTY]:
-                    address = self._generate_default_address(selected_device_type, row, col)
-                    new_device = self.grid_system.place_device(row, col, selected_device_type, address)
-                    
-                    if new_device and selected_device_type == DeviceType.TIMER_TON:
-                        new_device.preset_value = TimerConfig.DEFAULT_PRESET
-                    elif new_device and selected_device_type == DeviceType.COUNTER_CTU:
-                        new_device.preset_value = CounterConfig.DEFAULT_PRESET
+                    self._place_single_device(row, col, selected_device_type)
         
-        # 右クリック処理は変更なし
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
             device = self.grid_system.get_device(row, col)
             if device:
@@ -197,6 +175,23 @@ class PyPlcVer3:
                     self._draw_background_for_dialog,
                     self.grid_system
                 )
+
+    def _place_single_device(self, row: int, col: int, device_type: DeviceType) -> None:
+        """単一のデバイスを配置するヘルパーメソッド"""
+        # 配線系デバイスかどうかを判定
+        is_link_device = device_type in [DeviceType.LINK_HORZ, DeviceType.LINK_VIRT, DeviceType.LINK_BRANCH]
+        
+        # 配線系デバイスならアドレスは空、それ以外は生成
+        address = "" if is_link_device else self._generate_default_address(device_type, row, col)
+        
+        new_device = self.grid_system.place_device(row, col, device_type, address)
+        
+        # タイマー・カウンターのデフォルト値設定
+        if new_device:
+            if device_type == DeviceType.TIMER_TON:
+                new_device.preset_value = TimerConfig.DEFAULT_PRESET
+            elif device_type == DeviceType.COUNTER_CTU:
+                new_device.preset_value = CounterConfig.DEFAULT_PRESET
 
     def _handle_link_dragging(self) -> None:
         """
@@ -223,6 +218,14 @@ class PyPlcVer3:
                             self.grid_system.place_device(start_row, col, DeviceType.LINK_HORZ, "")
                     
                     self.last_drag_pos = (current_row, current_col)
+        
+        # マウスボタンを離した時にドラッグ終了
+        if pyxel.btnr(pyxel.MOUSE_BUTTON_LEFT):
+            self.is_dragging_link = False
+            self.drag_start_pos = None
+            self.last_drag_pos = None
+            # 回路全体を再解析
+            self.circuit_analyzer.solve_ladder()
 
     def _handle_device_operation(self) -> None:
         """
