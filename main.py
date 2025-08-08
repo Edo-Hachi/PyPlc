@@ -15,6 +15,7 @@ from core.circuit_analyzer import CircuitAnalyzer
 from core.device_palette import DevicePalette
 from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システムをインポート
 from dialogs import DialogManager, FileDialogManager  # ダイアログシステム統合管理をインポート
+from DialogManager.new_dialog_manager import NewDialogManager  # 新DialogManagerシステム
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 from DialogManager.integration_test_dialog import show_integration_test_dialog  # Phase 1統合テスト用
 from DialogManager.phase2_integration_test import show_phase2_integration_test_dialog  # Phase 2統合テスト用
@@ -49,7 +50,8 @@ class PyPlcVer3:
         self.circuit_analyzer = CircuitAnalyzer(self.grid_system)
         self.device_palette = DevicePalette()  # デバイスパレット追加
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
-        self.dialog_manager = DialogManager()  # ダイアログシステム統合管理
+        self.dialog_manager = DialogManager()  # 古いダイアログシステム統合管理
+        self.new_dialog_manager = NewDialogManager()  # 新DialogManagerシステム（Phase B1テスト用）
         self.file_dialog_manager = FileDialogManager(self.csv_manager)  # ファイルダイアログ管理追加
         
         self.mouse_state: MouseState = MouseState()
@@ -178,11 +180,21 @@ class PyPlcVer3:
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
             device = self.grid_system.get_device(row, col)
             if device:
-                self.dialog_manager.show_device_edit_dialog(
-                    device, row, col, 
-                    self._draw_background_for_dialog,
-                    self.grid_system
-                )
+                # Shift+右クリック: 新DialogManagerシステムをテスト（Phase B1）
+                if pyxel.btn(pyxel.KEY_SHIFT):
+                    print("[Phase B1 Test] Using NEW DialogManager system...")
+                    self.new_dialog_manager.show_device_edit_dialog(
+                        device, row, col, 
+                        self._draw_background_for_dialog,
+                        self.grid_system
+                    )
+                else:
+                    # 通常右クリック: 古いDialogManagerシステム（既存動作）
+                    self.dialog_manager.show_device_edit_dialog(
+                        device, row, col, 
+                        self._draw_background_for_dialog,
+                        self.grid_system
+                    )
 
     def _handle_device_operation(self) -> None:
         """
