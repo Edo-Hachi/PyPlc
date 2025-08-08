@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "event_definitions.json",
+  "title": "PyPlc Ver3 Event Definitions",
+  "description": "Event types for UI controls",
+  "definitions": {
+    "button_events": {
+      "type": "array",
+      "items": {
+        "enum": ["click", "hover", "focus", "blur"]
+      },
+      "uniqueItems": true,
+      "description": "Valid events for button controls"
+    },
+    "textinput_events": {
+      "type": "array",
+      "items": {
+        "enum": ["change", "focus", "blur", "enter", "validate"]
+      },
+      "uniqueItems": true,
+      "description": "Valid events for text input controls"
+    },
+    "filelist_events": {
+      "type": "array",
+      "items": {
+        "enum": ["select", "double_click", "change"]
+      },
+      "uniqueItems": true,
+      "description": "Valid events for file list controls"
+    }
+  }
+}
