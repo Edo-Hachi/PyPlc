@@ -389,3 +389,7 @@ def reset_dialog_event_system() -> None:
     """
     global _global_dialog_event_system
     _global_dialog_event_system = None
+
+
+# EventSystemエイリアス（後方互換性のため）
+EventSystem = DialogEventSystem

@@ -8,6 +8,7 @@ PyPlc Ver3 Dialog System - Phase 1 MVP Implementation
 import pyxel
 from typing import Dict, List, Any, Callable, Optional
 from abc import ABC, abstractmethod
+from .events.event_system import EventSystem
 
 
 class BaseDialog(ABC):
@@ -49,6 +50,7 @@ class BaseDialog(ABC):
         
         # イベントシステム
         self.event_callbacks: Dict[str, List[Callable]] = {}
+        self.event_system = EventSystem()
         
         # 入力状態
         self.mouse_x = 0
@@ -66,6 +68,10 @@ class BaseDialog(ABC):
         self.controls[control_id] = control
         if control_id not in self.control_order:
             self.control_order.append(control_id)
+        
+        # FileListControlWrapperの場合、イベントシステムを設定
+        if hasattr(control, 'set_event_system'):
+            control.set_event_system(self.event_system)
     
     def get_control(self, control_id: str) -> Optional[Any]:
         """

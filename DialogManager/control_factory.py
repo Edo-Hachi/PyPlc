@@ -8,6 +8,7 @@ JSON定義からコントロールを動的生成するファクトリーパタ�
 from typing import Dict, Any, Optional, Type, Callable
 from abc import ABC, abstractmethod
 from DialogManager.controls.text_input_control import TextInputControl
+from DialogManager.controls.file_list_control import FileListControl
 
 
 class BaseControl(ABC):
@@ -147,6 +148,7 @@ class ControlFactory:
         self.control_creators["label"] = self._create_label_control
         self.control_creators["button"] = self._create_button_control
         self.control_creators["textinput"] = self._create_textinput_control
+        self.control_creators["filelist"] = self._create_filelist_control
     
     def register_control_type(self, control_type: str, creator_func: Callable) -> None:
         """
@@ -340,3 +342,64 @@ class ControlFactory:
             サポートされている場合True
         """
         return control_type in self.control_creators
+    
+    def _create_filelist_control(self, definition: Dict[str, Any]) -> BaseControl:
+        """
+        ファイルリストコントロールを生成（Phase 3実装）
+        
+        Args:
+            definition: コントロール定義
+            
+        Returns:
+            ファイルリストコントロール
+        """
+        # FileListControlは独自のイベントシステムを使用するため、
+        # ここでは基本的なラッパークラスを作成
+        class FileListControlWrapper(BaseControl):
+            def __init__(self, control_id: str, x: int, y: int, width: int, height: int, **kwargs):
+                super().__init__(control_id, x, y, width, height, **kwargs)
+                # EventSystemは後でBaseDialogから注入される
+                self.file_list_control = None
+                self.config = kwargs
+            
+            def set_event_system(self, event_system):
+                """イベントシステムを設定してFileListControlを初期化"""
+                config = {
+                    'id': self.id,
+                    'x': self.x,
+                    'y': self.y,
+                    'width': self.width,
+                    'height': self.height,
+                    **self.config
+                }
+                self.file_list_control = FileListControl(config, event_system)
+            
+            def handle_input(self, mouse_x: int, mouse_y: int, mouse_clicked: bool) -> None:
+                if self.file_list_control:
+                    self.file_list_control.handle_input(mouse_x, mouse_y)
+            
+            def draw(self, dialog_x: int, dialog_y: int) -> None:
+                if self.file_list_control:
+                    self.file_list_control.draw(dialog_x, dialog_y)
+            
+            def get_selected_file(self):
+                """選択中のファイル情報を取得"""
+                if self.file_list_control:
+                    return self.file_list_control.get_selected_file()
+                return None
+            
+            def refresh_file_list(self):
+                """ファイルリストを更新"""
+                if self.file_list_control:
+                    self.file_list_control.refresh_file_list()
+        
+        return FileListControlWrapper(
+            control_id=definition["id"],
+            x=definition["x"],
+            y=definition["y"],
+            width=definition["width"],
+            height=definition["height"],
+            file_pattern=definition.get("file_pattern", "*.csv"),
+            directory=definition.get("directory", "./"),
+            show_details=definition.get("show_details", True)
+        )
