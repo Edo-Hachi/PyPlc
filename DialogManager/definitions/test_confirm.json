@@ -1,4 +1,5 @@
 {
+  "$schema": "./schemas/dialog_base_schema.json",
   "title": "確認ダイアログ",
   "width": 250,
   "height": 120,

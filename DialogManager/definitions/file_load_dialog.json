@@ -1,4 +1,5 @@
 {
+  "$schema": "./schemas/dialog_base_schema.json",
   "title": "Load Circuit File",
   "width": 350,
   "height": 280,

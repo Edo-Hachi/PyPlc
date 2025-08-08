@@ -9,6 +9,7 @@ import json
 import os
 from typing import Dict, Any, Optional, List
 from pathlib import Path
+from .schema_validator import SchemaValidator
 
 
 class JSONDialogLoader:
@@ -22,15 +23,29 @@ class JSONDialogLoader:
     - デフォルト値の適用
     """
     
-    def __init__(self, definitions_path: str = "DialogManager/definitions"):
+    def __init__(self, definitions_path: str = "DialogManager/definitions", enable_validation: bool = True):
         """
         JSONDialogLoader初期化
         
         Args:
             definitions_path: JSON定義ファイルのベースパス
+            enable_validation: スキーマ検証を有効にするか
         """
         self.definitions_path = Path(definitions_path)
         self.loaded_definitions: Dict[str, Dict[str, Any]] = {}
+        self.enable_validation = enable_validation
+        
+        # スキーマ検証機能の初期化
+        if self.enable_validation:
+            try:
+                self.schema_validator = SchemaValidator(str(self.definitions_path.parent))
+                print("JSONDialogLoader: Schema validation enabled")
+            except Exception as e:
+                print(f"JSONDialogLoader: Schema validation disabled ({e})")
+                self.enable_validation = False
+                self.schema_validator = None
+        else:
+            self.schema_validator = None
         
         # デフォルト値定義
         self.default_dialog = {
@@ -77,6 +92,17 @@ class JSONDialogLoader:
             # JSON読み込み
             with open(file_path, 'r', encoding='utf-8') as f:
                 definition = json.load(f)
+            
+            # スキーマ検証（有効な場合）
+            if self.enable_validation and self.schema_validator:
+                schema_valid, schema_errors = self.schema_validator.validate_definition_file(file_path)
+                if not schema_valid:
+                    print(f"Schema validation failed for {filename}:")
+                    for error in schema_errors:
+                        print(f"  - {error}")
+                    return None
+                else:
+                    print(f"Schema validation passed for {filename}")
             
             # 基本バリデーション
             validated_definition = self._validate_definition(definition, filename)
