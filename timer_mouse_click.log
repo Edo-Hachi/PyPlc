@@ -19,3 +19,6 @@
 [TIMER CLICK] Pos=(241,240)
   OK Button: (122, 232, 50, 20), In_rect=False
   Cancel Button: (212, 232, 50, 20), In_rect=True
+[TIMER CLICK] Pos=(150,243)
+  OK Button: (122, 232, 50, 20), In_rect=True
+  Cancel Button: (212, 232, 50, 20), In_rect=False

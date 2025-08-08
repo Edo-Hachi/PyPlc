@@ -1,0 +1,5 @@
+[CLICK] Dialog Active=True, Pos=(140,232)
+  OK Button: rect=(102, 222, 60, 20), hover=True
+  Cancel Button: rect=(222, 222, 60, 20), hover=False
+  Action: OK
+---

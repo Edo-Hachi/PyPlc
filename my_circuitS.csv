@@ -1,6 +1,6 @@
 # PyPlc Ver3 Circuit Data (Extended Format)
 # Format: row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state
-# Created: 2025-08-07 22:56:50
+# Created: 2025-08-08 18:26:29
 row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state
 1,1,CONTACT_A,X002,False,0,0,False,False
 1,2,LINK_HORZ,X12,False,0,0,False,False
@@ -8,7 +8,7 @@ row,col,device_type,address,state,preset_value,current_value,timer_active,last_i
 1,4,LINK_HORZ,X14,False,0,0,False,False
 1,5,LINK_HORZ,X15,False,0,0,False,False
 1,6,LINK_HORZ,X16,False,0,0,False,False
-1,7,LINK_HORZ,X17,False,0,0,False,False
+1,7,LINK_BRANCH,X17,False,0,0,False,False
 1,8,LINK_HORZ,X18,False,0,0,False,False
 1,9,LINK_HORZ,X19,False,0,0,False,False
 1,10,LINK_HORZ,X110,False,0,0,False,False
@@ -20,13 +20,14 @@ row,col,device_type,address,state,preset_value,current_value,timer_active,last_i
 1,16,LINK_HORZ,X116,False,0,0,False,False
 1,17,LINK_HORZ,X117,False,0,0,False,False
 1,18,TIMER_TON,T002,False,1000,0,False,False
+2,7,LINK_VIRT,X27,False,0,0,False,False
 3,1,CONTACT_A,T002,False,0,0,False,False
 3,2,LINK_HORZ,X32,False,0,0,False,False
 3,3,LINK_HORZ,X33,False,0,0,False,False
 3,4,LINK_HORZ,X34,False,0,0,False,False
 3,5,LINK_HORZ,X35,False,0,0,False,False
 3,6,LINK_HORZ,X36,False,0,0,False,False
-3,7,LINK_HORZ,X37,False,0,0,False,False
+3,7,LINK_BRANCH,X37,False,0,0,False,False
 3,8,LINK_HORZ,X38,False,0,0,False,False
 3,9,LINK_HORZ,X39,False,0,0,False,False
 3,10,LINK_HORZ,X310,False,0,0,False,False
