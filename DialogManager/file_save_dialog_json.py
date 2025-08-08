@@ -136,7 +136,7 @@ class FileSaveDialogJSON(BaseDialog):
         """保存ボタン押下時の処理"""
         if self._validate_filename():
             self.dialog_result = True
-            self.close()
+            self.close(True)  # BaseDialogのresultにもTrueを設定
             print(f"Save dialog: OK pressed with filename '{self.input_filename}'")
         else:
             print("Save dialog: Invalid filename")
@@ -144,7 +144,7 @@ class FileSaveDialogJSON(BaseDialog):
     def _on_cancel_pressed(self, *args) -> None:
         """キャンセルボタン押下時の処理"""
         self.dialog_result = False
-        self.close()
+        self.close(False)  # BaseDialogのresultにもFalseを設定
         print("Save dialog: Cancel pressed")
     
     def _validate_filename(self) -> bool:
@@ -214,7 +214,8 @@ class FileSaveDialogJSON(BaseDialog):
         """
         try:
             result = self.show()
-            if result and self.input_filename:
+            # self.dialog_resultを確認（OKボタン押下時にTrueに設定される）
+            if self.dialog_result and self.input_filename:
                 return True, self.input_filename
             else:
                 return False, ""

@@ -1,18 +1,17 @@
 """
-PyPlc Ver3 ダイアログシステム
-統合ダイアログ管理とデバイスID編集機能
+PyPlc Ver3 ダイアログシステム（Phase C完全移行後）
 
-このモジュールは、main.pyからダイアログ処理を分離し、
-保守性・拡張性・可読性を向上させる責任分離アーキテクチャを提供します。
+古いハードコーディングされたダイアログシステムは完全に削除され、
+新しいJSON駆動DialogManagerシステムに移行完了。
+
+新システムは DialogManager/ ディレクトリにあります:
+- DialogManager.new_dialog_manager.NewDialogManager
+- DialogManager.new_file_dialog_manager.NewFileDialogManager
+
+このディレクトリは互換性維持のためのみ保持されています。
 """
 
-from .device_id_dialog import DeviceIDDialog, DialogState
-from .dialog_manager import DialogManager
-from .file_dialog_manager import FileDialogManager
+# Phase C完了：古いシステムは完全削除済み
+# 新システム: DialogManager/ ディレクトリを参照
 
-__all__ = [
-    'DialogManager',
-    'DeviceIDDialog', 
-    'DialogState',
-    'FileDialogManager'
-]
+__all__ = []

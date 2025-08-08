@@ -38,6 +38,10 @@ class CircuitCsvManager:
             if filename is None:
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 filename = f"circuit_{timestamp}.csv"
+            else:
+                # .csv拡張子を自動追加（既に拡張子がある場合は追加しない）
+                if not filename.lower().endswith('.csv'):
+                    filename = f"{filename}.csv"
             
             # grid_system.to_csv()を使用して拡張フォーマットで保存
             csv_data = self.grid_system.to_csv()

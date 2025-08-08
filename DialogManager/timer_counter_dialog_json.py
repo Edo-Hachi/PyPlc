@@ -141,7 +141,7 @@ class TimerCounterDialogJSON(BaseDialog):
         """OKボタン押下時の処理"""
         if self._validate_preset_value():
             self.dialog_result = True
-            self.close()
+            self.close(True)  # BaseDialogのresultにもTrueを設定
             print(f"Timer/Counter dialog: OK pressed with preset '{self.new_preset_value}'")
         else:
             print("Timer/Counter dialog: Invalid preset value")
@@ -149,7 +149,7 @@ class TimerCounterDialogJSON(BaseDialog):
     def _on_cancel_pressed(self, *args) -> None:
         """キャンセルボタン押下時の処理"""
         self.dialog_result = False
-        self.close()
+        self.close(False)  # BaseDialogのresultにもFalseを設定
         print("Timer/Counter dialog: Cancel pressed")
     
     def _validate_preset_value(self) -> bool:

@@ -14,7 +14,7 @@ from core.input_handler import InputHandler, MouseState
 from core.circuit_analyzer import CircuitAnalyzer
 from core.device_palette import DevicePalette
 from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システムをインポート
-from dialogs import DialogManager, FileDialogManager  # ダイアログシステム統合管理をインポート
+# 古いdialogs/システムは削除済み（Phase Cで完全移行）
 from DialogManager.new_dialog_manager import NewDialogManager  # 新DialogManagerシステム
 from DialogManager.new_file_dialog_manager import NewFileDialogManager  # 新FileDialogManagerシステム
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
@@ -51,10 +51,9 @@ class PyPlcVer3:
         self.circuit_analyzer = CircuitAnalyzer(self.grid_system)
         self.device_palette = DevicePalette()  # デバイスパレット追加
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
-        self.dialog_manager = DialogManager()  # 古いダイアログシステム統合管理
-        self.new_dialog_manager = NewDialogManager()  # 新DialogManagerシステム（Phase B1テスト用）
-        self.file_dialog_manager = FileDialogManager(self.csv_manager)  # 古いファイルダイアログ管理
-        self.new_file_dialog_manager = NewFileDialogManager(self.csv_manager)  # 新FileDialogManagerシステム（Phase B2テスト用）
+        # 新DialogManagerシステム（Phase C完全移行）
+        self.dialog_manager = NewDialogManager()  # 新DialogManagerシステム
+        self.file_dialog_manager = NewFileDialogManager(self.csv_manager)  # 新FileDialogManagerシステム
         
         self.mouse_state: MouseState = MouseState()
         
@@ -76,23 +75,13 @@ class PyPlcVer3:
         # F6キーでの全システムリセット (Ver1実装継承)
         self._handle_full_system_reset()
         
-        # Ctrl+S: ファイル保存ダイアログ表示（古いシステム）
-        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S) and not pyxel.btn(pyxel.KEY_ALT):
+        # Ctrl+S: ファイル保存ダイアログ表示（新システム完全移行）
+        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
             self.file_dialog_manager.show_save_dialog()
             
-        # Ctrl+O: ファイル読み込みダイアログ表示（古いシステム）
-        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O) and not pyxel.btn(pyxel.KEY_ALT):
+        # Ctrl+O: ファイル読み込みダイアログ表示（新システム完全移行）
+        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
             self.file_dialog_manager.show_load_dialog()
-            
-        # Alt+Ctrl+S: 新ファイル保存ダイアログテスト（Phase B2）
-        if pyxel.btn(pyxel.KEY_ALT) and pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
-            print("[Phase B2 Test] Using NEW FileDialogManager save...")
-            self.new_file_dialog_manager.show_save_dialog()
-            
-        # Alt+Ctrl+O: 新ファイル読み込みダイアログテスト（Phase B2）
-        if pyxel.btn(pyxel.KEY_ALT) and pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
-            print("[Phase B2 Test] Using NEW FileDialogManager load...")
-            self.new_file_dialog_manager.show_load_dialog()
         
         # T: Phase 1統合テスト - 新ダイアログシステムのテスト
         if pyxel.btnp(pyxel.KEY_T):
@@ -192,21 +181,12 @@ class PyPlcVer3:
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
             device = self.grid_system.get_device(row, col)
             if device:
-                # Shift+右クリック: 新DialogManagerシステムをテスト（Phase B1）
-                if pyxel.btn(pyxel.KEY_SHIFT):
-                    print("[Phase B1 Test] Using NEW DialogManager system...")
-                    self.new_dialog_manager.show_device_edit_dialog(
-                        device, row, col, 
-                        self._draw_background_for_dialog,
-                        self.grid_system
-                    )
-                else:
-                    # 通常右クリック: 古いDialogManagerシステム（既存動作）
-                    self.dialog_manager.show_device_edit_dialog(
-                        device, row, col, 
-                        self._draw_background_for_dialog,
-                        self.grid_system
-                    )
+                # 右クリック: 新DialogManagerシステム（Phase C完全移行）
+                self.dialog_manager.show_device_edit_dialog(
+                    device, row, col, 
+                    self._draw_background_for_dialog,
+                    self.grid_system
+                )
 
     def _handle_device_operation(self) -> None:
         """
@@ -440,7 +420,7 @@ class PyPlcVer3:
             pyxel.text(plc_x + len(plc_text) * 4, status_bar_y + 2, hint_text, pyxel.COLOR_CYAN)
         
         # TABキーヒント表示（左端）
-        tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load Alt+Ctrl+S/O:NewDialog"
+        tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load"
         pyxel.text(10, status_bar_y + 2, tab_hint, pyxel.COLOR_WHITE)
 
     def _handle_plc_control(self) -> None:
