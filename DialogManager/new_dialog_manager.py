@@ -6,6 +6,7 @@ from typing import Callable, Optional
 from config import DeviceType
 from DialogManager.device_id_dialog_json import show_device_id_dialog
 from DialogManager.file_load_dialog_json import FileLoadDialogJSON
+from DialogManager.timer_counter_dialog_json import show_timer_counter_preset_dialog
 
 
 class NewDialogManager:
@@ -41,9 +42,8 @@ class NewDialogManager:
             grid_system: グリッドシステムインスタンス
         """
         if device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
-            # タイマー・カウンターはプリセット値編集（Phase B3で実装予定）
-            print(f"[NewDialogManager] Timer/Counter dialog for {device.device_type.value} (not yet implemented)")
-            # TODO: Phase B3でTimerCounterDialogJSON実装
+            # タイマー・カウンターはプリセット値編集（新TimerCounterDialogJSON使用）
+            self.show_timer_counter_preset_dialog_json(device, row, col, grid_system)
         else:
             # その他はデバイスID編集（新DeviceIDDialogJSON使用）
             self.show_device_id_dialog_json(device, row, col, grid_system)
@@ -78,6 +78,36 @@ class NewDialogManager:
         if success and new_id:
             device.address = new_id
             print(f"[NewDialogManager] Device ID updated: {device.device_type.value} -> {new_id}")
+    
+    def show_timer_counter_preset_dialog_json(
+        self,
+        device,
+        row: int,
+        col: int,
+        grid_system
+    ) -> None:
+        """
+        新TimerCounterDialogJSON使用のプリセット値編集処理
+        
+        Args:
+            device: 編集対象デバイス
+            row: グリッド行座標
+            col: グリッド列座標
+            grid_system: グリッドシステムインスタンス
+        """
+        # タイマー・カウンター以外は対象外
+        if device.device_type not in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+            return
+            
+        # 新TimerCounterDialogJSONを使用してダイアログ表示
+        success, new_preset = show_timer_counter_preset_dialog(device.device_type, device.preset_value)
+        
+        # OK が押された場合、プリセット値を更新
+        if success:
+            device.preset_value = new_preset
+            print(f"[NewDialogManager] Preset value updated: {device.device_type.value} -> {new_preset}")
+        else:
+            print("[NewDialogManager] Timer/Counter preset edit canceled")
     
     def validate_device_for_id_edit(self, device) -> bool:
         """
