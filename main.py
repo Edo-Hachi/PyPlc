@@ -56,6 +56,12 @@ class PyPlcVer3:
         self.file_dialog_manager = NewFileDialogManager(self.csv_manager)  # 新FileDialogManagerシステム
         
         self.mouse_state: MouseState = MouseState()
+
+        # --- LINK_HORZ ドラッグ配置用フラグ (Phase D) ---
+        self.is_dragging_link = False
+        self.drag_start_pos = None
+        self.last_drag_pos = None
+        # --- ここまで ---
         
         pyxel.run(self.update, self.draw)
     
