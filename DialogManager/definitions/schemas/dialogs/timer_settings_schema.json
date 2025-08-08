@@ -1,0 +1,181 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "timer_settings_schema.json",
+  "title": "PyPlc Ver3 Timer Settings Dialog Schema",
+  "description": "Schema for timer settings dialog definition",
+  "allOf": [
+    {
+      "$ref": "../dialog_base_schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "title": {
+          "const": "Timer Settings"
+        },
+        "width": {
+          "const": 260
+        },
+        "height": {
+          "const": 160
+        },
+        "controls": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 10,
+          "items": {
+            "anyOf": [
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "id": {
+                        "const": "device_info_label"
+                      },
+                      "type": {
+                        "const": "label"
+                      },
+                      "text": {
+                        "const": "Timer: TON (Timer ON-Delay)"
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "../controls/label_schema.json"
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "id": {
+                        "const": "instruction_label"
+                      },
+                      "type": {
+                        "const": "label"
+                      },
+                      "text": {
+                        "const": "Preset Value (0.1 sec units):"
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "../controls/label_schema.json"
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "id": {
+                        "const": "preset_input"
+                      },
+                      "type": {
+                        "const": "textinput"
+                      },
+                      "input_type": {
+                        "const": "numeric"
+                      },
+                      "validation": {
+                        "properties": {
+                          "type": {
+                            "const": "timer_preset_range"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "../controls/textinput_schema.json"
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "id": {
+                        "const": "range_label"
+                      },
+                      "type": {
+                        "const": "label"
+                      },
+                      "text": {
+                        "const": "Range: 0 - 32767 (0.0 - 3276.7 seconds)"
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "../controls/label_schema.json"
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "id": {
+                        "const": "error_label"
+                      },
+                      "type": {
+                        "const": "label"
+                      },
+                      "visible": {
+                        "const": false
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "../controls/label_schema.json"
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "id": {
+                        "const": "ok_button"
+                      },
+                      "type": {
+                        "const": "button"
+                      },
+                      "text": {
+                        "const": "OK"
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "../controls/button_schema.json"
+                  }
+                ]
+              },
+              {
+                "allOf": [
+                  {
+                    "properties": {
+                      "id": {
+                        "const": "cancel_button"
+                      },
+                      "type": {
+                        "const": "button"
+                      },
+                      "text": {
+                        "const": "Cancel"
+                      }
+                    }
+                  },
+                  {
+                    "$ref": "../controls/button_schema.json"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
