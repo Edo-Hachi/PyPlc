@@ -516,37 +516,46 @@ class TextInputControl:
         if not self.visible:
             return
         
-        abs_x, abs_y, w, h = self.get_absolute_rect(dialog_x, dialog_y)
-        
-        # 背景描画
-        pyxel.rect(abs_x, abs_y, w, h, self.bg_color)
+        abs_x, abs_y, w, _ = self.get_absolute_rect(dialog_x, dialog_y) # 元のhはレイアウト用にのみ使い、描画では無視
+
+        # --- 修正案：フォントサイズ基準で高さを動的に計算 ---
+        padding = 3
+        font_height = 7  # pyxel.FONT_HEIGHT
+        calculated_h = font_height + padding * 2
+        # --- 修正案ここまで ---
+
+        # 背景描画 (計算した高さを使用)
+        pyxel.rect(abs_x, abs_y, w, calculated_h, self.bg_color)
         
         # 境界線描画（フォーカス状態で色変更）
         border_color = self.focus_border_color if self.is_focused else self.border_color
         if not self.is_valid:
             border_color = 8  # pyxel.COLOR_RED
-        pyxel.rectb(abs_x, abs_y, w, h, border_color)
+        pyxel.rectb(abs_x, abs_y, w, calculated_h, border_color)
         
         # テキスト描画
+        text_y = abs_y + padding
         display_text = self.text[self.display_offset:self.display_offset + (w-4)//4]
         text_color = self.color if display_text else 13  # グレー（プレースホルダー用）
         
         if display_text:
-            pyxel.text(abs_x + 2, abs_y + 2, display_text, text_color)
+            pyxel.text(abs_x + 2, text_y, display_text, text_color)
         elif self.placeholder and not self.is_focused:
-            # プレースホルダー表示
             placeholder_text = self.placeholder[:((w-4)//4)]
-            pyxel.text(abs_x + 2, abs_y + 2, placeholder_text, 13)
+            pyxel.text(abs_x + 2, text_y, placeholder_text, 13)
         
         # カーソル描画（フォーカス時かつ点滅表示時）
         if self.is_focused and self.cursor_visible:
             cursor_x = abs_x + 2 + (self.cursor_pos - self.display_offset) * 4
             if abs_x + 2 <= cursor_x <= abs_x + w - 2:
-                pyxel.line(cursor_x, abs_y + 2, cursor_x, abs_y + h - 3, self.color)
-        
+                # --- 修正案：カーソルの高さをフォントに合わせる ---
+                pyxel.line(cursor_x, abs_y + padding, cursor_x, abs_y + padding + font_height - 1, self.color)
+                # --- 修正案ここまで ---
+
         # バリデーションエラー表示
         if not self.is_valid and self.validation_error:
-            error_y = abs_y + h + 2
+            # --- 修正案：エラーメッセージの位置を計算後の高さに合わせる ---
+            error_y = abs_y + calculated_h + 2
             pyxel.text(abs_x, error_y, self.validation_error[:((w)//4)], 8)  # 赤色
     
     def get_absolute_rect(self, dialog_x: int, dialog_y: int) -> tuple:
