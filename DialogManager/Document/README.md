@@ -1,33 +1,39 @@
 # PyPlc Ver3 DialogManager
 
-**JSON駆動ダイアログシステム - 疎結合・拡張可能・宣言的UI定義**
+## 概要
 
----
+DialogManager は、PyPlc Ver3 向けに開発された JSON 駆動のダイアログシステムです。宣言的な UI 定義と疎結合なイベントシステムを特徴とし、PLC 教育ツールに最適化されています。
 
-## 📋 概要
+## 主な特徴
 
-DialogManagerは、PyPlc Ver3のために開発された次世代ダイアログシステムです。JSON定義による宣言的UI構築、疎結合なイベントシステム、高い拡張性を特徴とし、PLC教育ツールに最適化されています。
+- **JSON 駆動の UI 構築**: 宣言的な JSON 定義による柔軟なダイアログ構築
+- **疎結合アーキテクチャ**: イベント駆動型のコンポーネント連携
+- **拡張可能な設計**: 新しいコントロールタイプの容易な追加
+- **PLC 標準準拠**: デバイスアドレス検証機能を内蔵
+- **包括的なテスト**: 各フェーズの統合テストを実装
 
-### 🎯 主要な特徴
+## クイックスタート
 
-- **JSON駆動UI**: 宣言的なJSON定義によるダイアログ構築
-- **疎結合アーキテクチャ**: イベントシステムによる柔軟な連携
-- **高い拡張性**: 新しいコントロールタイプの容易な追加
-- **PLC標準準拠**: デバイスアドレス検証・バリデーション機能
-- **実用的なコントロール**: テキスト入力・ファイル選択等の実装済み
-- **包括的テスト**: 各Phase毎の統合テスト・実機動作確認
+### インストール
 
----
+```bash
+# 仮想環境の作成と有効化
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# または
+# .\venv\Scripts\activate  # Windows
 
-## 🚀 クイックスタート
+# 依存関係のインストール
+pip install -r requirements.txt
+```
 
-### 基本的な使用方法
+### 基本的な使い方
 
 ```python
 from DialogManager.json_dialog_loader import JSONDialogLoader
 from DialogManager.base_dialog import BaseDialog
 
-# JSON定義からダイアログを作成
+# JSON 定義からダイアログを作成
 loader = JSONDialogLoader()
 dialog_data = loader.load_dialog("definitions/test_confirm.json")
 
@@ -36,168 +42,69 @@ dialog = TestConfirmDialog(dialog_data)
 result = dialog.show_modal()
 ```
 
-### JSON定義例
+## アーキテクチャ
 
-```json
-{
-  "title": "確認ダイアログ",
-  "width": 300,
-  "height": 150,
-  "controls": [
-    {
-      "type": "label",
-      "id": "message",
-      "text": "この操作を実行しますか？",
-      "x": 20,
-      "y": 30
-    },
-    {
-      "type": "button",
-      "id": "ok_button",
-      "text": "OK",
-      "x": 80,
-      "y": 100,
-      "events": ["click"]
-    }
-  ]
-}
-```
+DialogManager は以下の主要コンポーネントで構成されています：
 
----
+- **BaseDialog**: 全ダイアログの基底クラス
+- **JSONDialogLoader**: JSON 定義の読み込みと解析
+- **ControlFactory**: 動的コントロール生成
+- **EventSystem**: 疎結合なイベント通知システム
+- **ValidationSystem**: PLC 標準準拠のバリデーション
 
-## 🏗️ システムアーキテクチャ
+詳細は [Architecture.md](Architecture.md) を参照してください。
 
-### コアコンポーネント
-
-```
-JSON定義 → JSONDialogLoader → ControlFactory → BaseDialog → EventSystem
-                                     ↓
-各種Control + ValidationSystem + 座標変換システム
-```
-
-### 主要クラス
-
-- **BaseDialog**: 全ダイアログの基底クラス（モーダル処理・座標変換）
-- **JSONDialogLoader**: JSON定義ファイルの読み込み・解析
-- **ControlFactory**: 動的コントロール生成（ファクトリーパターン）
-- **EventSystem**: 疎結合イベント通知システム
-- **ValidationSystem**: PLC標準準拠バリデーション
-
----
-
-## 📁 ディレクトリ構造
-
-```
-DialogManager/
-├── README.md                    # このファイル
-├── base_dialog.py              # ダイアログ基底クラス
-├── json_dialog_loader.py       # JSON定義読み込み
-├── control_factory.py          # 動的コントロール生成
-├── controls/                   # コントロール実装
-│   ├── text_input_control.py   # テキスト入力コントロール
-│   └── file_list_control.py    # ファイル一覧コントロール
-├── events/                     # イベントシステム
-│   └── event_system.py         # 疎結合イベント通知
-├── validation/                 # バリデーションシステム
-│   └── validator.py            # PLC標準準拠検証
-├── definitions/                # JSON定義ファイル
-│   ├── test_confirm.json       # テスト用確認ダイアログ
-│   ├── device_settings.json    # デバイスID設定ダイアログ
-│   └── file_load_dialog.json   # ファイル読み込みダイアログ
-├── Document/                   # ドキュメント（このディレクトリ）
-│   ├── README.md               # 概要・使い方
-│   ├── Architecture.md         # アーキテクチャ設計
-│   ├── FileListControl.md      # FileListControl仕様
-│   ├── EventSystem.md          # イベントシステム仕様
-│   ├── JSONDefinition.md       # JSON定義リファレンス
-│   ├── DeveloperGuide.md       # 開発者ガイド
-│   └── Environment.md          # 実行環境・依存関係
-└── [テスト・統合ファイル群]
-```
-
----
-
-## 🎮 実装済みコントロール
+## 実装済みコントロール
 
 ### TextInputControl
-- **機能**: リアルタイムテキスト入力・編集
-- **特徴**: PLC標準準拠バリデーション、フォーカス管理、カーソル表示
+- **機能**: テキスト入力と編集
+- **特徴**: リアルタイムバリデーション、フォーカス管理
 - **用途**: デバイスアドレス入力、設定値入力
 
-### FileListControl  
-- **機能**: ファイル一覧表示・選択・スクロール
-- **特徴**: CSVファイル対応、ファイル情報表示、キーボード・マウス操作
-- **用途**: 回路図ファイル選択、データファイル読み込み
+### FileListControl
+- **機能**: ファイル一覧の表示と選択
+- **特徴**: CSV ファイル対応、スクロール機能
+- **用途**: 回路図ファイルの選択
 
 ### ButtonControl
-- **機能**: クリック可能ボタン
-- **特徴**: ホバー効果、正確なマウス座標判定
-- **用途**: OK/Cancel、Load/Save等の操作ボタン
+- **機能**: クリック可能なボタン
+- **特徴**: ホバー効果、正確なマウス判定
+- **用途**: 操作ボタン
 
 ### LabelControl
 - **機能**: 静的テキスト表示
-- **特徴**: 色・フォント・配置カスタマイズ
-- **用途**: 説明文、ステータス表示
+- **特徴**: 書式設定可能
+- **用途**: ラベル、説明文
 
----
+## ドキュメント
 
-## 🧪 テスト・動作確認
+- [アーキテクチャ概要](Architecture.md)
+- [FileListControl リファレンス](FileListControl.md)
+- [イベントシステム](EventSystem.md)
+- [JSON 定義リファレンス](JSONDefinition.md)
+- [開発者ガイド](DeveloperGuide.md)
+- [環境設定ガイド](Environment.md)
 
-### 統合テスト
+## 開発
 
-DialogManagerには包括的な統合テストが実装されています：
+### テストの実行
 
 ```bash
-# PyPlc Ver3を起動
-./venv/bin/python main.py
-
-# キーボードショートカット
-T キー: Phase 1統合テスト（基本機能）
-U キー: Phase 2統合テスト（テキスト入力）
-V キー: Phase 3統合テスト（ファイル選択）
-W キー: FileLoadDialog実装テスト
+# 統合テストの実行
+python -m unittest discover DialogManager/tests
 ```
 
-### テスト結果
-- **Phase 1統合テスト**: 3/3成功 ✅
-- **Phase 2統合テスト**: 3/3成功 ✅  
-- **Phase 3統合テスト**: 3/3成功 ✅
-- **実機動作確認**: 全キー完全動作 ✅
+### 開発ガイド
 
----
+新しいコントロールの作成方法については [開発者ガイド](DeveloperGuide.md) を参照してください。
 
-## 📈 開発履歴
+## ライセンス
 
-### Phase 1: MVPコアフレームワーク構築 ✅
-**Git commit**: 0e018c0 "Phase1 commit"
-- BaseDialog、JSONDialogLoader、ControlFactory、EventSystem実装
-- JSON定義からの動的ダイアログ生成確認
+[ライセンス情報]
 
-### Phase 2: 実用ダイアログシステム構築 ✅  
-**Git commit**: beb5e5a "Dialog Text Box Fixed"
-- TextInputControl、ValidationSystem、座標変換システム実装
-- 全ての技術的課題（座標系問題、フォーカス問題等）解決
+## 貢献について
 
-### Phase 3: FileListControl実装 ✅
-**Git commit**: 0c47dca "FileListDlg Finish"
-- CSVファイル一覧表示・選択・スクロール機能実装
-- 実機動作確認完了（V/Wキーテスト成功）
-
----
-
-## 🔧 実行環境・依存関係
-
-### 必要な環境
-- **Python**: 3.8+ 
-- **Pyxel**: 1.9.x（色定数制限あり）
-- **仮想環境**: `/home/yukikaze/Project/PyxelProject/PyPlc/venv/` 必須
-
-### 実行方法
-```bash
-# 仮想環境有効化
-source /home/yukikaze/Project/PyxelProject/PyPlc/venv/bin/activate
-
-# PyPlc Ver3起動
+[貢献ガイドライン]
 python main.py
 ```
 

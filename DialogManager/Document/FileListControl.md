@@ -1,27 +1,39 @@
 # FileListControl 詳細仕様書
 
-**CSVファイル一覧表示・選択・スクロール機能を持つ高度なコントロール**
+## 目次
+- [概要](#概要)
+- [基本仕様](#基本仕様)
+- [使用方法](#使用方法)
+  - [JSON定義](#json定義)
+  - [Pythonコード](#pythonコード)
+- [設定オプション](#設定オプション)
+  - [基本設定](#基本設定)
+  - [表示設定](#表示設定)
+  - [スタイル設定](#スタイル設定)
+- [イベント体系](#イベント体系)
+- [UI構成・レイアウト](#ui構成・レイアウト)
+- [実装例](#実装例)
+- [パフォーマンス考慮事項](#パフォーマンス考慮事項)
+- [トラブルシューティング](#トラブルシューティング)
 
----
-
-## 📋 概要
+## 概要
 
 FileListControlは、DialogManager Phase 3で実装された高度なファイル選択コントロールです。CSVファイルの一覧表示、選択、スクロール機能を提供し、実用的なファイル読み込みダイアログの中核を担います。
 
-### 🎯 主要機能
+### 主要機能
 
-- **ファイル一覧表示**: 指定ディレクトリ内のCSVファイル自動検出・表示
-- **ファイル情報表示**: ファイルサイズ・更新日時の詳細表示
-- **選択機能**: マウスクリック・キーボード操作による選択
-- **スクロール機能**: 大量ファイル対応の縦スクロール
-- **ダブルクリック対応**: 即座のファイル確定機能
-- **リアルタイム更新**: Refreshボタンによるファイル一覧更新
+- ファイル一覧表示: 指定ディレクトリ内のCSVファイル自動検出・表示
+- ファイル情報表示: ファイルサイズ・更新日時の詳細表示
+- 選択機能: マウスクリック・キーボード操作による選択
+- スクロール機能: 大量ファイル対応の縦スクロール
+- ダブルクリック対応: 即座のファイル確定機能
+- リアルタイム更新: Refreshボタンによるファイル一覧更新
 
 ---
 
-## 🎮 基本的な使用方法
+## 使用方法
 
-### JSON定義での使用
+### JSON定義
 
 ```json
 {
@@ -44,24 +56,25 @@ FileListControlは、DialogManager Phase 3で実装された高度なファイ�
 }
 ```
 
-### Python コードでの使用
+### Pythonコード
 
 ```python
 from DialogManager.controls.file_list_control import FileListControl
 
-# 直接インスタンス生成
-file_list = FileListControl(
-    x=20, y=40, width=360, height=200,
-    directory="./", file_pattern="*.csv"
-)
-
-# イベントハンドラー登録
+# イベントハンドラー
 def on_selection_changed(selected_file):
     print(f"選択されたファイル: {selected_file}")
 
 def on_file_loaded(file_path):
     print(f"ファイル読み込み: {file_path}")
 
+# コントロール作成とイベント登録
+file_list = FileListControl(
+    x=20, y=40, 
+    width=360, height=200,
+    directory="./", 
+    file_pattern="*.csv"
+)
 file_list.set_event_system(event_system)
 event_system.register("selection_changed", on_selection_changed)
 event_system.register("file_loaded", on_file_loaded)
@@ -69,44 +82,44 @@ event_system.register("file_loaded", on_file_loaded)
 
 ---
 
-## 🔧 設定オプション
+## 設定オプション
 
 ### 基本設定
 
 | プロパティ | 型 | デフォルト | 説明 |
-|------------|----|-----------|----|
-| `x` | int | 0 | X座標位置 |
-| `y` | int | 0 | Y座標位置 |
-| `width` | int | 300 | コントロール幅 |
-| `height` | int | 200 | コントロール高さ |
-| `directory` | str | "./" | 検索対象ディレクトリ |
-| `file_pattern` | str | "*.csv" | ファイルパターン |
+|------------|----|------------|------|
+| x | int | 0 | X座標位置 |
+| y | int | 0 | Y座標位置 |
+| width | int | 300 | コントロール幅 |
+| height | int | 200 | コントロール高さ |
+| directory | str | "./" | 検索対象ディレクトリ |
+| file_pattern | str | "*.csv" | ファイルパターン |
 
 ### 表示設定
 
 | プロパティ | 型 | デフォルト | 説明 |
-|------------|----|-----------|----|
-| `show_file_size` | bool | True | ファイルサイズ表示 |
-| `show_date_time` | bool | True | 更新日時表示 |
-| `max_filename_length` | int | 30 | ファイル名最大表示文字数 |
-| `items_per_page` | int | 10 | 1ページあたりの表示項目数 |
+|-------------------|------|------------|------------------|
+| show_file_size | bool | True | ファイルサイズ表示 |
+| show_date_time | bool | True | 更新日時表示 |
+| max_filename_length | int | 30 | ファイル名最大表示文字数 |
+| items_per_page | int | 10 | 1ページあたりの表示項目数 |
 
 ### スタイル設定
 
 | プロパティ | 型 | デフォルト | 説明 |
-|------------|----|-----------|----|
-| `header_height` | int | 20 | ヘッダー部分の高さ |
-| `item_height` | int | 16 | 各項目の高さ |
-| `scrollbar_width` | int | 6 | スクロールバーの幅 |
-| `selection_color` | int | pyxel.COLOR_YELLOW | 選択項目の背景色 |
-| `focus_border_color` | int | pyxel.COLOR_CYAN | フォーカス時の枠線色 |
+|-------------------|------|------------------|--------------|
+| header_height | int | 20 | ヘッダー部分の高さ |
+| item_height | int | 16 | 各項目の高さ |
+| scrollbar_width | int | 6 | スクロールバーの幅 |
+| selection_color | int | pyxel.COLOR_YELLOW | 選択項目の背景色 |
+| focus_border_color | int | pyxel.COLOR_CYAN | フォーカス時の枠線色 |
 
 ---
 
-## 🎯 イベント体系
+## イベント体系
 
-### 1. **selection_changed**
-ファイル選択が変更された時に発火
+### selection_changed
+ファイル選択が変更された時に発火します。
 
 ```python
 def on_selection_changed(file_info):
@@ -123,43 +136,53 @@ def on_selection_changed(file_info):
     print(f"選択変更: {file_info['name']}")
 ```
 
-### 2. **file_double_clicked**
-ダブルクリックまたはEnterキーでファイルが確定された時に発火
+### file_double_clicked
+ダブルクリックまたはEnterキーでファイルが確定された時に発火します。
 
 ```python
 def on_file_double_clicked(event_data):
-    """
-    Args:
-        event_data (dict): イベントデータ
-            {
-                'control_id': 'file_selector',
-                'file_info': {
-                    'name': 'example.csv',
-                    'path': './example.csv',
-                    'size': 1024,
-                    'modified': '2025-08-08 10:00:00',
-                    'display_name': 'example'
-                }
-            }
-    """
     file_path = event_data['file_info']['path']
-    print(f"ファイルダブルクリック: {file_path}")
-    # 実際のファイル読み込み処理
-    with open(file_path, 'r') as f:
-        content = f.read()
+    print(f"ファイル読み込み: {file_path}")
+    # ファイル読み込み処理を実装
 ```
 
-### 3. **scroll_changed**
-スクロール位置が変更された時に発火
+### scroll_changed
+スクロール位置が変更された時に発火します。
 
 ```python
 def on_scroll_changed(scroll_position, total_items):
-    """
-    Args:
-        scroll_position (int): 現在のスクロール位置
-        total_items (int): 総項目数
-    """
-    print(f"スクロール: {scroll_position}/{total_items}")
+    print(f"スクロール位置: {scroll_position}/{total_items}")
+```
+
+## 実装例
+
+### カスタムファイルローダー
+
+```python
+class FileLoader:
+    def __init__(self):
+        self.file_list = FileListControl(
+            x=10, y=30,
+            width=380, height=200,
+            directory="./data",
+            file_pattern="*.csv"
+        )
+        self.setup_events()
+    
+    def setup_events(self):
+        self.file_list.set_event_system(event_system)
+        event_system.register("file_double_clicked", self.handle_file_selected)
+    
+    def handle_file_selected(self, event_data):
+        file_path = event_data['file_info']['path']
+        try:
+            with open(file_path, 'r') as f:
+                data = f.read()
+            print(f"ファイルを読み込みました: {file_path}")
+            return data
+        except Exception as e:
+            print(f"エラーが発生しました: {e}")
+            return None
 ```
 
 ---
@@ -170,15 +193,13 @@ def on_scroll_changed(scroll_position, total_items):
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    Header Area                          │
-│  Files: 15 | Selected: example.csv                      │
+│  Files: 15 | Selected: example.csv                     │
 ├─────────────────────────────────────────────────────────┤
-│                   File List Area                        │
-│  📄 file1.csv          1.2KB    2025-08-08 09:30    ┃  │
-│  📄 file2.csv          2.5KB    2025-08-08 09:25    ┃  │
-│  🟡 example.csv        3.1KB    2025-08-08 10:00    ┃  │ ← 選択中
-│  📄 data.csv           0.8KB    2025-08-07 15:20    ┃  │
-│  📄 test.csv           4.2KB    2025-08-06 11:45    ┃  │
+│  file1.csv          1.2KB    2025-08-08 09:30    ┃    │
+│  file2.csv          2.5KB    2025-08-08 09:25    ┃    │
+│  example.csv        3.1KB    2025-08-08 10:00    ┃    │ ← 選択中
+│  data.csv           0.8KB    2025-08-07 15:20    ┃    │
+│  test.csv           4.2KB    2025-08-06 11:45    ┃    │
 │                                                     ┃  │
 │                                                     ┃  │
 │                                                     ┃  │
@@ -190,14 +211,47 @@ def on_scroll_changed(scroll_position, total_items):
 
 ### ヘッダー部分
 
-- **左側**: ファイル総数表示 (`Files: {count}`)
-- **右側**: 選択中ファイル名表示 (`Selected: {filename}`)
-- **背景色**: `pyxel.COLOR_LIGHT_BLUE`
-- **文字色**: `pyxel.COLOR_BLACK`
+- 左側: ファイル総数表示 (`Files: {count}`)
+- 右側: 選択中ファイル名表示 (`Selected: {filename}`)
+- 背景色: `pyxel.COLOR_LIGHT_BLUE`
+- 文字色: `pyxel.COLOR_BLACK`
 
 ### ファイル一覧部分
 
-- **項目表示**: アイコン + ファイル名 + サイズ + 更新日時
+- 項目表示: ファイル名 + サイズ + 更新日時
+- 選択項目: ハイライト表示
+- スクロールバー: 右端に表示
+
+## パフォーマンス考慮事項
+
+1. **大量ファイル対応**
+   - 表示項目はビューポート内のもののみ描画
+   - ファイル情報は必要に応じて遅延読み込み
+
+2. **メモリ効率**
+   - ファイル情報は必要最小限のデータを保持
+   - 大きなファイルリストはページネーション対応
+
+3. **描画最適化**
+   - 変更のあった部分のみ再描画
+   - スクロール時の描画を最適化
+
+## トラブルシューティング
+
+### ファイルが表示されない場合
+1. `directory` パスが正しいか確認
+2. `file_pattern` が正しいか確認
+3. アクセス権限を確認
+
+### イベントが発火しない場合
+1. `set_event_system()` が呼び出されているか確認
+2. イベント名が正しいか確認
+3. イベントハンドラーの引数が正しいか確認
+
+### パフォーマンスが悪い場合
+1. 表示項目数を減らす
+2. `items_per_page` を調整
+3. 不要なイベントハンドラーを削除
 - **選択表示**: 黄色背景 (`pyxel.COLOR_YELLOW`)
 - **通常表示**: 白背景 (`pyxel.COLOR_WHITE`)
 - **文字色**: 選択時は黒、非選択時は濃青
