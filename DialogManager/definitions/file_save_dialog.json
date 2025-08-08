@@ -1,4 +1,5 @@
 {
+  "$schema": "./schemas/dialogs/file_save_dialog_schema.json",
   "title": "Save Circuit File",
   "width": 320,
   "height": 180,

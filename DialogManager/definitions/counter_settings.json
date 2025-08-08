@@ -1,4 +1,5 @@
 {
+  "$schema": "./schemas/dialogs/counter_settings_schema.json",
   "title": "Counter Settings",
   "width": 260,
   "height": 160,
