@@ -68,7 +68,7 @@ class RequiredValidator(BaseValidator):
     必須入力バリデーター
     """
     
-    def __init__(self, error_message: str = "この項目は必須です"):
+    def __init__(self, error_message: str = "This field is required"):
         super().__init__(error_message)
     
     def validate(self, value: str) -> ValidationResult:
@@ -106,11 +106,11 @@ class LengthValidator(BaseValidator):
         
         if not error_message:
             if min_length > 0 and max_length < 100:
-                error_message = f"{min_length}～{max_length}文字で入力してください"
+                error_message = f"Enter between {min_length} and {max_length} characters"
             elif min_length > 0:
-                error_message = f"{min_length}文字以上で入力してください"
+                error_message = f"Enter at least {min_length} characters"
             else:
-                error_message = f"{max_length}文字以下で入力してください"
+                error_message = f"Enter no more than {max_length} characters"
         
         super().__init__(error_message)
     
@@ -139,7 +139,7 @@ class RegexValidator(BaseValidator):
     正規表現バリデーター
     """
     
-    def __init__(self, pattern: str, error_message: str = "入力形式が正しくありません"):
+    def __init__(self, pattern: str, error_message: str = "Invalid format"):
         """
         RegexValidator初期化
         
@@ -171,7 +171,7 @@ class PLCDeviceAddressValidator(BaseValidator):
     PLC標準仕様準拠のデバイスアドレス形式をチェック
     """
     
-    def __init__(self, error_message: str = "正しいPLCアドレス形式で入力してください"):
+    def __init__(self, error_message: str = "Enter a valid PLC address format"):
         super().__init__(error_message)
         
         # PLC標準デバイスタイプとアドレス範囲
@@ -201,7 +201,7 @@ class PLCDeviceAddressValidator(BaseValidator):
             バリデーション結果
         """
         if not value:
-            return ValidationResult(False, "デバイスアドレスを入力してください", "EMPTY")
+            return ValidationResult(False, "Please enter a device address", "EMPTY")
         
         # 大文字に変換
         value = value.upper().strip()
@@ -211,7 +211,7 @@ class PLCDeviceAddressValidator(BaseValidator):
         if not match:
             return ValidationResult(
                 False, 
-                "正しい形式: X0, Y10, M100, T0, C0等", 
+                "Correct format: X0, Y10, M100, T0, C0, etc.", 
                 "INVALID_FORMAT"
             )
         
@@ -223,7 +223,7 @@ class PLCDeviceAddressValidator(BaseValidator):
         if not (min_addr <= address_num <= max_addr):
             return ValidationResult(
                 False,
-                f"{device_type}デバイスは{min_addr}～{max_addr}の範囲です",
+                f"{device_type} device address must be between {min_addr} and {max_addr}",
                 "OUT_OF_RANGE"
             )
         
@@ -252,13 +252,13 @@ class NumericValidator(BaseValidator):
         
         if not error_message:
             if min_value is not None and max_value is not None:
-                error_message = f"{min_value}～{max_value}の数値を入力してください"
+                error_message = f"Enter a number between {min_value} and {max_value}"
             elif min_value is not None:
-                error_message = f"{min_value}以上の数値を入力してください"
+                error_message = f"Enter a number greater than or equal to {min_value}"
             elif max_value is not None:
-                error_message = f"{max_value}以下の数値を入力してください"
+                error_message = f"Enter a number less than or equal to {max_value}"
             else:
-                error_message = "数値を入力してください"
+                error_message = "Please enter a number"
         
         super().__init__(error_message)
     
@@ -273,14 +273,14 @@ class NumericValidator(BaseValidator):
             バリデーション結果
         """
         if not value.strip():
-            return ValidationResult(False, "数値を入力してください", "EMPTY")
+            return ValidationResult(False, "Please enter a number", "EMPTY")
         
         try:
             if self.allow_decimal:
                 num_value = float(value)
             else:
                 if '.' in value:
-                    return ValidationResult(False, "整数を入力してください", "NOT_INTEGER")
+                    return ValidationResult(False, "Please enter an integer", "NOT_INTEGER")
                 num_value = int(value)
             
             # 範囲チェック
@@ -292,7 +292,7 @@ class NumericValidator(BaseValidator):
             return ValidationResult(True)
             
         except ValueError:
-            return ValidationResult(False, "正しい数値を入力してください", "INVALID_NUMBER")
+            return ValidationResult(False, "Please enter a valid number", "INVALID_NUMBER")
 
 
 class CompositeValidator(BaseValidator):
@@ -365,8 +365,8 @@ class ValidatorFactory:
             タイマープリセット値バリデーター
         """
         return CompositeValidator([
-            RequiredValidator("プリセット値を入力してください"),
-            NumericValidator(0, 32767, False, "0～32767の整数を入力してください")
+            RequiredValidator("Please enter a preset value"),
+            NumericValidator(0, 32767, False, "Enter an integer between 0 and 32767")
         ])
     
     @staticmethod
@@ -378,8 +378,8 @@ class ValidatorFactory:
             カウンタープリセット値バリデーター
         """
         return CompositeValidator([
-            RequiredValidator("プリセット値を入力してください"),
-            NumericValidator(0, 32767, False, "0～32767の整数を入力してください")
+            RequiredValidator("Please enter a preset value"),
+            NumericValidator(0, 32767, False, "Enter an integer between 0 and 32767")
         ])
     
     @staticmethod
