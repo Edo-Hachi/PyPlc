@@ -118,9 +118,12 @@ class DeviceIDDialogJSON(BaseDialog):
                 if control_def["id"] == "device_id_input":
                     validation_config = control_def.get("validation", {})
                     base_validator = create_validator_from_config(validation_config)
-                    # RSTのみ、対象アドレスをT/Cかつ0-255に制限
+                    # RST: 単一T/Cかつ0-255
                     if self.device_type == DeviceType.RST:
                         device_input.set_validator(lambda text: self._validate_rst_address(text, base_validator))
+                    # ZRST: 列挙/範囲（T/Cのみ、0-255）
+                    elif self.device_type == DeviceType.ZRST:
+                        device_input.set_validator(lambda text: self._validate_zrst_targets(text))
                     else:
                         device_input.set_validator(lambda text: self._validate_device_id(text, base_validator))
                     break
@@ -160,6 +163,56 @@ class DeviceIDDialogJSON(BaseDialog):
             if not (0 <= addr_num <= 255):
                 return False, "T/C address must be 0-255"
             return True, ""
+        except Exception as e:
+            return False, f"Validation error: {e}"
+
+    def _validate_zrst_targets(self, text: str) -> Tuple[bool, str]:
+        """
+        ZRST用ターゲットバリデーション
+        - カンマ区切りの列挙と範囲（角括弧は任意）
+        - 許可プレフィックス: T, C のみ
+        - 数値範囲: 0-255
+        例: "T0-3, C10, C12"
+        """
+        try:
+            if text is None:
+                return False, "Please enter ZRST targets"
+            value = text.strip().upper()
+            if not value:
+                return False, "Please enter ZRST targets"
+
+            # トークン分割（カンマ）
+            tokens = [tok.strip() for tok in value.split(',') if tok.strip()]
+            if not tokens:
+                return False, "Please enter ZRST targets"
+
+            single_re = re.compile(r'^(T|C)(\d{1,3})$')
+            range_re = re.compile(r'^\[?(T|C)(\d{1,3})-(\d{1,3})\]?$')
+
+            for idx, tok in enumerate(tokens, start=1):
+                m1 = single_re.match(tok)
+                if m1:
+                    prefix, num_str = m1.group(1), m1.group(2)
+                    num = int(num_str)
+                    if not (0 <= num <= 255):
+                        return False, f"{prefix}{num} out of range (0-255)"
+                    continue
+
+                m2 = range_re.match(tok)
+                if m2:
+                    prefix, start_str, end_str = m2.group(1), m2.group(2), m2.group(3)
+                    start_num = int(start_str)
+                    end_num = int(end_str)
+                    if start_num > end_num:
+                        return False, f"Invalid range at #{idx}: start > end"
+                    if not (0 <= start_num <= 255) or not (0 <= end_num <= 255):
+                        return False, f"Range out of bounds at #{idx}: {prefix}{start_num}-{end_num}"
+                    continue
+
+                return False, f"Invalid token at #{idx}: '{tok}'"
+
+            return True, ""
+
         except Exception as e:
             return False, f"Validation error: {e}"
     
