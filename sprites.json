@@ -161,6 +161,18 @@
       "y": 0,
       "NAME": "RESET",
       "ACT_NAME": "FALSE"
+    },
+    "120_0": {
+      "x": 120,
+      "y": 0,
+      "NAME": "ZRST",
+      "ACT_NAME": "TRUE"
+    },
+    "128_0": {
+      "x": 128,
+      "y": 0,
+      "NAME": "ZRST",
+      "ACT_NAME": "FALSE"
     }
   }
 }
