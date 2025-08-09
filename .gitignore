@@ -1,6 +1,6 @@
-venv/
 *.pyc
 __pycache__/
 .claude/settings.local.json
-commit.txt
 New_Docs/
+venv/
+.venv/

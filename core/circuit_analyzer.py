@@ -340,7 +340,15 @@ class CircuitAnalyzer:
                     device.address and
                     device.address != "WIRE"):  # アドレス指定されたコイル・タイマー・カウンターのみ
                     all_coil_addresses.add(device.address)
-                    if device.state:  # タイマー・カウンターはstateで出力状態判定
+                    
+                    # COIL_STD/COIL_REVは通電状態をstateに反映（PLC標準動作）
+                    if device.device_type == DeviceType.COIL_STD:
+                        device.state = device.is_energized
+                    elif device.device_type == DeviceType.COIL_REV:
+                        device.state = not device.is_energized  # 反転コイル
+                    
+                    # 全コイルタイプの状態判定
+                    if device.state:  # コイル・タイマー・カウンターの出力状態判定
                         energized_coil_addresses.add(device.address)
         
         # 2. 全コイルアドレスについて対応する接点の状態を更新
@@ -352,7 +360,8 @@ class CircuitAnalyzer:
                     device = self.grid.get_device(row, col)
                     if (device and 
                         device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B] and
-                        device.address == coil_address):
+                        device.address == coil_address and
+                        not device.address.startswith('X')):  # 外部入力（Xデバイス）は手動制御
                         # PLC標準: コイル状態に応じて同一アドレス接点を自動更新
                         device.state = is_coil_energized
 

@@ -5,6 +5,9 @@
 #Todo
 #Timer Counterのアドレスを編集できるように ✅完了
 #RSTの実装 ✅完了（Phase 1基本動作 + Phase 2 ZRST範囲リセット）
+
+#編集中のファイル名が確定しているなら、セーブするときにそのファイル名を使う
+
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
 
 
@@ -267,7 +270,8 @@ class PyPlcVer3:
 
     def _generate_default_address(self, device_type: DeviceType, row: int, col: int) -> str:
         """
-        デバイスタイプに基づくデフォルトアドレス生成（PLC標準準拠）
+        デバイスタイプに基づくユニークなデフォルトアドレス生成（PLC標準準拠）
+        既存のアドレスと重複しないように、空きアドレスを自動検索する
         
         Args:
             device_type: デバイスタイプ
@@ -275,18 +279,40 @@ class PyPlcVer3:
             col: グリッド列座標
             
         Returns:
-            str: 生成されたデフォルトアドレス
+            str: 生成されたユニークなデフォルトアドレス
         """
+        # デバイスタイプ別のプレフィックス決定
         if device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
-            return f"X{row+1:03d}"  # X001, X002等（10進数）
+            prefix = "X"
         elif device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV]:
-            return f"Y{row+1:03d}"  # Y001, Y002等（10進数）
+            prefix = "M"  # 内部リレー（自己保持回路で使用）
         elif device_type == DeviceType.TIMER_TON:
-            return f"T{row+1:03d}"  # T001, T002等（10進数）
+            prefix = "T"
         elif device_type == DeviceType.COUNTER_CTU:
-            return f"C{row+1:03d}"  # C001, C002等（10進数）
+            prefix = "C"
+        elif device_type == DeviceType.RST:
+            prefix = "T"  # RSTはタイマー/カウンターを対象
+        elif device_type == DeviceType.ZRST:
+            prefix = "T"  # ZRSTもタイマー/カウンターを対象
         else:
-            return f"X{row}{col}"   # その他のデフォルト
+            return ""
+        
+        # 既存のアドレス一覧を取得
+        existing_addresses = set()
+        for r in range(self.grid_system.rows):
+            for c in range(self.grid_system.cols):
+                device = self.grid_system.get_device(r, c)
+                if device and device.address:
+                    existing_addresses.add(device.address.upper())
+        
+        # プレフィックス + 番号で空きアドレスを検索（001から開始）
+        for i in range(1, 1000):  # X001-X999まで検索
+            candidate = f"{prefix}{i:03d}"
+            if candidate not in existing_addresses:
+                return candidate
+        
+        # 見つからなければフォールバック（まず発生しない）
+        return f"{prefix}999"
 
     def draw(self) -> None:
         """描画処理"""

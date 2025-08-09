@@ -92,15 +92,13 @@ class GridSystem:
     def _calculate_display_state(self, device: PLCDevice) -> bool:
         """
         デバイスの表示状態を計算（PLC標準準拠）
-        接点：論理状態と通電状態の組み合わせで点灯判定
-        その他：通電状態をそのまま使用
+        接点：device.stateがスプライト表示状態を直接決定
+        コイル・配線：通電状態をそのまま表示
         """
-        if device.device_type == DeviceType.CONTACT_A:
-            # A接点: ONかつ通電時のみ点灯
-            return device.state and device.is_energized
-        elif device.device_type == DeviceType.CONTACT_B:
-            # B接点: OFFかつ通電時のみ点灯  
-            return (not device.state) and device.is_energized
+        if device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
+            # 接点（A/B）: stateがONなら導通スプライト、OFFなら開放スプライト表示
+            # 右クリックでの状態変更を直接反映
+            return device.state
         else:
             # その他のデバイス（コイル、配線等）: 通電状態をそのまま表示
             return device.is_energized
