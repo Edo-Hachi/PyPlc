@@ -144,6 +144,7 @@ class DeviceType(Enum):
     TIMER_TON = "TIMER_TON"    # Timer ON-Delay (TON)
     COUNTER_CTU = "COUNTER_CTU" # Counter UP (CTU)
     RST = "RST"               # Reset command (Mitsubishi RST)
+    ZRST = "ZRST"             # Range Reset command (Mitsubishi ZRST)
     
     # 配線系（Ver3: 明示的配線システム）
     LINK_HORZ = "LINK_HORZ"    # Horizontal wiring (Ver3 new feature: essential for self-holding circuits)
@@ -195,7 +196,7 @@ DEVICE_PALETTE_DEFINITIONS = {
         (DeviceType.TIMER_TON, "TIMER", 1, "Timer ON-Delay"),
         (DeviceType.COUNTER_CTU, "COUNT", 2, "Counter UP"),
         (DeviceType.RST, "RESET", 3, "Reset Command"),
-        (DeviceType.EMPTY, "", 4, "UNDEF"),
+        (DeviceType.ZRST, "ZRST", 4, "Range Reset Command"),
         (DeviceType.EMPTY, "", 5, "UNDEF"),
         (DeviceType.EMPTY, "", 6, "UNDEF"),
         (DeviceType.EMPTY, "", 7, "UNDEF"),
