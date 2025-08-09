@@ -3,8 +3,8 @@
 # 目標: PLC標準仕様完全準拠ラダー図シミュレーター
 
 #Todo
-#Timer Counterのアドレスを編集できるように
-#RSTの実装
+#Timer Counterのアドレスを編集できるように ✅完了
+#RSTの実装 ✅完了（Phase 1 基本動作）
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
 
 
