@@ -1,6 +1,6 @@
 # PyPlc Ver3 Circuit Data (Extended Format)
 # Format: row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state
-# Created: 2025-08-10 00:14:07
+# Created: 2025-08-10 00:19:08
 row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state
 0,1,CONTACT_A,X001,False,0,0,False,False
 0,2,LINK_HORZ,,False,0,0,False,False
@@ -62,4 +62,3 @@ row,col,device_type,address,state,preset_value,current_value,timer_active,last_i
 5,16,LINK_HORZ,,False,0,0,False,False
 5,17,LINK_HORZ,,False,0,0,False,False
 5,18,COUNTER_CTU,C001,False,10,0,False,False
-6,12,CONTACT_A,X002,False,0,0,False,False

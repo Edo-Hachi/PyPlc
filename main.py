@@ -99,6 +99,8 @@ class PyPlcVer3:
         # Ctrl+S: ファイル保存ダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
             if self.current_mode == SimulatorMode.EDIT:
+                # 保存前に回路状態をリセット（クリーンな状態で保存）
+                self._reset_circuit_for_save()
                 self.file_dialog_manager.show_save_dialog()
             else:
                 self._show_status_message("Save: EDIT mode only. Press TAB to switch.", 4.0)
@@ -630,6 +632,39 @@ class PyPlcVer3:
                         device.current_value = 0
                         device.last_input_state = False
                         device.state = False  # 出力状態もリセット
+    
+    def _reset_circuit_for_save(self) -> None:
+        """
+        ファイル保存前の回路状態リセット
+        実行時の状態（接点ON/OFF、タイマー・カウンター現在値等）をクリアして
+        クリーンな初期状態で保存する
+        """
+        for row in range(self.grid_system.rows):
+            for col in range(self.grid_system.cols):
+                device = self.grid_system.get_device(row, col)
+                if device:
+                    # 全ての接点状態をOFFに（外部入力含む）
+                    if device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
+                        device.state = False
+                    
+                    # タイマー・カウンターの実行時値をクリア
+                    if device.device_type == DeviceType.TIMER_TON:
+                        device.current_value = 0
+                        device.timer_active = False
+                        device.state = False
+                    elif device.device_type == DeviceType.COUNTER_CTU:
+                        device.current_value = 0
+                        device.last_input_state = False
+                        device.state = False
+                    
+                    # コイル状態をクリア
+                    elif device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV]:
+                        device.state = False
+                        
+                    # 通電状態もクリア
+                    device.is_energized = False
+        
+        print("[Save] Circuit state reset before saving - clean initial state")
 
     def _draw_device_info_on_hover(self) -> None:
         """
