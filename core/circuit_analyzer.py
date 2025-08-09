@@ -243,7 +243,7 @@ class CircuitAnalyzer:
 
         if not zrst_texts:
             return
-
+        
         # 2. すべてのテキストを解釈してターゲットアドレス集合を構築
         target_addresses: set[str] = set()
         for text in zrst_texts:
@@ -284,7 +284,7 @@ class CircuitAnalyzer:
         value = text.strip().upper()
         tokens = [tok.strip() for tok in value.split(',') if tok.strip()]
         single_re = re.compile(r'^(T|C)(\d{1,3})$')
-        range_re = re.compile(r'^\[?(T|C)(\d{1,3})-(\d{1,3})\]?$')
+        range_re = re.compile(r'^\[?(T|C)(\d{1,3})-(T|C)(\d{1,3})\]?$')
 
         def norm(prefix: str, num: int) -> str:
             return f"{prefix}{num:03d}"
@@ -300,7 +300,10 @@ class CircuitAnalyzer:
 
             m2 = range_re.match(tok)
             if m2:
-                prefix, start_str, end_str = m2.group(1), m2.group(2), m2.group(3)
+                start_prefix, start_str, end_prefix, end_str = m2.group(1), m2.group(2), m2.group(3), m2.group(4)
+                # 同一プレフィックス必須
+                if start_prefix != end_prefix:
+                    continue
                 start_num = int(start_str)
                 end_num = int(end_str)
                 if start_num > end_num:
@@ -308,7 +311,7 @@ class CircuitAnalyzer:
                 start_num = max(0, start_num)
                 end_num = min(255, end_num)
                 for n in range(start_num, end_num + 1):
-                    targets.add(norm(prefix, n))
+                    targets.add(norm(start_prefix, n))
                 continue
 
             # 不正トークンは無視（バリデーションはUI側で実施済み）

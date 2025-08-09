@@ -4,7 +4,7 @@
 
 #Todo
 #Timer Counterのアドレスを編集できるように ✅完了
-#RSTの実装 ✅完了（Phase 1 基本動作）
+#RSTの実装 ✅完了（Phase 1基本動作 + Phase 2 ZRST範囲リセット）
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
 
 

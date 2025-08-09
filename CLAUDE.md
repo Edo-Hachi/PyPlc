@@ -945,13 +945,13 @@ X002 ──┤├── RST C0   # X002 ON時、C0カウンターリセット
 
 ---
 
-*最終更新: 2025-08-08*  
-*更新内容: RST命令実装計画策定完了*  
-*次回更新: RST命令実装完了時*
+*最終更新: 2025-08-09*  
+*更新内容: RST/ZRST実装完了記録・Phase 2完了確認*  
+*次回更新: 次期開発機能実装時*
 
-## ✅ RST（Reset）命令 Phase 1 実装完了（2025-08-09）
+## ✅ RST/ZRST（Reset）命令 Phase 1+2 実装完了（2025-08-09）
 
-### 実装範囲（Phase 1）
+### 実装範囲（Phase 1: RST基本機能）
 - `DeviceType.RST` 追加（Mitsubishi RST準拠）
 - パレット統合: 下段 Shift+3 に `RESET` を割当
 - スプライト統合: `RESET TRUE(104,0) / FALSE(112,0)` を使用
@@ -960,6 +960,15 @@ X002 ──┤├── RST C0   # X002 ON時、C0カウンターリセット
   - 対象一致（大文字統一）で `TIMER_TON`/`COUNTER_CTU` を即時リセット
   - Timer: `current_value=0`, `state=False`, `timer_active=False`
   - Counter: `current_value=0`, `state=False`, `last_input_state`を現在入力で更新
+
+### 実装範囲（Phase 2: ZRST範囲リセット）
+- `DeviceType.ZRST` 追加（Mitsubishi ZRST準拠）
+- パレット統合: 下段 Shift+4 に `ZRST` を割当
+- スプライト統合: `ZRST TRUE(120,0) / FALSE(128,0)` を使用
+- 範囲記法対応: 列挙（`T1,C3,C5`）・範囲（`T0-3`）・混在（`T1-2,C3,C5-7`）
+- バリデーション: 正規表現・範囲チェック・プレフィックス検証
+- 解析エンジン: `_process_zrst_commands()` + `_resolve_zrst_targets()` 実装
+- 正規化処理: 大文字化・3桁ゼロパディング（`T1` → `T001`）
 
 ### 変更ファイル
 - `config.py`: `DeviceType.RST`/パレット割当
