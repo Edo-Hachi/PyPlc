@@ -35,7 +35,10 @@ class CircuitAnalyzer:
         # 4. RST（リセット命令）処理（Mitsubishi準拠）
         self._process_rst_commands()
 
-        # 5. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
+        # 5. ZRST（範囲リセット命令）処理
+        self._process_zrst_commands()
+
+        # 6. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
         self._update_contact_states_from_coils()
 
     def _trace_power_flow(self, start_pos: Optional[Tuple[int, int]], visited: Optional[Set[Tuple[int, int]]] = None) -> None:
@@ -224,6 +227,94 @@ class CircuitAnalyzer:
                     device.state = False
                     # 次スキャンでの誤カウント防止: 現在の入力状態を前回状態として記録
                     device.last_input_state = device.is_energized
+
+    def _process_zrst_commands(self) -> None:
+        """
+        ZRST命令処理（範囲/複数指定）
+        - 通電中のZRSTのaddressテキストを解釈し、対象アドレス集合に一致するT/Cを即時リセット
+        """
+        # 1. 通電中のZRSTのテキストを収集
+        zrst_texts: list[str] = []
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                device = self.grid.get_device(row, col)
+                if device and device.device_type == DeviceType.ZRST and device.is_energized and device.address:
+                    zrst_texts.append(device.address)
+
+        if not zrst_texts:
+            return
+
+        # 2. すべてのテキストを解釈してターゲットアドレス集合を構築
+        target_addresses: set[str] = set()
+        for text in zrst_texts:
+            target_addresses.update(self._resolve_zrst_targets(text))
+
+        if not target_addresses:
+            return
+
+        # 3. 一致するタイマー/カウンターを即時リセット
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                device = self.grid.get_device(row, col)
+                if not device or not device.address:
+                    continue
+                addr_upper = device.address.upper()
+                if addr_upper not in target_addresses:
+                    continue
+                if device.device_type == DeviceType.TIMER_TON:
+                    device.current_value = 0
+                    device.state = False
+                    device.timer_active = False
+                elif device.device_type == DeviceType.COUNTER_CTU:
+                    device.current_value = 0
+                    device.state = False
+                    device.last_input_state = device.is_energized
+
+    def _resolve_zrst_targets(self, text: str) -> set[str]:
+        """
+        ZRSTターゲット文字列から個別アドレス集合を解決
+        許可: T/C、0-255、列挙/範囲、角括弧任意
+        内部表現は大文字+3桁ゼロパディング（例: T1 -> T001）
+        """
+        import re
+        targets: set[str] = set()
+        if not text:
+            return targets
+
+        value = text.strip().upper()
+        tokens = [tok.strip() for tok in value.split(',') if tok.strip()]
+        single_re = re.compile(r'^(T|C)(\d{1,3})$')
+        range_re = re.compile(r'^\[?(T|C)(\d{1,3})-(\d{1,3})\]?$')
+
+        def norm(prefix: str, num: int) -> str:
+            return f"{prefix}{num:03d}"
+
+        for tok in tokens:
+            m1 = single_re.match(tok)
+            if m1:
+                prefix, num_str = m1.group(1), m1.group(2)
+                num = int(num_str)
+                if 0 <= num <= 255:
+                    targets.add(norm(prefix, num))
+                continue
+
+            m2 = range_re.match(tok)
+            if m2:
+                prefix, start_str, end_str = m2.group(1), m2.group(2), m2.group(3)
+                start_num = int(start_str)
+                end_num = int(end_str)
+                if start_num > end_num:
+                    start_num, end_num = end_num, start_num  # 安全のため入替
+                start_num = max(0, start_num)
+                end_num = min(255, end_num)
+                for n in range(start_num, end_num + 1):
+                    targets.add(norm(prefix, n))
+                continue
+
+            # 不正トークンは無視（バリデーションはUI側で実施済み）
+            continue
+
+        return targets
 
     def _update_contact_states_from_coils(self) -> None:
         """
