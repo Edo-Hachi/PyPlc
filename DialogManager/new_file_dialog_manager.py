@@ -26,27 +26,44 @@ class NewFileDialogManager:
             csv_manager: CSV管理システムインスタンス
         """
         self.csv_manager = csv_manager
+        self.current_filename: Optional[str] = None  # 現在編集中のファイル名
     
-    def show_save_dialog(self, default_name: str = "my_circuit") -> bool:
+    def show_save_dialog(self, default_name: Optional[str] = None) -> bool:
         """
         新保存ダイアログ表示→CSV保存実行
+        現在編集中のファイル名を優先的にデフォルト値として使用
         
         Args:
-            default_name: デフォルトファイル名
+            default_name: デフォルトファイル名（指定がない場合は現在のファイル名または"untitled.csv"）
             
         Returns:
             保存成功時True
         """
-        print(f"[NewFileDialogManager] Showing save dialog (default: {default_name})")
+        # デフォルトファイル名の決定ロジック
+        if default_name:
+            effective_default = default_name
+        elif self.current_filename:
+            # 現在編集中のファイル名からパス部分を除去してファイル名のみ抽出
+            import os
+            filename_only = os.path.basename(self.current_filename)
+            # 拡張子を除去
+            effective_default = filename_only.replace('.csv', '') if filename_only.endswith('.csv') else filename_only
+        else:
+            # 新規エディット時
+            effective_default = "untitled"
+        
+        print(f"[NewFileDialogManager] Showing save dialog (default: {effective_default})")
         
         # 新FileSaveDialogJSONを使用
-        success, filename = show_file_save_dialog(default_name)
+        success, filename = show_file_save_dialog(effective_default)
         
         if success and filename:
             # CSVManager経由で保存実行（正しいメソッド名を使用）
             saved = self.csv_manager.save_circuit_to_csv(filename)
             if saved:
-                print(f"[NewFileDialogManager] File saved successfully: {filename}")
+                # 保存成功時に現在のファイル名として記憶
+                self.current_filename = filename if filename.endswith('.csv') else f"{filename}.csv"
+                print(f"[NewFileDialogManager] File saved successfully: {self.current_filename}")
                 return True
             else:
                 print("[NewFileDialogManager] Save failed: CSV manager error")
@@ -58,6 +75,7 @@ class NewFileDialogManager:
     def show_load_dialog(self) -> bool:
         """
         新読み込みダイアログ表示→CSV読み込み実行
+        読み込み成功時に現在のファイル名として記憶
         
         Returns:
             読み込み成功時True
@@ -73,7 +91,9 @@ class NewFileDialogManager:
                 # CSVManager経由で読み込み実行（正しいメソッド名を使用）
                 loaded = self.csv_manager.load_circuit_from_csv(file_path)
                 if loaded:
-                    print(f"[NewFileDialogManager] File loaded successfully: {file_path}")
+                    # 読み込み成功時に現在のファイル名として記憶
+                    self.current_filename = file_path
+                    print(f"[NewFileDialogManager] File loaded successfully: {self.current_filename}")
                     return True
                 else:
                     print(f"[NewFileDialogManager] Load failed: CSV manager error")
@@ -85,6 +105,21 @@ class NewFileDialogManager:
         except Exception as e:
             print(f"[NewFileDialogManager] Load dialog error: {e}")
             return False
+    
+    def get_current_filename(self) -> str:
+        """
+        現在編集中のファイル名を取得
+        
+        Returns:
+            現在のファイル名、または新規時は"untitled.csv"
+        """
+        return self.current_filename if self.current_filename else "untitled.csv"
+    
+    def reset_current_filename(self) -> None:
+        """
+        現在のファイル名をリセット（新規作成時用）
+        """
+        self.current_filename = None
     
     def get_recent_files(self) -> list:
         """

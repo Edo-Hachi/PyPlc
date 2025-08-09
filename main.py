@@ -2,11 +2,18 @@
 # 作成日: 2025-07-29
 # 目標: PLC標準仕様完全準拠ラダー図シミュレーター
 
-#Todo
-#Timer Counterのアドレスを編集できるように ✅完了
-#RSTの実装 ✅完了（Phase 1基本動作 + Phase 2 ZRST範囲リセット）
+#重要！
+# Pyxelは２バイト文字扱えないので１バイト文字のみ使用。絵文字も不可能
+# コメントには日本語を使用する。絵文字は使わない！￥
 
-#編集中のファイル名が確定しているなら、セーブするときにそのファイル名を使う
+# .vscode/以下に実行環境の記載があるので、参照してください
+
+
+#Todo
+#OK Timer Counterのアドレスを編集できるように ✅完了
+#OK RSTの実装 ✅完了（Phase 1基本動作 + Phase 2 ZRST範囲リセット）
+
+# OK !編集中のファイル名が確定しているなら、セーブするときにそのファイル名を使う
 
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
 
@@ -67,6 +74,10 @@ class PyPlcVer3:
         self.last_drag_pos = None
         # --- ここまで ---
         
+        # --- メッセージ表示システム ---
+        self.status_message = ""  # 表示中のメッセージ
+        self.status_message_timer = 0  # メッセージ表示残り時間（フレーム数）
+        
         pyxel.run(self.update, self.draw)
     
     def update(self) -> None:
@@ -85,13 +96,19 @@ class PyPlcVer3:
         # F6キーでの全システムリセット (Ver1実装継承)
         self._handle_full_system_reset()
         
-        # Ctrl+S: ファイル保存ダイアログ表示（新システム完全移行）
+        # Ctrl+S: ファイル保存ダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
-            self.file_dialog_manager.show_save_dialog()
+            if self.current_mode == SimulatorMode.EDIT:
+                self.file_dialog_manager.show_save_dialog()
+            else:
+                self._show_status_message("Save: EDIT mode only. Press TAB to switch.", 4.0)
             
-        # Ctrl+O: ファイル読み込みダイアログ表示（新システム完全移行）
+        # Ctrl+O: ファイル読み込みダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
-            self.file_dialog_manager.show_load_dialog()
+            if self.current_mode == SimulatorMode.EDIT:
+                self.file_dialog_manager.show_load_dialog()
+            else:
+                self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)
         
         # T: Phase 1統合テスト - 新ダイアログシステムのテスト
         if pyxel.btnp(pyxel.KEY_T):
@@ -132,6 +149,9 @@ class PyPlcVer3:
             # RUNモードかつPLC実行中の場合のみ回路解析実行
             self.circuit_analyzer.solve_ladder()
         # EDITモードまたはPLC停止中は回路解析を停止
+        
+        # 3. ステータスメッセージ更新
+        self._update_status_message()
 
     def _handle_device_placement(self) -> None:
         """
@@ -267,6 +287,26 @@ class PyPlcVer3:
             # 将来的にタイマー、カウンターなども追加予定
         }
         return device.device_type in operable_types
+    
+    def _show_status_message(self, message: str, duration_seconds: float = 3.0) -> None:
+        """
+        ステータスメッセージを表示する
+        
+        Args:
+            message: 表示するメッセージ（1バイト文字のみ）
+            duration_seconds: 表示時間（秒）
+        """
+        self.status_message = message
+        self.status_message_timer = int(duration_seconds * DisplayConfig.TARGET_FPS)  # フレーム数に変換
+    
+    def _update_status_message(self) -> None:
+        """
+        ステータスメッセージのタイマー更新
+        """
+        if self.status_message_timer > 0:
+            self.status_message_timer -= 1
+            if self.status_message_timer <= 0:
+                self.status_message = ""
 
     def _generate_default_address(self, device_type: DeviceType, row: int, col: int) -> str:
         """
@@ -485,9 +525,27 @@ class PyPlcVer3:
             hint_text = " F5:Start" if self.plc_run_state == PLCRunState.STOPPED else " F5:Stop"
             pyxel.text(plc_x + len(plc_text) * 4, status_bar_y + 2, hint_text, pyxel.COLOR_CYAN)
         
-        # TABキーヒント表示（左端）
-        tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load"
+        # TABキーヒント表示（左端） - モード別表示
+        if self.current_mode == SimulatorMode.EDIT:
+            tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load"
+        else:
+            tab_hint = "TAB:Mode F6:Reset F5:PLC [Save/Load: EDIT mode only]"
         pyxel.text(10, status_bar_y + 2, tab_hint, pyxel.COLOR_WHITE)
+        
+        # 現在編集中のファイル名表示（下部ステータスバー）
+        current_file = self.file_dialog_manager.get_current_filename()
+        file_display = f"File: {current_file}"
+        file_x = DisplayConfig.WINDOW_WIDTH - len(file_display) * 4 - 10  # 右端から10px余白
+        pyxel.text(file_x, DisplayConfig.WINDOW_HEIGHT - 20, file_display, pyxel.COLOR_CYAN)
+        
+        # ステータスメッセージ表示（中央上部）
+        if self.status_message:
+            message_x = (DisplayConfig.WINDOW_WIDTH - len(self.status_message) * 4) // 2  # 中央揃え
+            message_y = 20  # 上部に表示
+            # 背景を描画して見やすくする
+            pyxel.rect(message_x - 4, message_y - 2, len(self.status_message) * 4 + 8, 10, pyxel.COLOR_DARK_BLUE)
+            pyxel.rectb(message_x - 4, message_y - 2, len(self.status_message) * 4 + 8, 10, pyxel.COLOR_WHITE)
+            pyxel.text(message_x, message_y, self.status_message, pyxel.COLOR_RED)
 
     def _handle_plc_control(self) -> None:
         """
