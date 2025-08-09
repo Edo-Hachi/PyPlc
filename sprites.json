@@ -149,6 +149,18 @@
       "y": 0,
       "NAME": "COUNTER",
       "ACT_NAME": "FALSE"
+    },
+    "104_0": {
+      "x": 104,
+      "y": 0,
+      "NAME": "RESET",
+      "ACT_NAME": "TRUE"
+    },
+    "112_0": {
+      "x": 112,
+      "y": 0,
+      "NAME": "RESET",
+      "ACT_NAME": "FALSE"
     }
   }
 }

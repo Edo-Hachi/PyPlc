@@ -65,11 +65,13 @@ class SpriteManager:
         elif target_name == "EMPTY":
             target_act_name = "EMPTY"
         
-        # タイマー・カウンターのスプライト名マッピング（config.py名 → sprites.json名）
+        # タイマー・カウンター・リセットのスプライト名マッピング（config.py名 → sprites.json名）
         elif target_name == "TIMER_TON":
             target_name = "TIMER"
         elif target_name == "COUNTER_CTU":
             target_name = "COUNTER"
+        elif target_name == "RST":
+            target_name = "RESET"
 
         for key, sprite_info in self._sprite_map.items():
             if sprite_info.get("NAME") == target_name and sprite_info.get("ACT_NAME") == target_act_name:
