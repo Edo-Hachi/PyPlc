@@ -948,3 +948,35 @@ X002 ──┤├── RST C0   # X002 ON時、C0カウンターリセット
 *最終更新: 2025-08-08*  
 *更新内容: RST命令実装計画策定完了*  
 *次回更新: RST命令実装完了時*
+
+## ✅ RST（Reset）命令 Phase 1 実装完了（2025-08-09）
+
+### 実装範囲（Phase 1）
+- `DeviceType.RST` 追加（Mitsubishi RST準拠）
+- パレット統合: 下段 Shift+3 に `RESET` を割当
+- スプライト統合: `RESET TRUE(104,0) / FALSE(112,0)` を使用
+- アドレス編集: 既存DeviceIDダイアログを流用し、RST時のみ `T/C` かつ `0-255` に制限
+- 回路解析: `solve_ladder()`にRST処理を追加（タイマ/カウンタ更新の直後に実行）
+  - 対象一致（大文字統一）で `TIMER_TON`/`COUNTER_CTU` を即時リセット
+  - Timer: `current_value=0`, `state=False`, `timer_active=False`
+  - Counter: `current_value=0`, `state=False`, `last_input_state`を現在入力で更新
+
+### 変更ファイル
+- `config.py`: `DeviceType.RST`/パレット割当
+- `core/SpriteManager.py`: RST→RESET マッピング
+- `sprites.json`: RESET スプライト登録
+- `DialogManager/device_id_dialog_json.py`: RST用アドレス検証を追加
+- `core/circuit_analyzer.py`: `_process_rst_commands()` 実装・組み込み
+- `main.py`: Todo更新（Phase 1完了）
+
+### 動作確認要点
+- CTU C0 + RST C0 で即時リセット
+- TON T1 動作中に RST T1 で即時停止/クリア
+- 未設定RSTは無動作（エラーにしない）
+- CSV保存/読込後も動作維持
+
+### 次段（Phase 2/3）
+- ZRST（範囲リセット）/複数指定対応
+- RST対象候補UI/ログ強化、教育用サンプル回路追加
+
+— この節により、2025-08-08の計画に対するPhase 1の実装が完了したことを記録。
