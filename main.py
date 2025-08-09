@@ -3,8 +3,9 @@
 # 目標: PLC標準仕様完全準拠ラダー図シミュレーター
 
 #Todo
+#Timer Counterのアドレスを編集できるように
+#RSTの実装
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
-#Timer Counter実装
 
 
 import pyxel

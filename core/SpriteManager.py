@@ -64,12 +64,24 @@ class SpriteManager:
             target_act_name = "DEL"
         elif target_name == "EMPTY":
             target_act_name = "EMPTY"
+        
+        # タイマー・カウンターのスプライト名マッピング（config.py名 → sprites.json名）
+        elif target_name == "TIMER_TON":
+            target_name = "TIMER"
+        elif target_name == "COUNTER_CTU":
+            target_name = "COUNTER"
 
         for key, sprite_info in self._sprite_map.items():
             if sprite_info.get("NAME") == target_name and sprite_info.get("ACT_NAME") == target_act_name:
                 return (sprite_info["x"], sprite_info["y"])
         
-        # 見つからなかった場合
+        # 見つからなかった場合のデバッグ情報
+        print(f"[SPRITE DEBUG] Not found: target_name='{target_name}', target_act_name='{target_act_name}'")
+        print(f"[SPRITE DEBUG] Available sprites:")
+        for key, sprite_info in self._sprite_map.items():
+            if sprite_info.get("NAME") == target_name:  # 同じNAMEのもののみ表示
+                print(f"  - {key}: NAME='{sprite_info.get('NAME')}', ACT_NAME='{sprite_info.get('ACT_NAME')}'")
+        
         return None
 
 # --- グローバルインスタンス ---
