@@ -115,3 +115,75 @@
 ---
 
 以上、RST（Mitsubishi準拠）Phase 1 の設計・実装・レビュー・懸念点の記録。
+
+---
+
+## ZRST 仕様提案（範囲・複数指定の記述と保存設計）
+
+- **保存先**: 既存の`PLCDevice.address`に文字列として保存（CSV互換）。
+- **実行時解決**: スキャンごとに`resolved_targets: set[str]`をオンデマンド生成（必要ならキャッシュ）。
+
+### 記述仕様（大小無視・空白許容）
+- **列挙**: `x001, x003, x005`
+- **範囲**: `x006-x010`（`[x006-x010]`も許容、角括弧は任意）
+- **併記**: `x001,x003,x005,x006-x010`
+- **正規化**: すべて大文字化、数値は3桁ゼロパディング（例: `X1`→`X001`）。
+- **許可プレフィックス（Phase 2初期）**: `T, C`（将来拡張で`Y, M`も検討）。
+- **範囲上限**: `T/C`は`0-255`（`DeviceAddressRanges`準拠）。
+- **重複/重なり**: 自動ユニーク化。
+
+### バリデーション（ZRST専用）
+- トークン分割（`,`）後に各トークンを判定：
+  - 単一: `^(T|C)(\d{1,3})$` → 範囲内チェック
+  - 範囲: `^\[?(T|C)(\d{1,3})-(\d{1,3})\]?$` → 同一プレフィックス必須、下限<=上限
+- 許可外プレフィックスはエラー（Phase 2初期は`T,C`のみ）。
+- エラーメッセージ例: `Invalid token at #2: 'X-5'`, `Prefix 'X' not allowed (allowed: T,C)`, `Range out of bounds: T300 (max 255)`
+
+### 解析ロジック（実行順）
+- `電力フロー → タイマ/カウンタ更新 → RST → ZRST → 接点反映`
+- ZRSTが励磁かつ`address`非空: 記述をパース→ターゲット集合を解決→一致デバイスを即時リセット。
+  - タイマー: `current_value=0, state=False, timer_active=False`
+  - カウンタ: `current_value=0, state=False, last_input_state=現在入力`
+
+### CSV入出力・UI
+- **CSV**: `address`にZRSTの文字列をそのまま保存/復元。
+- **UI編集**: 既存DeviceIDダイアログを流用。ZRST時のみ専用バリデータを適用。
+- **プレースホルダ例**: `T0-3, C10, C12`
+
+---
+
+## 実装Todoプラン（ZRST: 範囲リセット／複数指定）
+
+### Step 1: 型・パレットの追加（小変更）
+- `config.py`: `DeviceType.ZRST` 追加。
+- パレット下段 Shift+4 に `(DeviceType.ZRST, "ZRST", 4, "Range Reset Command")` を追加。
+- スプライトは既に`ZRST` TRUE(120,0)/FALSE(128,0)が登録済み。
+
+### Step 2: アドレス編集UI（バリデーション拡張）
+- `DialogManager/validation/validator.py` に ZRST専用バリデータ（列挙+範囲対応）を追加。
+- `DeviceIDDialogJSON`で`DeviceType.ZRST`選択時に新バリデータを使用。
+
+### Step 3: 解析エンジン（ZRST処理の組込み）
+- `core/circuit_analyzer.py` に `_process_zrst_commands()` を追加し、`_process_rst_commands()`の後に実行。
+- テキストを解釈→ターゲット集合を解決→一致する`TIMER_TON`/`COUNTER_CTU`を即時リセット。
+
+### Step 4: CSV保存・読み込みの確認
+- 現行`to_csv()/from_csv()`で`address`は文字列そのまま保存/復元できることを確認。問題があれば最小修正。
+
+### Step 5: ステータス表示・使い勝手（任意の小強化）
+- ホバー詳細に`ZRST`の`address`文字列が見えることを確認。
+- 必要ならプレースホルダ文言を分かりやすく調整。
+
+### Step 6: 動作テスト（手動）
+- 範囲: `T0-3` → T0〜T3が即時リセット。
+- 列挙: `C10,C12` → 指定カウンタが即時リセット。
+- 混在: `T1-2, C3, C5-7`。
+- 異常系: `X1`, `T-1`, `T300`, `C10-T20` 等がエラーになること。
+- CSV往復の再現性。
+
+### Step 7: ドキュメント更新
+- `CLAUDE.md`/`_PLC_RESET.md`/`_Cursor_Add_RsetDev.md` に ZRST Phase 2 実装を追記。
+
+### 実装メモ（正規化と比較）
+- 大文字化（T/C）、数値は3桁ゼロパディングで内部比較。
+- 15×20グリッド規模ではフル走査で十分軽量（必要なら後日キャッシュ最適化）。
