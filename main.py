@@ -4,7 +4,7 @@
 
 #重要！
 # Pyxelは２バイト文字扱えないので１バイト文字のみ使用。絵文字も不可能
-# コメントには日本語を使用する。絵文字は使わない！￥
+# コメントには日本語を使用する。絵文字は使わない！
 
 # .vscode/以下に実行環境の記載があるので、参照してください
 
@@ -584,15 +584,17 @@ class PyPlcVer3:
         # グリッドシステムの全デバイス通電状態リセット
         self.grid_system.reset_all_energized_states()
         
+        # タイマー・カウンターの値リセット
+        self._reset_timer_counter_values()
+        
         # 追加のリセット処理（将来拡張時）
-        # - タイマー・カウンターの値リセット
         # - 内部リレー状態リセット
         # - エラー状態クリア
 
     def _reset_all_device_states(self) -> None:
         """
         全デバイスの個別状態をリセット（F6キー専用）
-        配置は維持、状態のみ初期化（接点のON/OFF等）
+        配置は維持、状態のみ初期化（接点のON/OFF、タイマー・カウンター値等）
         """
         for row in range(self.grid_system.rows):
             for col in range(self.grid_system.cols):
@@ -600,8 +602,34 @@ class PyPlcVer3:
                 if device:
                     # デバイスの個別状態を初期値に戻す
                     device.state = False  # 接点のON/OFF状態をOFFに
-                    # 将来的にタイマー・カウンターの現在値もリセット
-
+                    
+                    # タイマー・カウンターの現在値リセット
+                    if device.device_type == DeviceType.TIMER_TON:
+                        device.current_value = 0
+                        device.timer_active = False
+                        # preset_valueは保持（設定値は維持）
+                    elif device.device_type == DeviceType.COUNTER_CTU:
+                        device.current_value = 0
+                        device.last_input_state = False
+                        # preset_valueは保持（設定値は維持）
+    
+    def _reset_timer_counter_values(self) -> None:
+        """
+        タイマー・カウンターの現在値のみリセット（EDITモード復帰時・F5停止時用）
+        設定値（preset_value）は保持し、実行時の値のみクリア
+        """
+        for row in range(self.grid_system.rows):
+            for col in range(self.grid_system.cols):
+                device = self.grid_system.get_device(row, col)
+                if device:
+                    if device.device_type == DeviceType.TIMER_TON:
+                        device.current_value = 0
+                        device.timer_active = False
+                        device.state = False  # 出力状態もリセット
+                    elif device.device_type == DeviceType.COUNTER_CTU:
+                        device.current_value = 0
+                        device.last_input_state = False
+                        device.state = False  # 出力状態もリセット
 
     def _draw_device_info_on_hover(self) -> None:
         """

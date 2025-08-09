@@ -206,14 +206,14 @@ class GridSystem:
             current_val = getattr(device, 'current_value', 0)
             preset_val = getattr(device, 'preset_value', 0)
             value_text = f"{current_val}/{preset_val}"
-            text_color = pyxel.COLOR_YELLOW if device.state else pyxel.COLOR_GRAY
+            text_color = pyxel.COLOR_PURPLE  # 常時パープルで見やすく
             
         elif device.device_type == DeviceType.COUNTER_CTU:
             # カウンター: 現在値/プリセット値形式で表示
             current_val = getattr(device, 'current_value', 0)
             preset_val = getattr(device, 'preset_value', 0)
             value_text = f"{current_val}/{preset_val}"
-            text_color = pyxel.COLOR_LIME if device.state else pyxel.COLOR_GRAY
+            text_color = pyxel.COLOR_PURPLE  # 常時パープルで見やすく
         else:
             return
         
