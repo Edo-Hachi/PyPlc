@@ -32,7 +32,10 @@ class CircuitAnalyzer:
         # 3. タイマー・カウンター処理（電力フロー後）
         self._update_timer_counter_logic()
 
-        # 4. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
+        # 4. RST（リセット命令）処理（Mitsubishi準拠）
+        self._process_rst_commands()
+
+        # 5. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
         self._update_contact_states_from_coils()
 
     def _trace_power_flow(self, start_pos: Optional[Tuple[int, int]], visited: Optional[Set[Tuple[int, int]]] = None) -> None:
@@ -182,6 +185,45 @@ class CircuitAnalyzer:
                 
         # 現在の入力状態を記録（次回のエッジ検出用）
         counter_device.last_input_state = current_input
+
+    def _process_rst_commands(self) -> None:
+        """
+        RST命令処理（三菱PLC準拠）
+        - 通電中のRSTデバイスに設定されたアドレス（T/C）に一致するタイマー・カウンターを即時リセット
+        - 同一スキャン内で即時反映されるよう、タイマー/カウンター更新後に実行
+        """
+        # 1. 通電中のRSTのターゲットアドレスを収集
+        target_addresses: set[str] = set()
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                device = self.grid.get_device(row, col)
+                if device and device.device_type == DeviceType.RST and device.is_energized and device.address:
+                    # アドレスは大文字で統一
+                    target_addresses.add(device.address.upper())
+
+        if not target_addresses:
+            return
+
+        # 2. 対象アドレスに一致するタイマー/カウンターをリセット
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                device = self.grid.get_device(row, col)
+                if not device or not device.address:
+                    continue
+                if device.address.upper() not in target_addresses:
+                    continue
+
+                if device.device_type == DeviceType.TIMER_TON:
+                    # タイマー即時リセット
+                    device.current_value = 0
+                    device.state = False
+                    device.timer_active = False
+                elif device.device_type == DeviceType.COUNTER_CTU:
+                    # カウンター即時リセット
+                    device.current_value = 0
+                    device.state = False
+                    # 次スキャンでの誤カウント防止: 現在の入力状態を前回状態として記録
+                    device.last_input_state = device.is_energized
 
     def _update_contact_states_from_coils(self) -> None:
         """
