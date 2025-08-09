@@ -12,6 +12,7 @@ from DialogManager.events.event_system import get_dialog_event_system
 from DialogManager.validation.validator import create_validator_from_config
 from config import DeviceType
 from typing import Tuple, Optional
+import re
 
 
 class DeviceIDDialogJSON(BaseDialog):
@@ -116,8 +117,12 @@ class DeviceIDDialogJSON(BaseDialog):
             for control_def in self.definition["controls"]:
                 if control_def["id"] == "device_id_input":
                     validation_config = control_def.get("validation", {})
-                    validator = create_validator_from_config(validation_config)
-                    device_input.set_validator(lambda text: self._validate_device_id(text, validator))
+                    base_validator = create_validator_from_config(validation_config)
+                    # RSTのみ、対象アドレスをT/Cかつ0-255に制限
+                    if self.device_type == DeviceType.RST:
+                        device_input.set_validator(lambda text: self._validate_rst_address(text, base_validator))
+                    else:
+                        device_input.set_validator(lambda text: self._validate_device_id(text, base_validator))
                     break
     
     def _validate_device_id(self, text: str, validator) -> Tuple[bool, str]:
@@ -134,6 +139,27 @@ class DeviceIDDialogJSON(BaseDialog):
         try:
             result = validator.validate(text)
             return result.is_valid, result.error_message
+        except Exception as e:
+            return False, f"Validation error: {e}"
+
+    def _validate_rst_address(self, text: str, base_validator) -> Tuple[bool, str]:
+        """
+        RST用のターゲットアドレスバリデーション
+        - 形式検証は既存のPLCアドレス検証を使用
+        - 追加制約: TまたはCのみ、数値は0-255
+        """
+        try:
+            result = base_validator.validate(text)
+            if not result.is_valid:
+                return result.is_valid, result.error_message
+            value = text.strip().upper()
+            match = re.match(r'^(T|C)(\d+)$', value)
+            if not match:
+                return False, "Use T0-255 or C0-255"
+            addr_num = int(match.group(2))
+            if not (0 <= addr_num <= 255):
+                return False, "T/C address must be 0-255"
+            return True, ""
         except Exception as e:
             return False, f"Validation error: {e}"
     
