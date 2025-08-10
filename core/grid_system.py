@@ -382,3 +382,32 @@ class GridSystem:
             return True
         else:
             return False
+
+    def find_devices_by_address(self, target_address: str) -> List[Tuple[int, int]]:
+        """
+        指定アドレスと一致する全デバイスの座標を返す
+        同アドレスハイライト機能で使用
+        
+        Args:
+            target_address: 検索対象アドレス（例: "X001", "M100"）
+            
+        Returns:
+            List[Tuple[int, int]]: 一致デバイスの(row, col)座標リスト
+        """
+        if not target_address or target_address.strip() == "":
+            return []
+        
+        matching_positions: List[Tuple[int, int]] = []
+        normalized_target = target_address.upper().strip()
+        
+        # 全グリッドをスキャンして同アドレスデバイスを検索
+        for row in range(self.rows):
+            for col in range(self.cols):
+                device = self.get_device(row, col)
+                if (device and 
+                    device.address and 
+                    device.address.upper().strip() == normalized_target and
+                    device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]):
+                    matching_positions.append((row, col))
+        
+        return matching_positions

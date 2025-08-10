@@ -371,6 +371,9 @@ class PyPlcVer3:
         # グリッドシステム描画
         self.grid_system.draw()
         
+        # ★ 新機能: 同アドレスデバイスハイライト描画 ★
+        self._draw_address_highlight()
+        
         # RUNモード時のデバイス情報表示（マウスオーバー）
         # if self.current_mode == SimulatorMode.RUN:
         #     self._draw_device_info_on_hover()
@@ -379,6 +382,48 @@ class PyPlcVer3:
         self._draw_cursor_and_status()
         self._draw_mode_status_bar()  # Edit/Runモード状態表示追加
         self._draw_header_footer()
+
+    def _draw_address_highlight(self) -> None:
+        """
+        同アドレスデバイスのハイライト描画
+        Editモードでホバー時のみ動作
+        """
+        # Editモード以外では描画しない
+        if (self.current_mode != SimulatorMode.EDIT or 
+            not self.mouse_state.hovered_pos or 
+            not self.mouse_state.on_editable_area):
+            return
+        
+        # ホバー中のデバイスを取得
+        row, col = self.mouse_state.hovered_pos
+        hovered_device = self.grid_system.get_device(row, col)
+        
+        # アドレスが無いデバイスは対象外
+        if not hovered_device or not hovered_device.address:
+            return
+        
+        # 同アドレスデバイス座標を取得
+        matching_positions = self.grid_system.find_devices_by_address(hovered_device.address)
+        
+        # 自分自身のみの場合は描画不要
+        if len(matching_positions) <= 1:
+            return
+        
+        # 各同アドレスデバイスに赤色強調枠を描画
+        for pos_row, pos_col in matching_positions:
+            # スプライト描画座標を計算（grid_system.pyと同じロジック）
+            sprite_size = sprite_manager.sprite_size  # 動的にスプライトサイズを取得
+            sprite_x = self.grid_system.origin_x + pos_col * self.grid_system.cell_size - sprite_size // 2
+            sprite_y = self.grid_system.origin_y + pos_row * self.grid_system.cell_size - sprite_size // 2
+            
+            # スプライトを囲む赤色強調枠描画（スプライト座標-2, サイズ+4）
+            pyxel.rectb(
+                sprite_x - 2, 
+                sprite_y - 2, 
+                sprite_size + 4, 
+                sprite_size + 4, 
+                pyxel.COLOR_RED
+            )
 
     def _draw_cursor_and_status(self) -> None:
         """
