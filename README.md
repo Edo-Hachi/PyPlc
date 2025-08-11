@@ -1,87 +1,3 @@
-# PyPlc Ver3 - PLC Standard-Compliant Ladder Diagram Simulator
-
-[![Version](https://img.shields.io/badge/Version-3.0--alpha-orange)]() 
-[![Python](https://img.shields.io/badge/Python-3.8+-green)]() 
-[![Pyxel](https://img.shields.io/badge/Pyxel-1.9.0+-red)]()
-[![Status](https://img.shields.io/badge/Status-Alpha-yellow)]()
-
-## Overview
-
-PyPlc Ver3 is a PLC (Programmable Logic Controller) standard-compliant ladder diagram simulator designed for industrial verification and educational purposes. This alpha version provides the same operational experience as real PLC programming, with complete implementation of basic functions including contacts, coils, timers, and counters.
-
-**⚠️ Alpha Version Notice**: This software is currently in alpha stage. Some features may be incomplete or subject to change. Use for production purposes is not recommended.
-
-## Features
-
-- **Full PLC Standard Compliance**: Device system and operation specifications equivalent to actual PLCs (Mitsubishi PLC compatible)
-- **Real-time Circuit Analysis**: High-speed 30FPS power flow visualization
-- **Educational Value**: Seamless transition to real PLC programming
-- **Commercial-grade Quality**: Achieved A+ rating from WindSurf AI Assistant code review
-- **Modular Architecture**: Clean implementation with separation of concerns
-
-## Installation & Execution
-
-```bash
-# Install dependencies
-pip install pyxel
-
-# Run (virtual environment recommended)
-./venv/bin/python main.py
-
-# Alternative execution
-python main.py
-```
-
-## Basic Operations
-
-- **1-0 Keys**: Device selection (A/B contacts, coils, timers, etc.)
-- **Left Click**: Place device on grid
-- **Right Click**: Edit device ID
-- **F5**: Start/stop circuit execution
-- **Shift+X**: Operate input devices (X001-X004)
-- **TAB**: Switch between EDIT/RUN modes
-
-## Technical Specifications
-
-- **Resolution**: 384×384 pixels
-- **Grid System**: 15 rows × 20 columns
-- **Supported Devices**: X contacts, Y outputs, M internal relays, T/C timers/counters
-- **Architecture**: Modular design with responsibility separation
-- **Performance**: 30FPS real-time operation
-- **Standards**: Mitsubishi PLC address format compliance
-
-## Device Types
-
-| Key | Device | Description |
-|-----|--------|-------------|
-| 1 | A Contact | Normally Open Contact -\| \|- |
-| 2 | B Contact | Normally Closed Contact -\|/\|- |
-| 3 | Coil | Output Coil -( )- |
-| 4 | Timer | Timer Device (TON) |
-| 5 | Counter | Counter Device (CTU) |
-| 6-9 | Links | Vertical/Horizontal connections |
-| 0 | Delete | Remove device |
-
-## Development History
-
-- **Ver1**: Prototype implementation
-- **Ver2**: Modularization and stabilization  
-- **Ver3**: PLC standard compliance and educational optimization (Current Alpha)
-
-## System Requirements
-
-- Python 3.8 or higher
-- Pyxel 1.9.0 or higher
-- Operating System: Windows/Linux/macOS
-
-## Current Limitations (Alpha)
-
-- Some advanced PLC functions not yet implemented
-- Circuit save/load functionality under development
-- Complex parallel circuit analysis in progress
-
----
-
 # PyPlc Ver3 - PLC標準準拠ラダー図シミュレーター
 
 ## 概要
@@ -103,11 +19,8 @@ PyPlc Ver3は、工場検証用途と教育目的を兼ねたPLC標準準拠の�
 # 依存関係インストール
 pip install pyxel
 
-# 実行（仮想環境推奨）
-./venv/bin/python main.py
-
 # 通常実行
-python main.py
+pyxel run main.py
 ```
 
 ## 基本操作
@@ -176,6 +89,89 @@ PyPlc/
 ## ライセンス
 
 このプロジェクトはアルファ版として開発中です。ライセンス条項は正式版リリース時に決定予定です。
+
+---
+
+# PyPlc Ver3 - PLC Standard-Compliant Ladder Diagram Simulator
+
+[![Version](https://img.shields.io/badge/Version-3.0--alpha-orange)]() 
+[![Python](https://img.shields.io/badge/Python-3.8+-green)]() 
+[![Pyxel](https://img.shields.io/badge/Pyxel-1.9.0+-red)]()
+[![Status](https://img.shields.io/badge/Status-Alpha-yellow)]()
+
+## Overview
+
+PyPlc Ver3 is a PLC (Programmable Logic Controller) standard-compliant ladder diagram simulator designed for industrial verification and educational purposes. This alpha version provides the same operational experience as real PLC programming, with complete implementation of basic functions including contacts, coils, timers, and counters.
+
+**⚠️ Alpha Version Notice**: This software is currently in alpha stage. Some features may be incomplete or subject to change. Use for production purposes is not recommended.
+
+## Features
+
+- **Full PLC Standard Compliance**: Device system and operation specifications equivalent to actual PLCs (Mitsubishi PLC compatible)
+- **Real-time Circuit Analysis**: High-speed 30FPS power flow visualization
+- **Educational Value**: Seamless transition to real PLC programming
+- **Commercial-grade Quality**: Achieved A+ rating from WindSurf AI Assistant code review
+- **Modular Architecture**: Clean implementation with separation of concerns
+
+## Installation & Execution
+
+```bash
+# Install dependencies
+pip install pyxel
+
+# Alternative execution
+pyxel run main.py
+```
+
+## Basic Operations
+
+- **1-0 Keys**: Device selection (A/B contacts, coils, timers, etc.)
+- **Left Click**: Place device on grid
+- **Right Click**: Edit device ID
+- **F5**: Start/stop circuit execution
+- **Shift+X**: Operate input devices (X001-X004)
+- **TAB**: Switch between EDIT/RUN modes
+
+## Technical Specifications
+
+- **Resolution**: 384×384 pixels
+- **Grid System**: 15 rows × 20 columns
+- **Supported Devices**: X contacts, Y outputs, M internal relays, T/C timers/counters
+- **Architecture**: Modular design with responsibility separation
+- **Performance**: 30FPS real-time operation
+- **Standards**: Mitsubishi PLC address format compliance
+
+## Device Types
+
+| Key | Device | Description |
+|-----|--------|-------------|
+| 1 | A Contact | Normally Open Contact -\| \|- |
+| 2 | B Contact | Normally Closed Contact -\|/\|- |
+| 3 | Coil | Output Coil -( )- |
+| 4 | Timer | Timer Device (TON) |
+| 5 | Counter | Counter Device (CTU) |
+| 6-9 | Links | Vertical/Horizontal connections |
+| 0 | Delete | Remove device |
+
+## Development History
+
+- **Ver1**: Prototype implementation
+- **Ver2**: Modularization and stabilization  
+- **Ver3**: PLC standard compliance and educational optimization (Current Alpha)
+
+## System Requirements
+
+- Python 3.8 or higher
+- Pyxel 1.9.0 or higher
+- Operating System: Windows/Linux/macOS
+
+## Current Limitations (Alpha)
+
+- Some advanced PLC functions not yet implemented
+- Circuit save/load functionality under development
+- Complex parallel circuit analysis in progress
+
+
 
 ---
 

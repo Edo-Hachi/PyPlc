@@ -1,6 +1,9 @@
 *.pyc
 __pycache__/
 .claude/settings.local.json
-New_Docs/
+_ProjectReportMd/
 venv/
 .venv/
+SupportAgent/
+CLAUDE.md
+GEMINI.md
