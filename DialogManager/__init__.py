@@ -17,6 +17,7 @@ JSON駆動による柔軟なUI構成と、デバイス種別に応じた適切�
 
 # メインクラスのエクスポート
 from .core.dialog_manager import DialogManager
+from .core.file_manager import FileManager
 from .core.base_dialog import BaseDialog
 from .core.control_factory import ControlFactory
 from .core.json_dialog_loader import JSONDialogLoader
@@ -41,6 +42,7 @@ DEFAULT_SCHEMAS_PATH = "DialogManager/definitions/schemas"
 __all__ = [
     # Core classes
     "DialogManager",
+    "FileManager",
     "BaseDialog", 
     "ControlFactory",
     "JSONDialogLoader",

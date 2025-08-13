@@ -27,7 +27,7 @@ from core.device_palette import DevicePalette
 from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システムをインポート
 # 古いdialogs/システムは削除済み（Phase Cで完全移行）
 # DialogManager 統合システム
-from DialogManager import DialogManager
+from DialogManager import DialogManager, FileManager
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 # TODO: 必要に応じてファイルダイアログ機能を追加
 # from DialogManager.dialogs.file_load_dialog import FileLoadDialogJSON
@@ -61,9 +61,8 @@ class PyPlcVer3:
         self.device_palette = DevicePalette()  # デバイスパレット追加
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
         # 新DialogManagerシステム（Phase C完全移行）
-        self.dialog_manager = DialogManager()  # DialogManager v2統合システム
-        # TODO: ファイルダイアログマネージャーは後で実装
-        # self.file_dialog_manager = FileDialogManager(self.csv_manager)
+        self.dialog_manager = DialogManager()  # DialogManager統合システム
+        self.file_manager = FileManager(self.csv_manager)  # ファイル管理システム
         
         self.mouse_state: MouseState = MouseState()
 
@@ -76,6 +75,7 @@ class PyPlcVer3:
         # --- メッセージ表示システム ---
         self.status_message = ""  # 表示中のメッセージ
         self.status_message_timer = 0  # メッセージ表示残り時間（フレーム数）
+        self.status_message_type = "info"  # メッセージタイプ（info/success/error）
         
         pyxel.run(self.update, self.draw)
     
@@ -95,17 +95,29 @@ class PyPlcVer3:
         # F6キーでの全システムリセット (Ver1実装継承)
         self._handle_full_system_reset()
         
-        # Ctrl+S: ファイル保存ダイアログ表示（EDITモードのみ）- TODO: 再実装予定
+        # Ctrl+S: ファイル保存ダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
             if self.current_mode == SimulatorMode.EDIT:
-                self._show_status_message("Save: TODO - File dialog implementation needed", 3.0)
+                # 保存前に回路状態をリセット（クリーンな状態で保存）
+                self._reset_circuit_for_save()
+                success = self.file_manager.show_save_dialog()
+                if success:
+                    self._show_status_message("File saved successfully!", 3.0, "success")
+                else:
+                    self._show_status_message("Save canceled or failed", 2.0, "error")
             else:
                 self._show_status_message("Save: EDIT mode only. Press TAB to switch.", 4.0)
             
-        # Ctrl+O: ファイル読み込みダイアログ表示（EDITモードのみ）- TODO: 再実装予定
+        # Ctrl+O: ファイル読み込みダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
             if self.current_mode == SimulatorMode.EDIT:
-                self._show_status_message("Load: TODO - File dialog implementation needed", 3.0)
+                success = self.file_manager.show_load_dialog()
+                if success:
+                    self._show_status_message("File loaded successfully!", 3.0, "success")
+                    # 読み込み後は回路を再解析
+                    self.circuit_analyzer.solve_ladder()
+                else:
+                    self._show_status_message("Load canceled or failed", 2.0, "error")
             else:
                 self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)
         
@@ -275,16 +287,18 @@ class PyPlcVer3:
         }
         return device.device_type in operable_types
     
-    def _show_status_message(self, message: str, duration_seconds: float = 3.0) -> None:
+    def _show_status_message(self, message: str, duration_seconds: float = 3.0, message_type: str = "info") -> None:
         """
         ステータスメッセージを表示する
         
         Args:
             message: 表示するメッセージ（1バイト文字のみ）
             duration_seconds: 表示時間（秒）
+            message_type: メッセージタイプ（"info", "success", "error"）
         """
         self.status_message = message
         self.status_message_timer = int(duration_seconds * DisplayConfig.TARGET_FPS)  # フレーム数に変換
+        self.status_message_type = message_type
     
     def _update_status_message(self) -> None:
         """
@@ -294,6 +308,7 @@ class PyPlcVer3:
             self.status_message_timer -= 1
             if self.status_message_timer <= 0:
                 self.status_message = ""
+                self.status_message_type = "info"
 
     def _generate_default_address(self, device_type: DeviceType, row: int, col: int) -> str:
         """
@@ -575,20 +590,35 @@ class PyPlcVer3:
             tab_hint = "TAB:Mode F6:Reset F5:PLC [Save/Load: EDIT mode only]"
         pyxel.text(10, status_bar_y + 2, tab_hint, pyxel.COLOR_WHITE)
         
-        # 現在編集中のファイル名表示（下部ステータスバー）- TODO: ファイルダイアログ実装後に復旧
-        # current_file = self.file_dialog_manager.get_current_filename()
-        file_display = "File: [No file system yet]"
+        # 現在編集中のファイル名表示（下部ステータスバー）
+        current_file = self.file_manager.get_current_filename()
+        file_display = f"File: {current_file}"
         file_x = DisplayConfig.WINDOW_WIDTH - len(file_display) * 4 - 10  # 右端から10px余白
         pyxel.text(file_x, DisplayConfig.WINDOW_HEIGHT - 20, file_display, pyxel.COLOR_CYAN)
         
-        # ステータスメッセージ表示（中央上部）
+        # ステータスメッセージ表示（画面下部）- 色分け対応
         if self.status_message:
             message_x = (DisplayConfig.WINDOW_WIDTH - len(self.status_message) * 4) // 2  # 中央揃え
-            message_y = 20  # 上部に表示
-            # 背景を描画して見やすくする
-            pyxel.rect(message_x - 4, message_y - 2, len(self.status_message) * 4 + 8, 10, pyxel.COLOR_DARK_BLUE)
-            pyxel.rectb(message_x - 4, message_y - 2, len(self.status_message) * 4 + 8, 10, pyxel.COLOR_WHITE)
-            pyxel.text(message_x, message_y, self.status_message, pyxel.COLOR_RED)
+            message_y = DisplayConfig.WINDOW_HEIGHT - 40  # 下部に表示（ファイル名表示の上）
+            
+            # メッセージタイプに応じた色分け
+            if self.status_message_type == "success":
+                bg_color = pyxel.COLOR_DARK_BLUE  # 濃い緑の代替（濃い青）
+                border_color = pyxel.COLOR_GREEN   # 緑
+                text_color = pyxel.COLOR_WHITE     # 白文字
+            elif self.status_message_type == "error":
+                bg_color = pyxel.COLOR_NAVY        # 濃い赤の代替（ネイビー）
+                border_color = pyxel.COLOR_RED     # 赤
+                text_color = pyxel.COLOR_WHITE     # 白文字
+            else:  # info
+                bg_color = pyxel.COLOR_DARK_BLUE   # 濃い青（従来）
+                border_color = pyxel.COLOR_WHITE   # 白（従来）
+                text_color = pyxel.COLOR_WHITE     # 白文字
+            
+            # 背景・枠線・テキストを描画
+            pyxel.rect(message_x - 4, message_y - 2, len(self.status_message) * 4 + 8, 10, bg_color)
+            pyxel.rectb(message_x - 4, message_y - 2, len(self.status_message) * 4 + 8, 10, border_color)
+            pyxel.text(message_x, message_y, self.status_message, text_color)
 
     def _handle_plc_control(self) -> None:
         """
