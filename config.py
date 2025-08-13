@@ -5,6 +5,7 @@ PLC Standard Specification Compliant System Configuration
 """
 
 from enum import Enum
+import pyxel
 
 
 # =============================================================================
@@ -310,3 +311,61 @@ class SystemInfo:
         "接点/コイル概念の正しい実装",
         "30FPS最適化",
     ]
+
+
+# =============================================================================
+# DropdownControl Configuration (WindSurf改善組み込み版)
+# =============================================================================
+class DropdownControlConfig:
+    """ドロップダウンコントロール設定（WindSurf提案）"""
+    
+    # デフォルトサイズ
+    DEFAULT_WIDTH = 200
+    DEFAULT_HEIGHT = 25
+    DEFAULT_ITEM_HEIGHT = 20
+    
+    # 色設定（テーマ対応準備）
+    BACKGROUND_COLOR = pyxel.COLOR_DARK_BLUE
+    BORDER_COLOR = pyxel.COLOR_WHITE
+    TEXT_COLOR = pyxel.COLOR_WHITE
+    HOVER_COLOR = pyxel.COLOR_GRAY
+    SELECTED_COLOR = pyxel.COLOR_DARK_BLUE
+    ERROR_COLOR = pyxel.COLOR_RED
+    
+    # UI設定
+    MAX_VISIBLE_ITEMS = 5
+    TEXT_PADDING = 4
+    DROPDOWN_ICON = "▼"
+    DROPUP_ICON = "▲"
+
+
+# =============================================================================
+# Data Operation Configuration (データ演算機能)
+# =============================================================================
+class DataOperationConfig:
+    """データレジスタ演算機能設定"""
+    
+    # デフォルト値
+    DEFAULT_OPERATION = "MOV"
+    DEFAULT_OPERAND = 0
+    
+    # データ値範囲（16bit符号付き整数）
+    MAX_DATA_VALUE = 32767
+    MIN_DATA_VALUE = -32768
+    
+    # 演算タイプ定義（ドロップダウン用）
+    OPERATION_OPTIONS = [
+        {"value": "MOV", "label": "MOV - Data Transfer"},
+        {"value": "ADD", "label": "ADD - Addition"},
+        {"value": "SUB", "label": "SUB - Subtraction"},  
+        {"value": "MUL", "label": "MUL - Multiplication"},
+        {"value": "DIV", "label": "DIV - Division"}
+    ]
+    
+    # 演算エラーメッセージ
+    ERROR_MESSAGES = {
+        "OVERFLOW": "Value overflow",
+        "UNDERFLOW": "Value underflow", 
+        "DIV_BY_ZERO": "Division by zero",
+        "INVALID_OPERAND": "Invalid operand value"
+    }

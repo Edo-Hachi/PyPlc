@@ -136,12 +136,15 @@ class ControlFactory:
         # コントロールタイプ別の生成関数を登録
         self.control_creators: Dict[str, Callable] = {}
         
+        # 動的インポート用キャッシュ（WindSurf提案）
+        self._control_cache: Dict[str, Type] = {}
+        
         # Phase 1基本コントロールを登録
         self._register_basic_controls()
     
     def _register_basic_controls(self) -> None:
         """
-        Phase 1基本コントロールを登録
+        Phase 1基本コントロールを登録（WindSurf改善版）
         """
         # 後で実装するコントロールクラスをインポート予定
         # 現在は仮実装として関数ベースで登録
@@ -149,6 +152,9 @@ class ControlFactory:
         self.control_creators["button"] = self._create_button_control
         self.control_creators["textinput"] = self._create_textinput_control
         self.control_creators["filelist"] = self._create_filelist_control
+        
+        # 新規追加: ドロップダウンコントロール（動的インポート方式）
+        self.control_creators["dropdown"] = self._create_dropdown_control
     
     def register_control_type(self, control_type: str, creator_func: Callable) -> None:
         """
@@ -403,3 +409,38 @@ class ControlFactory:
             directory=definition.get("directory", "./"),
             show_details=definition.get("show_details", True)
         )
+    
+    def _get_control_class(self, control_type: str):
+        """動的にコントロールクラスを取得（WindSurf提案）"""
+        if control_type in self._control_cache:
+            return self._control_cache[control_type]
+            
+        if control_type == "dropdown":
+            from DialogManager.controls.dropdown_control import DropdownControl
+            self._control_cache[control_type] = DropdownControl
+            return DropdownControl
+        # 他のコントロールも同様に追加可能
+        
+        return None
+    
+    def _create_dropdown_control(self, definition: Dict[str, Any]) -> Optional[BaseControl]:
+        """ドロップダウンコントロール生成（WindSurf改善版）"""
+        try:
+            DropdownControl = self._get_control_class("dropdown")
+            if not DropdownControl:
+                print(f"Failed to load DropdownControl class")
+                return None
+            
+            return DropdownControl(
+                control_id=definition.get("id", "dropdown"),
+                x=definition.get("x", 0),
+                y=definition.get("y", 0), 
+                width=definition.get("width", 200),
+                height=definition.get("height", 25),
+                options=definition.get("options", []),
+                default=definition.get("default", "")
+            )
+            
+        except Exception as e:
+            print(f"Failed to create dropdown control: {e}")
+            return None

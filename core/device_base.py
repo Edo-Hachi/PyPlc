@@ -77,6 +77,44 @@ class PLCDevice:
     - タイマー: リセット検出に使用
     - その他: 未使用
     """
+    
+    # --- データレジスタ演算機能フィールド（Phase 1拡張）---
+    operation_type: str = "MOV"
+    """
+    データレジスタの演算種別
+    - "MOV": データ転送（デフォルト）
+    - "ADD": 加算
+    - "SUB": 減算  
+    - "MUL": 乗算
+    - "DIV": 除算
+    - その他のデバイス: 未使用
+    """
+    
+    operand_value: int = 0
+    """
+    演算オペランド値（-32768 to 32767）
+    - MOV: 転送元データ値
+    - ADD/SUB/MUL/DIV: 演算対象値
+    - その他のデバイス: 未使用
+    """
+    
+    execution_enabled: bool = False
+    """
+    演算実行許可フラグ
+    - True: 入力条件がONの時に演算実行
+    - False: 演算無効
+    - その他のデバイス: 未使用
+    """
+    
+    error_state: str = ""
+    """
+    演算エラー状態文字列（WindSurf提案）
+    - "": エラーなし
+    - "OVERFLOW": 値オーバーフロー
+    - "UNDERFLOW": 値アンダーフロー
+    - "DIV_BY_ZERO": ゼロ除算
+    - "INVALID_OPERAND": 無効なオペランド
+    """
 
     # --- 接続情報 ---
     # key: "up", "down", "left", "right"
