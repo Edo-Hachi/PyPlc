@@ -7,7 +7,7 @@ from config import DeviceType
 from DialogManager.device_id_dialog_json import show_device_id_dialog
 from DialogManager.file_load_dialog_json import FileLoadDialogJSON
 from DialogManager.timer_counter_dialog_json import show_timer_counter_preset_dialog
-from DialogManager.data_register_simple import show_data_register_dialog
+from DialogManager.data_register_dialog_json import DataRegisterDialog
 from DialogManager.compare_simple import show_compare_dialog
 
 
@@ -140,11 +140,13 @@ class NewDialogManager:
         current_address = device.address if device.address else f"D{row * 10 + col}"
         current_value = getattr(device, 'data_value', 0)
         
-        # 簡単実装のダイアログを呼び出し
-        success, result = show_data_register_dialog(current_address, current_value)
+        # JSON実装のダイアログを作成・表示
+        dialog = DataRegisterDialog(current_address, current_value)
+        dialog.show()
         
         # 結果を取得してデバイスに反映
-        if success and result:
+        result = dialog.get_result()
+        if result:
             device.address = result["address"]
             device.data_value = result["value"]
             print(f"[NewDialogManager] Data register updated: {result['address']} = {result['value']}")
