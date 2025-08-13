@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "button_schema.json",
+  "title": "PyPlc Ver3 Button Control Schema",
+  "description": "Schema for button UI controls",
+  "type": "object",
+  "required": ["text"],
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20,
+      "description": "Button display text"
+    },
+    "color": {
+      "$ref": "../common/color_definitions.json#/definitions/pyxel_color",
+      "description": "Button text color"
+    },
+    "bg_color": {
+      "$ref": "../common/color_definitions.json#/definitions/pyxel_color", 
+      "description": "Button background color"
+    },
+    "hover_color": {
+      "$ref": "../common/color_definitions.json#/definitions/pyxel_color",
+      "description": "Button background color when hovered"
+    },
+    "border_color": {
+      "$ref": "../common/color_definitions.json#/definitions/pyxel_color",
+      "description": "Button border color"
+    },
+    "events": {
+      "$ref": "../common/event_definitions.json#/definitions/button_events",
+      "description": "Events that this button can emit"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether button is enabled/clickable"
+    }
+  },
+  "additionalProperties": false
+}

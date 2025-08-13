@@ -1,0 +1,91 @@
+{
+  "$schema": "./schemas/dialogs/file_save_dialog_schema.json",
+  "title": "Save Circuit File",
+  "width": 320,
+  "height": 180,
+  "controls": [
+    {
+      "id": "filename_label",
+      "type": "label",
+      "x": 10,
+      "y": 30,
+      "width": 80,
+      "height": 15,
+      "text": "File name:",
+      "color": 7
+    },
+    {
+      "id": "filename_input",
+      "type": "textinput",
+      "x": 100,
+      "y": 25,
+      "width": 200,
+      "height": 25,
+      "placeholder": "my_circuit",
+      "value": "",
+      "max_length": 50,
+      "color": 7,
+      "bg_color": 0,
+      "border_color": 7,
+      "focus_border_color": 10,
+      "events": ["change", "focus", "blur", "enter"]
+    },
+    {
+      "id": "extension_label",
+      "type": "label",
+      "x": 10,
+      "y": 65,
+      "width": 300,
+      "height": 15,
+      "text": "File will be saved as: [filename].csv",
+      "color": 5
+    },
+    {
+      "id": "status_label",
+      "type": "label",
+      "x": 10,
+      "y": 85,
+      "width": 300,
+      "height": 15,
+      "text": "Enter filename and click Save",
+      "color": 7
+    },
+    {
+      "id": "error_label",
+      "type": "label",
+      "x": 10,
+      "y": 105,
+      "width": 300,
+      "height": 15,
+      "text": "",
+      "color": 8,
+      "visible": false
+    },
+    {
+      "id": "save_button",
+      "type": "button",
+      "x": 70,
+      "y": 135,
+      "width": 60,
+      "height": 25,
+      "text": "Save",
+      "color": 7,
+      "bg_color": 11,
+      "hover_color": 10,
+      "events": ["click"]
+    },
+    {
+      "id": "cancel_button",
+      "type": "button",
+      "x": 190,
+      "y": 135,
+      "width": 60,
+      "height": 25,
+      "text": "Cancel",
+      "color": 7,
+      "bg_color": 8,
+      "hover_color": 2,
+      "events": ["click"]
+    }
+  ]
+}
