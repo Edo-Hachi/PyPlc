@@ -7,6 +7,8 @@ from config import DeviceType
 from DialogManager.device_id_dialog_json import show_device_id_dialog
 from DialogManager.file_load_dialog_json import FileLoadDialogJSON
 from DialogManager.timer_counter_dialog_json import show_timer_counter_preset_dialog
+from DialogManager.data_register_simple import show_data_register_dialog
+from DialogManager.compare_simple import show_compare_dialog
 
 
 class NewDialogManager:
@@ -44,6 +46,12 @@ class NewDialogManager:
         if device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
             # タイマー・カウンターはプリセット値編集（新TimerCounterDialogJSON使用）
             self.show_timer_counter_preset_dialog_json(device, row, col, grid_system)
+        elif device.device_type == DeviceType.DATA_REGISTER:
+            # データレジスタはアドレス・値編集（新DataRegisterDialog使用）
+            self.show_data_register_dialog_json(device, row, col, grid_system)
+        elif device.device_type == DeviceType.COMPARE_DEVICE:
+            # Compare命令は条件式編集（新CompareDialog使用）
+            self.show_compare_dialog_json(device, row, col, grid_system)
         else:
             # その他はデバイスID編集（新DeviceIDDialogJSON使用）
             self.show_device_id_dialog_json(device, row, col, grid_system)
@@ -109,6 +117,72 @@ class NewDialogManager:
         else:
             print("[NewDialogManager] Timer/Counter preset edit canceled")
     
+    def show_data_register_dialog_json(
+        self,
+        device,
+        row: int,
+        col: int,
+        grid_system
+    ) -> None:
+        """
+        データレジスタ編集処理（簡単実装）
+        
+        Args:
+            device: 編集対象デバイス
+            row: グリッド行座標
+            col: グリッド列座標
+            grid_system: グリッドシステムインスタンス
+        """
+        if device.device_type != DeviceType.DATA_REGISTER:
+            return
+        
+        # 現在のアドレスと値を取得
+        current_address = device.address if device.address else f"D{row * 10 + col}"
+        current_value = getattr(device, 'data_value', 0)
+        
+        # 簡単実装のダイアログを呼び出し
+        success, result = show_data_register_dialog(current_address, current_value)
+        
+        # 結果を取得してデバイスに反映
+        if success and result:
+            device.address = result["address"]
+            device.data_value = result["value"]
+            print(f"[NewDialogManager] Data register updated: {result['address']} = {result['value']}")
+        else:
+            print("[NewDialogManager] Data register edit canceled")
+    
+    def show_compare_dialog_json(
+        self,
+        device,
+        row: int,
+        col: int,
+        grid_system
+    ) -> None:
+        """
+        比較命令編集処理（簡単実装）
+        
+        Args:
+            device: 編集対象デバイス
+            row: グリッド行座標
+            col: グリッド列座標
+            grid_system: グリッドシステムインスタンス
+        """
+        if device.device_type != DeviceType.COMPARE_DEVICE:
+            return
+        
+        # 現在の条件式を取得
+        current_condition = device.address if device.address else "D1>10"
+        
+        # 簡単実装のダイアログを呼び出し
+        success, result = show_compare_dialog(current_condition)
+        
+        # 結果を取得してデバイスに反映
+        if success and result:
+            device.address = result
+            print(f"[NewDialogManager] Compare condition updated: {result}")
+        else:
+            print("[NewDialogManager] Compare condition edit canceled")
+    
     def validate_device_for_id_edit(self, device) -> bool:
         """
         デバイスがID編集対象かどうかを判定
@@ -153,5 +227,9 @@ class NewDialogManager:
             return f"T{row * 10 + col:03d}"  # T000, T001, ...
         elif device_type == DeviceType.COUNTER_CTU:
             return f"C{row * 10 + col:03d}"  # C000, C001, ...
+        elif device_type == DeviceType.DATA_REGISTER:
+            return f"D{row * 10 + col:03d}"  # D000, D001, ...
+        elif device_type == DeviceType.COMPARE_DEVICE:
+            return "D1>10"  # デフォルト比較式
         else:
             return f"M{row * 10 + col:03d}"  # M000, M001, ...

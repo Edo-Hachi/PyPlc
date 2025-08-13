@@ -32,13 +32,16 @@ class CircuitAnalyzer:
         # 3. タイマー・カウンター処理（電力フロー後）
         self._update_timer_counter_logic()
 
-        # 4. RST（リセット命令）処理（Mitsubishi準拠）
+        # 4. Compare命令処理（データレジスタ比較演算）
+        self._process_compare_commands()
+
+        # 5. RST（リセット命令）処理（Mitsubishi準拠）
         self._process_rst_commands()
 
-        # 5. ZRST（範囲リセット命令）処理
+        # 6. ZRST（範囲リセット命令）処理
         self._process_zrst_commands()
 
-        # 6. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
+        # 7. PLC標準動作: 励磁されたコイルの同一アドレス接点を自動的にON状態に更新
         self._update_contact_states_from_coils()
 
     def _trace_power_flow(self, start_pos: Optional[Tuple[int, int]], visited: Optional[Set[Tuple[int, int]]] = None) -> None:
@@ -94,6 +97,14 @@ class CircuitAnalyzer:
 
         # L_SIDE（左バス）は電源なので常時導通
         if device.device_type == DeviceType.L_SIDE:
+            return True
+
+        # Compare命令は比較結果に応じて導通性を決定
+        if device.device_type == DeviceType.COMPARE_DEVICE:
+            return device.state  # 比較結果がTrue時のみ導通
+
+        # データレジスタは常時導通（値保持のみ、電力は通す）
+        if device.device_type == DeviceType.DATA_REGISTER:
             return True
 
         # R_SIDE（右バス）とコイルは電力の終端なので、電気を通さない
@@ -319,6 +330,130 @@ class CircuitAnalyzer:
 
         return targets
 
+    def _process_compare_commands(self) -> None:
+        """
+        Compare命令処理（データレジスタ比較演算）
+        - 通電中のCompareデバイスに設定された比較条件を評価
+        - データレジスタから値を取得し、比較演算を実行
+        - 比較結果をCompareデバイスのstateに反映
+        """
+        for row in range(self.grid.rows):
+            for col in range(self.grid.cols):
+                device = self.grid.get_device(row, col)
+                if device and device.device_type == DeviceType.COMPARE_DEVICE and device.is_energized:
+                    # Compare命令の処理
+                    self._execute_compare_operation(device)
+
+    def _execute_compare_operation(self, compare_device) -> None:
+        """
+        個別のCompare命令を実行する
+        
+        Args:
+            compare_device: Compare命令デバイス
+        """
+        # アドレスの解析（例: "D1>10", "D2=D3", "D0<100"）
+        if not hasattr(compare_device, 'address') or not compare_device.address:
+            compare_device.state = False
+            return
+        
+        comparison_text = compare_device.address.strip()
+        result = self._evaluate_comparison(comparison_text)
+        
+        # 比較結果をデバイスのstateに反映
+        compare_device.state = result
+        
+        print(f"[COMPARE DEBUG] {comparison_text} -> {result}")
+
+    def _evaluate_comparison(self, comparison_text: str) -> bool:
+        """
+        比較演算式を評価する
+        サポート演算子: =, <>, >, <, >=, <=
+        データソース: データレジスタ(D番号)、定数値
+        
+        Args:
+            comparison_text: 比較式テキスト（例: "D1>10"）
+            
+        Returns:
+            bool: 比較結果
+        """
+        import re
+        
+        # 演算子の優先順位（長い演算子から先にチェック）
+        operators = ['>=', '<=', '<>', '=', '>', '<']
+        
+        for op in operators:
+            if op in comparison_text:
+                parts = comparison_text.split(op, 1)
+                if len(parts) == 2:
+                    left_str = parts[0].strip()
+                    right_str = parts[1].strip()
+                    
+                    # 左辺と右辺の値を取得
+                    left_value = self._get_value_from_operand(left_str)
+                    right_value = self._get_value_from_operand(right_str)
+                    
+                    if left_value is None or right_value is None:
+                        return False
+                    
+                    # 比較演算の実行
+                    if op == '=':
+                        return left_value == right_value
+                    elif op == '<>':
+                        return left_value != right_value
+                    elif op == '>':
+                        return left_value > right_value
+                    elif op == '<':
+                        return left_value < right_value
+                    elif op == '>=':
+                        return left_value >= right_value
+                    elif op == '<=':
+                        return left_value <= right_value
+                break
+        
+        return False
+
+    def _get_value_from_operand(self, operand: str) -> Optional[int]:
+        """
+        オペランドから値を取得する
+        データレジスタ(D番号)の場合は対応するデバイスから値を取得
+        定数の場合はそのまま数値として返す
+        
+        Args:
+            operand: オペランド文字列（例: "D1", "100"）
+            
+        Returns:
+            Optional[int]: 取得した値、取得できない場合はNone
+        """
+        operand = operand.strip().upper()
+        
+        # データレジスタの場合（D番号）
+        if operand.startswith('D') and operand[1:].isdigit():
+            register_address = operand
+            
+            # グリッドからデータレジスタデバイスを検索
+            for row in range(self.grid.rows):
+                for col in range(self.grid.cols):
+                    device = self.grid.get_device(row, col)
+                    if (device and 
+                        device.device_type == DeviceType.DATA_REGISTER and 
+                        hasattr(device, 'address') and 
+                        device.address and 
+                        device.address.upper() == register_address):
+                        # データレジスタから値を取得
+                        if hasattr(device, 'data_value'):
+                            return device.data_value
+                        else:
+                            return 0  # デフォルト値
+            
+            # 見つからない場合は0を返す（PLC標準動作）
+            return 0
+        
+        # 定数値の場合
+        try:
+            return int(operand)
+        except ValueError:
+            return None
+
     def _update_contact_states_from_coils(self) -> None:
         """
         PLC標準動作の実装: コイル状態に応じて同一アドレス接点を自動更新
@@ -336,9 +471,9 @@ class CircuitAnalyzer:
             for col in range(self.grid.cols):
                 device = self.grid.get_device(row, col)
                 if (device and 
-                    device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.TIMER_TON, DeviceType.COUNTER_CTU] and
+                    device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.TIMER_TON, DeviceType.COUNTER_CTU, DeviceType.COMPARE_DEVICE] and
                     device.address and
-                    device.address != "WIRE"):  # アドレス指定されたコイル・タイマー・カウンターのみ
+                    device.address != "WIRE"):  # アドレス指定されたコイル・タイマー・カウンター・比較命令のみ
                     all_coil_addresses.add(device.address)
                     
                     # COIL_STD/COIL_REVは通電状態をstateに反映（PLC標準動作）
@@ -346,6 +481,9 @@ class CircuitAnalyzer:
                         device.state = device.is_energized
                     elif device.device_type == DeviceType.COIL_REV:
                         device.state = not device.is_energized  # 反転コイル
+                    elif device.device_type == DeviceType.COMPARE_DEVICE:
+                        # Compare命令のstateは_process_compare_commands()で既に設定済み
+                        pass
                     
                     # 全コイルタイプの状態判定
                     if device.state:  # コイル・タイマー・カウンターの出力状態判定

@@ -479,6 +479,17 @@ class PyPlcVer3:
                         device_debug_text = f"TIMER {device_id}: {current_val}/{preset_val} Active:{timer_active} Out:{hovered_device.state}"
                     else:
                         device_debug_text = f"COUNTER {device_id}: {current_val}/{preset_val} Out:{hovered_device.state}"
+                
+                # データレジスタ詳細表示
+                elif hovered_device.device_type == DeviceType.DATA_REGISTER:
+                    data_value = getattr(hovered_device, 'data_value', 0)
+                    device_debug_text = f"DATA_REG {device_id}: Value={data_value} [Double-click to edit]"
+                
+                # Compare命令詳細表示
+                elif hovered_device.device_type == DeviceType.COMPARE_DEVICE:
+                    condition = hovered_device.address if hovered_device.address else "N/A"
+                    device_debug_text = f"COMPARE {condition}: Result={hovered_device.state} Energized={hovered_device.is_energized}"
+                
                 else:
                     # 通常デバイス表示
                     device_debug_text = f"Device: {hovered_device.device_type.value} ID:{device_id} State:{hovered_device.state} Energized:{hovered_device.is_energized}"
