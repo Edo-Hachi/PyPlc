@@ -86,6 +86,8 @@ class DeviceType(Enum):
     WIRE_V = "WIRE_V"        # 縦配線
     LINK_UP = "LINK_UP"      # 上方向結線点(ラインから上方向に接続を作成する分岐)
     LINK_DOWN = "LINK_DOWN"  # 下方向結線点（ラインから舌方向に接続を作成する分岐）
+    DATA_REGISTER = "DATA_REGISTER"    # データレジスタ（Dデバイス）
+    COMPARE_DEVICE = "COMPARE_DEVICE"  # 比較演算子デバイス
     DEL = "DEL"              # 削除デバイス
 
 # バスバー接続方向

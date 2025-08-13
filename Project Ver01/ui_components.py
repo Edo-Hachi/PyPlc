@@ -144,6 +144,37 @@ class UIRenderer:
                     # デバイスアドレス表示
                     if device.device_address:
                         pyxel.text(px - 8, py + 6, device.device_address, Colors.TEXT)
+                    
+                    # データレジスタ専用情報表示
+                    self._draw_data_register_info(device, px, py)
+                    
+                    # 比較演算子専用情報表示
+                    self._draw_compare_device_info(device, px, py)
+    
+    def _draw_data_register_info(self, device, px, py):
+        """データレジスタ専用情報表示"""
+        if device.device_type == DeviceType.DATA_REGISTER:
+            # 現在値表示（水平一列）
+            info_text = f"D:{device.current_value}"
+            if device.is_32bit:
+                info_text += " (32bit)"
+            
+            # 右寄せで表示（右端に近い場合は左寄せ）
+            text_x = px + 10 if px < Layout.GRID_START_X + (Layout.GRID_COLS - 3) * Layout.GRID_SIZE else px - 50
+            pyxel.text(text_x, py - 2, info_text, pyxel.COLOR_YELLOW)
+    
+    def _draw_compare_device_info(self, device, px, py):
+        """比較演算子専用情報表示"""
+        if device.device_type == DeviceType.COMPARE_DEVICE:
+            # 比較情報表示（水平一列）
+            info_text = f"{device.comparison_symbol} {device.param_summary}"
+            
+            # 結果表示色（TRUE: 緑、FALSE: 赤）
+            result_color = pyxel.COLOR_LIME if device.comparison_result else pyxel.COLOR_RED
+            
+            # 右寄せで表示（右端に近い場合は左寄せ）
+            text_x = px + 10 if px < Layout.GRID_START_X + (Layout.GRID_COLS - 3) * Layout.GRID_SIZE else px - 40
+            pyxel.text(text_x, py - 2, info_text, result_color)
     
     def _draw_electrical_wiring(self, electrical_system):
         """横方向電気配線描画（電力セグメントベース）"""
