@@ -213,6 +213,10 @@ class LadderRung:
                 # コイル/タイマーは電力を消費するが通過を阻止しない
                 # current_power は変更せずそのまま継続
                 pass
+            elif device.device_type in [DeviceType.DATA_REGISTER, DeviceType.COMPARE_DEVICE]:
+                # データレジスタ・比較演算子は電力に影響しない（表示専用）
+                # current_power は変更せずそのまま継続
+                pass
             
             # 次のデバイスまでのセグメント
             if i < len(self.devices) - 1:

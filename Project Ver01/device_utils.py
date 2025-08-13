@@ -73,7 +73,7 @@ class DeviceTypeUtils:
     @classmethod
     def requires_address(cls, device_type: DeviceType) -> bool:
         """デバイスアドレスが必要なデバイスかどうかを判定"""
-        return device_type in (cls.CONTACT_TYPES | cls.COIL_TYPES | {DeviceType.TIMER, DeviceType.COUNTER})
+        return device_type in (cls.CONTACT_TYPES | cls.COIL_TYPES | {DeviceType.TIMER, DeviceType.COUNTER, DeviceType.DATA_REGISTER, DeviceType.COMPARE_DEVICE})
 
 
 class DeviceAddressGenerator:
@@ -92,6 +92,10 @@ class DeviceAddressGenerator:
             return f"C{grid_y:03d}"
         elif device_type in {DeviceType.INCOIL, DeviceType.OUTCOIL_REV}:
             return f"M{grid_x:03d}"
+        elif device_type == DeviceType.DATA_REGISTER:
+            return f"D{grid_x:03d}"
+        elif device_type == DeviceType.COMPARE_DEVICE:
+            return f"CMP{grid_x:02d}"
         else:
             return ""
     
@@ -108,6 +112,10 @@ class DeviceAddressGenerator:
             return "C"
         elif device_type in {DeviceType.INCOIL, DeviceType.OUTCOIL_REV}:
             return "M"
+        elif device_type == DeviceType.DATA_REGISTER:
+            return "D"
+        elif device_type == DeviceType.COMPARE_DEVICE:
+            return "CMP"
         else:
             return ""
 

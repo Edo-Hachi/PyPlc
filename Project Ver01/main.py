@@ -112,13 +112,13 @@ class PLCSimulator:
             {"type": DeviceType.COIL, "name": "Output Coil", "sprite": "OUTCOIL_NML_OFF"},
             {"type": DeviceType.OUTCOIL_REV, "name": "Rev Output", "sprite": "OUTCOIL_REV_OFF"},
             {"type": DeviceType.TIMER, "name": "Timer", "sprite": "TIMER_STANBY"},
-            {"type": DeviceType.COUNTER, "name": "Counter", "sprite": "COUNTER_OFF"},
+            {"type": DeviceType.DATA_REGISTER, "name": "Data Reg", "sprite": "D_DEV_OFF"},
+            {"type": DeviceType.COMPARE_DEVICE, "name": "Compare", "sprite": "CMP_OFF"},
             {"type": DeviceType.WIRE_H, "name": "Wire H", "sprite": "H_LINE_OFF"},
             {"type": DeviceType.WIRE_V, "name": "Wire V", "sprite": "V_LINE_OFF"},
             {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "Link Down", "sprite": "LINK_DOWN"},
-            {"type": DeviceType.DATA_REGISTER, "name": "Data Reg", "sprite": "D_DEV_OFF"},
-            {"type": DeviceType.COMPARE_DEVICE, "name": "Compare", "sprite": "CMP_OFF"},
+            {"type": DeviceType.COUNTER, "name": "Counter", "sprite": "COUNTER_OFF"},
             {"type": DeviceType.DEL, "name": "Delete", "sprite": "DEL"}
         ]
     

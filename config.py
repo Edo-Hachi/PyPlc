@@ -146,6 +146,10 @@ class DeviceType(Enum):
     RST = "RST"               # Reset command (Mitsubishi RST)
     ZRST = "ZRST"             # Range Reset command (Mitsubishi ZRST)
     
+    # Data series (PLC standard data handling)
+    DATA_REGISTER = "DATA_REGISTER"    # データレジスタ（Dデバイス）
+    COMPARE_DEVICE = "COMPARE_DEVICE"  # 比較演算子デバイス
+    
     # 配線系（Ver3: 明示的配線システム）
     LINK_HORZ = "LINK_HORZ"    # Horizontal wiring (Ver3 new feature: essential for self-holding circuits)
     LINK_BRANCH = "LINK_BRANCH" # 分岐点（右・上・下の3方向分配）
@@ -198,8 +202,8 @@ DEVICE_PALETTE_DEFINITIONS = {
         (DeviceType.RST, "RESET", 3, "Reset Command"),
         (DeviceType.ZRST, "ZRST", 4, "Range Reset Command"),
         (DeviceType.EMPTY, "", 5, "UNDEF"),
-        (DeviceType.EMPTY, "", 6, "UNDEF"),
-        (DeviceType.EMPTY, "", 7, "UNDEF"),
+        (DeviceType.DATA_REGISTER, "D_DEV", 6, "Data Register"),
+        (DeviceType.COMPARE_DEVICE, "COMP", 7, "Compare Device"),
         (DeviceType.EMPTY, "", 8, "UNDEF"),
         (DeviceType.EMPTY, "", 9, "UNDEF"),
         (DeviceType.EMPTY, "", 0, "UNDEF"),
