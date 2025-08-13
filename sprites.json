@@ -173,6 +173,30 @@
       "y": 0,
       "NAME": "ZRST",
       "ACT_NAME": "FALSE"
+    },
+    "136_0": {
+      "x": 136,
+      "y": 0,
+      "NAME": "D_DEV",
+      "ACT_NAME": "TRUE"
+    },
+    "144_0": {
+      "x": 144,
+      "y": 0,
+      "NAME": "D_DEV",
+      "ACT_NAME": "FALSE"
+    },
+    "152_0": {
+      "x": 152,
+      "y": 0,
+      "NAME": "CMP",
+      "ACT_NAME": "TRUE"
+    },
+    "160_0": {
+      "x": 160,
+      "y": 0,
+      "NAME": "CMP",
+      "ACT_NAME": "FALSE"
     }
   }
 }
