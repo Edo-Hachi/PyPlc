@@ -1,0 +1,197 @@
+PLC  (プログラミング　ロジック　コントローラー)のシミュレーションを行う
+
+#可能な限りシンプルなシステムでの実装を目指す
+
+
+# データ構造
+内部では、 Row * Col の配列構造となっている。
+試作では10x10のマトリックスで開始する。
+将来的にはRow,Col共に拡張可能とする
+
+GRID_ROW = 10  (行)
+GRID_COL = 10  (列)
+
+Row=GRID_ROW
+Col=GRID_COL
+
+GridDeviceManager[Row][Col]
+
+### 1. スキャン処理の再現 （可能な限りシンプルに）
+- 左から右へのトレース処理
+- 上から下へのライン実行順序
+- リアルタイムでの電流フロー可視化
+
+
+#全ての行の、0カラム目にはPLCの回路の電源バス（L_Side）
+#すべての行の、最終カラム(GRID_COL-1)には右側バス（R_Side）
+
+が入ります
+
+
+行、列で表される要素は、以下のようなデバイスクラス（構造体）が格納されます
+
+
+---
+#LogicElement(ロジックエレメント構造体クラス)
+
+#ID
+グリッド座標から作製される固有ID
+XXX_YYY：文字列型 XXXはROWでの座標をゼロサプレスで表現したもの ROW(1) = 001
+YYYはCOLでの座標をゼロサプレスで表現したもの COL(2) = 002
+
+例： COL=7 : ROW=5  = 007_005 
+
+
+#Name
+デバイスにユーザーがつける固有名文字列
+例：接点 X001..X002..など
+コイル Y001,Y002..など
+ランプ PL001,PL002..など
+
+#DeviceType デバイスタイプ（辞書にて管理）
+├── L_Side(電源バス:L側)
+├── R_Side（ニュートラルバス:R側）
+├── ContactA (A接点 - ノーマルオープン)
+├── ContactB (B接点 - ノーマルクローズ)  
+├── InCoil (入力コイル)
+├── OutCoilStd (出力コイル 通常)
+├── OutCoilRev (出力コイル 反転)
+├── Lamp (表示ランプ)
+├── Timer (タイマー)
+├── Counter (カウンター)
+└── Line (接続配線)
+└── LineUp (接続配線上方向 ↑)
+└── LineDown (接続配線下方向 ↓)
+等など・・・
+
+
+#特殊デバイス L_Side R_Side
+
+##全ての行の、0カラム目にはPLCの回路の電源バス（L_Side）
+##すべての行の、最終カラム(GRID_COL-1)にはニュートラルバス（R_Side）
+
+上記ルールに従って Col=0 には:L_Side
+上記ルールに従って Col=9 には:R_Side
+
+が必ず格納される（編集画面においても、表示はされるが、L_SIDE,R_SIDEはユーザー編集不可能とする）
+
+
+
+#特殊デバイス DownLnk（┻） UpLink（┳）
+これらがデバイスとして設置された場合は、上下のラインを結ぶ縦方向ラインとして機能する
+
+DownLinkは自身と接続するペアのUpLinkの固有IDを保持する
+UpLinkは自身と接続するペアとなるDownLinkの固有IDを保持する
+
+
+
+＃デバイスの接続について
+
+Row 0 に次のようなラダーがあると仮定して
+
+[Col 0:L_Side]  → [Col 1:Line] → [Col 2:ContactA]  → [Col 3:Line] → → → [Col 9:R_Side]
+
+といった様に編集画面にてデバイスを配置する。
+
+
+
+
+
+#接続情報
+ LEFT_DEV ： 自デバイスが接続する左側のデバイスID
+ RIGHT_DEV ：自デバイスが接続する右側のIDを格納する
+ 左側にあるデバイス、右側にあるデバイスも自分のデバイスIDを持っており、双方向リンク構造となっている
+
+[Col 1:Line]は、LEFT_DEVに左側にある[Col 0:L_Side]の持つID、RIGHT_DEVには右側の[Col 2:ContactA]の持つIDを格納する
+
+[Col 2:ContactA]は、LEFT_DEVに左側にある[Col 1:Line]の持つID、RIGHT_DEVには右側の[Col 3:Line]の持つIDを格納する
+
+以下、例外2件
+L_Sideは例外的にLEFT_DEVには"POWER"が入る。RIGHT_DEVは [Col 1:Line] の持つIDを格納する
+R_Sideも例外的にRIGHT_DEVには"NEUTRAL"が入る。LEFT_DEVは [Col 3:L_Side] の持つIDが入る。
+
+
+
+
+
+#デバイス作動時の定義
+
+デバイス名,定義名,スプライト名,ステート,Note
+A端子,TYPE_A,TYPE_A_ON,作動時,作動時　導通ON
+A端子,TYPE_A,TYPE_A_OFF,待機時,待機時　導通OFF
+,,,,
+B端子,TYPE_B,TYPE_B_ON,待機時,待機時　導通ON
+B端子,TYPE_B,TYPE_B_OFF,作動時,作動時　導通OFF
+,,,,
+入力 コイル,INCOIL,INCOIL_ON,作動時,作動時　導通ON
+入力 コイル,INCOIL,INCOIL_OFF,待機時,待機時　導通OFF
+,,,,
+リンク,LINK,LINK_UP,なし,ラインから上向きにのアイコン
+リンク,LINK,LINK_DOWN,なし,ラインから下向きのアイコン
+,,,,
+削除,DEL,DEL,なし,編集画面での削除機能
+,,,,
+タイマ,TIMER,TIMER_STANBY,待機中,待機時　導通OFF
+タイマ,TIMER,TIMER_CNTUP,カウントアップ中,待機時　導通OFF
+タイマ,TIMER,TIMER_ON,作動時,作動時　導通ON
+,,,,
+出力コイル,OUTCOIL_NML,OUTCOIL_NML_ON,作動時,作動時　導通ON
+出力コイル,OUTCOIL_NML,OUTCOIL_NML_OFF,待機時,待機時　導通OFF
+,,,,
+出力コイル,OUTCOIL_REV,OUTCOIL_REV_ON,作動時,待機時　導通OFF
+出力コイル,OUTCOIL_REV,OUTCOIL_REV_OFF,待機時,作動時　導通ON
+
+
+
+
+
+
+
+**共通データ構造**:
+```python
+class LogicElement():
+    inputs: List[LogicElement]  # 入力素子リスト
+    device_address: str         # 関連デバイスアドレス
+    last_result: bool          # 最後の演算結果
+    
+    @abstractmethod
+    def evaluate(self, device_manager: DeviceManager) -> bool:
+        """論理演算を実行"""
+        pass
+```
+
+**各素子の動作**:
+
+#### ContactA (A接点)
+```python
+def evaluate(self, device_manager: DeviceManager) -> bool:
+    device = device_manager.get_device(self.device_address)
+    return bool(device.value)  # デバイス値がTrueなら通電
+```
+
+#### ContactB (B接点)
+```python
+def evaluate(self, device_manager: DeviceManager) -> bool:
+    device = device_manager.get_device(self.device_address)
+    return not bool(device.value)  # デバイス値がFalseなら通電
+```
+
+#### Timer (タイマー)
+```python
+def evaluate(self, device_manager: DeviceManager) -> bool:
+    input_state = self.inputs[0].evaluate(device_manager)
+    
+    if input_state and not self.is_timing:
+        self.start_time = time.time()  # タイマー開始
+        self.is_timing = True
+    elif not input_state:
+        self.is_timing = False  # タイマーリセット
+    
+    if self.is_timing:
+        elapsed = time.time() - self.start_time
+        return elapsed >= self.preset_time  # プリセット時間到達でON
+```
+
+
+
+
