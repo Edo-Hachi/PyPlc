@@ -86,7 +86,15 @@ class PLCSimulator:
             "H_LINE_ON": sprite_manager.get_sprite_by_name_and_tag("H_LINE_ON"),
             "H_LINE_OFF": sprite_manager.get_sprite_by_name_and_tag("H_LINE_OFF"),
             "V_LINE_ON": sprite_manager.get_sprite_by_name_and_tag("V_LINE_ON"),
-            "V_LINE_OFF": sprite_manager.get_sprite_by_name_and_tag("V_LINE_OFF")
+            "V_LINE_OFF": sprite_manager.get_sprite_by_name_and_tag("V_LINE_OFF"),
+            
+            # データレジスタスプライト
+            "D_DEV_ON": sprite_manager.get_sprite_by_name_and_tag("D_DEV", "TRUE"),
+            "D_DEV_OFF": sprite_manager.get_sprite_by_name_and_tag("D_DEV", "FALSE"),
+            
+            # 比較演算子スプライト
+            "CMP_ON": sprite_manager.get_sprite_by_name_and_tag("CMP", "TRUE"),
+            "CMP_OFF": sprite_manager.get_sprite_by_name_and_tag("CMP", "FALSE")
         }
     
     def _initialize_ui_systems(self):
@@ -109,6 +117,8 @@ class PLCSimulator:
             {"type": DeviceType.WIRE_V, "name": "Wire V", "sprite": "V_LINE_OFF"},
             {"type": DeviceType.LINK_UP, "name": "Link Up", "sprite": "LINK_UP"},
             {"type": DeviceType.LINK_DOWN, "name": "Link Down", "sprite": "LINK_DOWN"},
+            {"type": DeviceType.DATA_REGISTER, "name": "Data Reg", "sprite": "D_DEV_OFF"},
+            {"type": DeviceType.COMPARE_DEVICE, "name": "Compare", "sprite": "CMP_OFF"},
             {"type": DeviceType.DEL, "name": "Delete", "sprite": "DEL"}
         ]
     

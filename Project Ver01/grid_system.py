@@ -41,6 +41,15 @@ class GridDevice:
         
         # 配線専用
         self.wire_energized = False  # 配線通電状態
+        
+        # データレジスタ専用フィールド
+        self.current_value = 0               # 現在値
+        self.is_32bit = False               # 32ビットフラグ
+        
+        # 比較演算専用フィールド  
+        self.comparison_symbol = "="         # "=", ">", "<", "≥", "≤", "≠"
+        self.param_summary = "K100"          # パラメータサマリー
+        self.comparison_result = False       # 比較結果
     
     def get_sprite_name(self) -> Optional[str]:
         """デバイスタイプと状態に応じたスプライト名を返す"""
@@ -78,6 +87,12 @@ class GridDevice:
             return "H_LINE_ON" if self.wire_energized else "H_LINE_OFF"
         elif self.device_type == DeviceType.WIRE_V:
             return "V_LINE_ON" if self.wire_energized else "V_LINE_OFF"
+        elif self.device_type == DeviceType.DATA_REGISTER:
+            # データレジスタスプライト切り替え（値により状態変化）
+            return "D_DEV_ON" if self.current_value != 0 else "D_DEV_OFF"
+        elif self.device_type == DeviceType.COMPARE_DEVICE:
+            # 比較演算子スプライト切り替え（比較結果により状態変化）
+            return "CMP_ON" if self.comparison_result else "CMP_OFF"
         elif self.device_type == DeviceType.DEL:
             return "DEL"
         return None
@@ -138,6 +153,17 @@ class GridDeviceManager:
                 device.wire_direction = "V"
                 device.wire_energized = False
             
+            # データレジスタ固有の初期化
+            elif device_type == DeviceType.DATA_REGISTER:
+                device.current_value = 0
+                device.is_32bit = False
+            
+            # 比較演算子固有の初期化
+            elif device_type == DeviceType.COMPARE_DEVICE:
+                device.comparison_symbol = "="
+                device.param_summary = "K100"
+                device.comparison_result = False
+            
             return True
         return False
     
@@ -154,6 +180,16 @@ class GridDeviceManager:
             device.device_type = DeviceType.EMPTY
             device.device_address = None
             device.active = False
+            
+            # データレジスタフィールドリセット
+            device.current_value = 0
+            device.is_32bit = False
+            
+            # 比較演算子フィールドリセット
+            device.comparison_symbol = "="
+            device.param_summary = "K100"
+            device.comparison_result = False
+            
             return True
         return False
     
