@@ -5,8 +5,8 @@ New_Docs/
 venv/
 .venv/
 SupportAgent/
-CLAUDE.md
-GEMINI.md
+#CLAUDE.md
+#GEMINI.md
 # _Common_Report.md
 
 Project Ver01/

@@ -1,0 +1,127 @@
+{
+  "$schema": "./schemas/dialog_base_schema.json",
+  "title": "データレジスタ設定",
+  "width": 250,
+  "height": 180,
+  "controls": [
+    {
+      "id": "device_type_label",
+      "type": "label",
+      "x": 20,
+      "y": 25,
+      "width": 210,
+      "height": 15,
+      "text": "デバイスタイプ: データレジスタ",
+      "color": 7
+    },
+    {
+      "id": "address_label",
+      "type": "label",
+      "x": 20,
+      "y": 45,
+      "width": 210,
+      "height": 15,
+      "text": "レジスタアドレス:",
+      "color": 10
+    },
+    {
+      "id": "address_input",
+      "type": "textinput",
+      "x": 20,
+      "y": 65,
+      "width": 100,
+      "height": 20,
+      "placeholder": "例: D1, D100",
+      "value": "",
+      "max_length": 8,
+      "input_type": "data_register_address",
+      "color": 7,
+      "bg_color": 0,
+      "border_color": 7,
+      "focus_border_color": 10,
+      "events": ["change", "focus", "blur", "enter", "validate"],
+      "validation": {
+        "type": "required_data_register"
+      }
+    },
+    {
+      "id": "value_label",
+      "type": "label",
+      "x": 140,
+      "y": 45,
+      "width": 90,
+      "height": 15,
+      "text": "値:",
+      "color": 10
+    },
+    {
+      "id": "value_input",
+      "type": "textinput",
+      "x": 140,
+      "y": 65,
+      "width": 90,
+      "height": 20,
+      "placeholder": "0-32767",
+      "value": "0",
+      "max_length": 5,
+      "input_type": "integer",
+      "color": 7,
+      "bg_color": 0,
+      "border_color": 7,
+      "focus_border_color": 10,
+      "events": ["change", "focus", "blur", "enter", "validate"],
+      "validation": {
+        "type": "integer_range",
+        "min": 0,
+        "max": 32767
+      }
+    },
+    {
+      "id": "error_label",
+      "type": "label",
+      "x": 20,
+      "y": 95,
+      "width": 210,
+      "height": 10,
+      "text": "",
+      "color": 8,
+      "visible": false
+    },
+    {
+      "id": "note_label",
+      "type": "label",
+      "x": 20,
+      "y": 110,
+      "width": 210,
+      "height": 15,
+      "text": "※値は0-32767の範囲で入力してください",
+      "color": 6
+    },
+    {
+      "id": "ok_button",
+      "type": "button",
+      "x": 30,
+      "y": 140,
+      "width": 60,
+      "height": 20,
+      "text": "OK",
+      "color": 7,
+      "bg_color": 11,
+      "hover_color": 3,
+      "events": ["click"]
+    },
+    {
+      "id": "cancel_button",
+      "type": "button",
+      "x": 160,
+      "y": 140,
+      "width": 60,
+      "height": 20,
+      "text": "Cancel",
+      "color": 7,
+      "bg_color": 8,
+      "hover_color": 2,
+      "events": ["click"]
+    }
+  ]
+}

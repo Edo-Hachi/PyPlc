@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "textinput_schema.json",
+  "title": "PyPlc Ver3 TextInput Control Schema",
+  "description": "Schema for text input UI controls",
+  "type": "object",
+  "properties": {
+    "placeholder": {
+      "type": "string",
+      "maxLength": 50,
+      "description": "Placeholder text when input is empty"
+    },
+    "value": {
+      "type": "string",
+      "description": "Initial/default value"
+    },
+    "max_length": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 255,
+      "description": "Maximum allowed input length"
+    },
+    "input_type": {
+      "enum": ["text", "numeric", "alphanumeric"],
+      "default": "text",
+      "description": "Type of input validation"
+    },
+    "color": {
+      "$ref": "../common/color_definitions.json#/definitions/pyxel_color",
+      "description": "Text color"
+    },
+    "bg_color": {
+      "$ref": "../common/color_definitions.json#/definitions/pyxel_color",
+      "description": "Background color"
+    },
+    "border_color": {
+      "$ref": "../common/color_definitions.json#/definitions/pyxel_color",
+      "description": "Border color"
+    },
+    "focus_border_color": {
+      "$ref": "../common/color_definitions.json#/definitions/pyxel_color",
+      "description": "Border color when focused"
+    },
+    "events": {
+      "$ref": "../common/event_definitions.json#/definitions/textinput_events",
+      "description": "Events that this text input can emit"
+    },
+    "validation": {
+      "$ref": "../common/validation_definitions.json#/definitions/validation_rule",
+      "description": "Input validation rule"
+    },
+    "readonly": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether input is read-only"
+    }
+  },
+  "additionalProperties": false
+}

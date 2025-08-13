@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "validation_definitions.json",
+  "title": "PyPlc Ver3 Validation Definitions",
+  "description": "Validation rules for input controls",
+  "definitions": {
+    "validation_rule": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": [
+            "timer_preset_range",
+            "counter_preset_range", 
+            "device_id_pattern",
+            "filename_pattern",
+            "numeric_only",
+            "alphanumeric_only"
+          ],
+          "description": "Type of validation to apply"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "timer_preset_range"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "min": {
+                "type": "integer",
+                "const": 0
+              },
+              "max": {
+                "type": "integer",
+                "const": 32767
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "counter_preset_range"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "min": {
+                "type": "integer",
+                "const": 0
+              },
+              "max": {
+                "type": "integer",
+                "const": 65535
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
