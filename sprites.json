@@ -189,13 +189,13 @@
     "152_0": {
       "x": 152,
       "y": 0,
-      "NAME": "CMP",
+      "NAME": "COMP",
       "ACT_NAME": "TRUE"
     },
     "160_0": {
       "x": 160,
       "y": 0,
-      "NAME": "CMP",
+      "NAME": "COMP",
       "ACT_NAME": "FALSE"
     }
   }
