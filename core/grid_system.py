@@ -214,6 +214,13 @@ class GridSystem:
             preset_val = getattr(device, 'preset_value', 0)
             value_text = f"{current_val}/{preset_val}"
             text_color = pyxel.COLOR_PURPLE  # 常時パープルで見やすく
+            
+        elif device.device_type == DeviceType.DATA_REGISTER:
+            # データレジスタ: アドレス=値形式で表示
+            address = getattr(device, 'address', 'D?')
+            data_val = getattr(device, 'data_value', 0)
+            value_text = f"{address}={data_val}"
+            text_color = pyxel.COLOR_CYAN  # シアンで見やすく
         else:
             return
         
