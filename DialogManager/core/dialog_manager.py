@@ -84,26 +84,129 @@ class DialogManager:
             print(f"[DialogManager] Timer/Counter preset updated: {device.device_type.value} = {new_preset}")
     
     def _show_data_register_dialog(self, device, row: int, col: int, grid_system) -> None:
-        """データレジスタ編集ダイアログ表示"""
-        if device.device_type != DeviceType.DATA_REGISTER:
-            return
-        
-        # 現在のアドレスと値を取得
-        current_address = device.address if device.address else f"D{row}"
-        current_value = getattr(device, 'data_value', 0)
-        
-        # データレジスタダイアログを作成・表示
-        dialog = DataRegisterDialog(current_address, current_value)
-        dialog.show()
-        
-        # 結果を取得してデバイスに反映
-        result = dialog.get_result()
-        if result:
-            device.address = result["address"]
-            device.data_value = result["value"]
-            print(f"[DialogManager] Data register updated: {result['address']} = {result['value']}")
-        else:
-            print("[DialogManager] Data register edit canceled")
+        """データレジスタ編集ダイアログ表示（WindSurf改善版）"""
+        try:
+            # 事前バリデーション（WindSurf提案）
+            if device.device_type != DeviceType.DATA_REGISTER:
+                raise ValueError(f"Invalid device type for data register dialog: {device.device_type}")
+            
+            if not hasattr(device, 'address'):
+                raise ValueError("Device missing required 'address' attribute")
+            
+            # 現在値を安全に取得（PLCDevice拡張フィールド使用）
+            current_address = device.address if device.address else f"D{row}"
+            current_operation = getattr(device, 'operation_type', 'MOV')
+            current_operand = getattr(device, 'operand_value', 0)  
+            current_execution = getattr(device, 'execution_enabled', False)
+            current_error = getattr(device, 'error_state', '')
+            
+            # ログ記録（WindSurf提案）
+            print(f"[DialogManager] Opening enhanced data register dialog:")
+            print(f"  Address: {current_address}")
+            print(f"  Operation: {current_operation}")
+            print(f"  Operand: {current_operand}")
+            print(f"  Execution: {current_execution}")
+            print(f"  Error State: '{current_error}'")
+            
+            # JSON駆動ダイアログ作成（DropdownControl統合版）
+            dialog = self._create_enhanced_data_register_dialog(
+                current_address, current_operation, current_operand, current_execution, current_error
+            )
+            
+            if not dialog:
+                raise RuntimeError("Failed to create data register dialog")
+            
+            # ダイアログ表示・結果取得
+            result = dialog.show_and_get_result()
+            
+            if result and result.get('success', False):
+                # WindSurf提案: 包括的エラーハンドリング付きデバイス更新
+                self._update_device_with_validation(device, result, row, col)
+            else:
+                print("[DialogManager] Data register edit canceled or failed")
+                
+        except ValueError as e:
+            print(f"[DialogManager] Data register dialog validation error: {e}")
+            self._show_error_message("Validation Error", str(e))
+        except Exception as e:
+            print(f"[DialogManager] Data register dialog error: {e}")
+            self._show_error_message("Dialog Error", "Failed to open data register dialog")
+            import traceback
+            traceback.print_exc()
+    
+    def _create_enhanced_data_register_dialog(self, address: str, operation: str, operand: int, 
+                                            execution: bool, error_state: str):
+        """拡張データレジスタダイアログ作成（WindSurf改善版）"""
+        try:
+            from DialogManager.dialogs.enhanced_data_register_dialog import EnhancedDataRegisterDialog
+            
+            # 設定辞書を作成
+            dialog_config = {
+                'address': address,
+                'operation_type': operation,
+                'operand_value': operand,
+                'execution_enabled': execution,
+                'error_state': error_state,
+                'json_definition': 'data_register_settings.json'
+            }
+            
+            return EnhancedDataRegisterDialog(dialog_config)
+            
+        except ImportError:
+            print("[DialogManager] Enhanced dialog not available, using fallback")
+            return self._create_fallback_data_register_dialog(address, operand)
+        except Exception as e:
+            print(f"[DialogManager] Error creating enhanced dialog: {e}")
+            return None
+    
+    def _update_device_with_validation(self, device, result: dict, row: int, col: int) -> None:
+        """WindSurf提案: バリデーション付きデバイス更新"""
+        try:
+            # アドレス更新
+            new_address = result.get('address', device.address)
+            if new_address != device.address:
+                device.address = new_address
+                print(f"[DialogManager] Address updated: {new_address}")
+            
+            # 演算設定更新（PLCDevice拡張フィールド使用）
+            new_operation = result.get('operation_type', 'MOV')
+            new_operand = result.get('operand_value', 0)
+            new_execution = result.get('execution_enabled', False)
+            
+            # 範囲チェック（WindSurf提案）
+            if not (-32768 <= new_operand <= 32767):
+                raise ValueError(f"Operand value out of range: {new_operand}")
+            
+            device.operation_type = new_operation
+            device.operand_value = new_operand
+            device.execution_enabled = new_execution
+            device.error_state = ""  # 正常更新時はエラー状態クリア
+            
+            print(f"[DialogManager] Data register fully updated:")
+            print(f"  Address: {device.address}")
+            print(f"  Operation: {device.operation_type}")
+            print(f"  Operand: {device.operand_value}")
+            print(f"  Execution: {device.execution_enabled}")
+            
+        except Exception as e:
+            print(f"[DialogManager] Device update validation failed: {e}")
+            device.error_state = "UPDATE_FAILED"
+            raise
+    
+    def _show_error_message(self, title: str, message: str) -> None:
+        """エラーメッセージ表示（WindSurf提案）"""
+        print(f"[DialogManager] ERROR - {title}: {message}")
+        # 将来的にはエラーダイアログ表示を実装
+    
+    def _create_fallback_data_register_dialog(self, address: str, value: int):
+        """フォールバック用シンプルダイアログ"""
+        # 既存のDataRegisterDialogを使用
+        try:
+            dialog = DataRegisterDialog(address, value)
+            return dialog
+        except Exception as e:
+            print(f"[DialogManager] Fallback dialog creation failed: {e}")
+            return None
     
     def _show_compare_dialog(self, device, row: int, col: int, grid_system) -> None:
         """比較命令編集ダイアログ表示"""
