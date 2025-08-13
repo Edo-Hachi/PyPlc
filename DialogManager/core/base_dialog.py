@@ -211,11 +211,23 @@ class BaseDialog(ABC):
             title_y = self.y + 5
             pyxel.text(title_x, title_y, self.title, pyxel.COLOR_WHITE)
         
-        # 各コントロールの描画
+        # 各コントロールの描画（Z-order対応：ドロップダウン以外を先に描画）
+        expanded_dropdowns = []
+        
         for control_id in self.control_order:
             control = self.controls[control_id]
             if hasattr(control, 'draw'):
-                control.draw(self.x, self.y)
+                # ドロップダウンが展開中の場合は後で描画
+                if (hasattr(control, 'expanded') and control.expanded and 
+                    control.__class__.__name__ == 'DropdownControl'):
+                    expanded_dropdowns.append((control_id, control))
+                else:
+                    control.draw(self.x, self.y)
+        
+        # 展開されたドロップダウンを最後に描画（最前面）
+        for control_id, control in expanded_dropdowns:
+            control.draw(self.x, self.y)
+            print(f"[BaseDialog] Expanded dropdown '{control_id}' drawn on top")
         
         # カスタム描画処理
         self._draw_custom()

@@ -263,7 +263,8 @@ class ControlFactory:
             def handle_input(self, mouse_x: int, mouse_y: int, mouse_clicked: bool) -> None:
                 import pyxel
                 
-                # マウス座標がボタン内にあるかチェック
+                # mouse_xとmouse_yはダイアログ相対座標として渡されている
+                # コントロール座標と直接比較（二重変換を避ける）
                 self.is_hovered = (self.x <= mouse_x <= self.x + self.width and 
                                    self.y <= mouse_y <= self.y + self.height)
                 
@@ -424,23 +425,34 @@ class ControlFactory:
         return None
     
     def _create_dropdown_control(self, definition: Dict[str, Any]) -> Optional[BaseControl]:
-        """ドロップダウンコントロール生成（WindSurf改善版）"""
+        """ドロップダウンコントロール生成（WindSurf改善版・ログ強化）"""
+        print(f"[ControlFactory] Creating dropdown control: {definition.get('id', 'unknown')}")
         try:
             DropdownControl = self._get_control_class("dropdown")
             if not DropdownControl:
-                print(f"Failed to load DropdownControl class")
+                print(f"[ControlFactory] Failed to load DropdownControl class")
                 return None
             
-            return DropdownControl(
+            options = definition.get("options", [])
+            default_value = definition.get("default", "")
+            
+            print(f"[ControlFactory] Dropdown options: {len(options)}, default: '{default_value}'")
+            
+            dropdown = DropdownControl(
                 control_id=definition.get("id", "dropdown"),
                 x=definition.get("x", 0),
                 y=definition.get("y", 0), 
                 width=definition.get("width", 200),
                 height=definition.get("height", 25),
-                options=definition.get("options", []),
-                default=definition.get("default", "")
+                options=options,
+                default=default_value
             )
             
+            print(f"[ControlFactory] Dropdown control created successfully: {dropdown.id}")
+            return dropdown
+            
         except Exception as e:
-            print(f"Failed to create dropdown control: {e}")
+            print(f"[ControlFactory] Failed to create dropdown control: {e}")
+            import traceback
+            traceback.print_exc()
             return None

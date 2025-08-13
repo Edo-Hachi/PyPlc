@@ -12,16 +12,18 @@ from DialogManager.core.control_factory import ControlFactory
 class DataRegisterDialog(BaseDialog):
     """データレジスタ設定ダイアログクラス"""
     
-    def __init__(self, address: str = "", value: int = 0):
+    def __init__(self, address: str = "", value: int = 0, operation: str = "MOV"):
         """
         データレジスタ設定ダイアログの初期化
         
         Args:
             address: 初期アドレス
             value: 初期値
+            operation: 初期操作種別
         """
         self.address = address
         self.value = value
+        self.operation = operation
         self.input_address = address
         self.input_value = str(value)
         self.validation_error = ""
@@ -46,32 +48,59 @@ class DataRegisterDialog(BaseDialog):
         self._create_controls()
         
         # 初期値をコントロールに設定
-        self.set_initial_values(address, value)
+        self.set_initial_values(address, value, operation)
         
         # 結果格納用
         self.result: Optional[Dict[str, Any]] = None
         self.confirmed = False
         self.active = False
     
-    def set_initial_values(self, address: str = "", value: int = 0):
+    def set_initial_values(self, address: str = "", value: int = 0, operation: str = ""):
         """
         初期値を設定する
         
         Args:
             address: データレジスタアドレス
             value: データレジスタ値
+            operation: 操作種別
         """
         # デフォルト値の設定
         if not address:
             address = "D1"  # デフォルトアドレス
+        if not operation:
+            operation = self.operation if hasattr(self, 'operation') else "MOV"
         
         print(f"[DataRegisterDialog] Setting initial values: address='{address}', value={value}")
         if "address_input" in self.controls:
             self.controls["address_input"].set_text(address)
             print(f"[DataRegisterDialog] Address input set to: '{address}'")
-        if "value_input" in self.controls:
-            self.controls["value_input"].set_text(str(value))
-            print(f"[DataRegisterDialog] Value input set to: '{value}'")
+        # operand_input (新JSON) または value_input (旧JSON) に対応
+        value_control_id = "operand_input" if "operand_input" in self.controls else "value_input"
+        if value_control_id in self.controls:
+            self.controls[value_control_id].set_text(str(value))
+            print(f"[DataRegisterDialog] Value input set to: '{value}' (control: {value_control_id})")
+        
+        # ドロップダウンの初期値設定（重要な修正）
+        if "operation_dropdown" in self.controls:
+            dropdown_control = self.controls["operation_dropdown"]
+            print(f"[DataRegisterDialog] Found operation_dropdown control: {type(dropdown_control).__name__}")
+            
+            if hasattr(dropdown_control, 'set_selected_value'):
+                dropdown_control.set_selected_value(operation)
+                print(f"[DataRegisterDialog] Operation dropdown set to: '{operation}'")
+                
+                # 強制的な再描画フラグ設定
+                if hasattr(dropdown_control, 'invalidate'):
+                    dropdown_control.invalidate()
+                    print(f"[DataRegisterDialog] Operation dropdown invalidated for redraw")
+                    
+                # さらに強制的に描画フラグをセット
+                if hasattr(dropdown_control, 'needs_redraw'):
+                    dropdown_control.needs_redraw = True
+                    print(f"[DataRegisterDialog] Operation dropdown needs_redraw set to True")
+                    
+            else:
+                print(f"[DataRegisterDialog] Warning: operation_dropdown missing set_selected_value method")
     
     def handle_event(self, event_type: str, control_id: str, data: Any = None) -> bool:
         """
@@ -92,7 +121,7 @@ class DataRegisterDialog(BaseDialog):
                 return self._handle_cancel_click()
         
         elif event_type == "enter":
-            if control_id in ["address_input", "value_input"]:
+            if control_id in ["address_input", "value_input", "operand_input"]:
                 return self._handle_ok_click()
         
         elif event_type == "validate":
@@ -110,7 +139,9 @@ class DataRegisterDialog(BaseDialog):
         
         # 結果を構築
         address = self.controls["address_input"].get_text().strip().upper()
-        value_text = self.controls["value_input"].get_text().strip()
+        # operand_input (新JSON) または value_input (旧JSON) に対応
+        value_control_id = "operand_input" if "operand_input" in self.controls else "value_input"
+        value_text = self.controls[value_control_id].get_text().strip()
         
         try:
             value = int(value_text) if value_text else 0
@@ -122,9 +153,20 @@ class DataRegisterDialog(BaseDialog):
         if not address.startswith('D'):
             address = f"D{address}"
         
+        # ドロップダウンから選択された操作を取得
+        operation_type = "MOV"  # デフォルト値
+        if "operation_dropdown" in self.controls:
+            dropdown_control = self.controls["operation_dropdown"]
+            if hasattr(dropdown_control, 'get_selected_value'):
+                operation_type = dropdown_control.get_selected_value()
+                print(f"[DataRegisterDialog] Selected operation: {operation_type}")
+            else:
+                print(f"[DataRegisterDialog] Warning: dropdown missing get_selected_value method")
+        
         self.result = {
             "address": address,
-            "value": value
+            "value": value,
+            "operation_type": operation_type  # 操作種別を追加
         }
         self.confirmed = True
         self.active = False
@@ -165,7 +207,7 @@ class DataRegisterDialog(BaseDialog):
                 self._show_error("D番号は0-255の範囲で入力してください")
                 return False
         
-        elif control_id == "value_input":
+        elif control_id in ["value_input", "operand_input"]:
             try:
                 value = int(data) if data else 0
                 if not (0 <= value <= 32767):
@@ -182,7 +224,9 @@ class DataRegisterDialog(BaseDialog):
     def _validate_all_inputs(self) -> bool:
         """全入力値の総合バリデーション"""
         address = self.controls["address_input"].get_text().strip()
-        value_text = self.controls["value_input"].get_text().strip()
+        # operand_input (新JSON) または value_input (旧JSON) に対応
+        value_control_id = "operand_input" if "operand_input" in self.controls else "value_input"
+        value_text = self.controls[value_control_id].get_text().strip()
         
         print(f"[DataRegisterDialog] Validating address: '{address}', value: '{value_text}'")
         
@@ -192,7 +236,7 @@ class DataRegisterDialog(BaseDialog):
             return False
         
         # 値バリデーション
-        if not self._handle_validation("value_input", value_text):
+        if not self._handle_validation(value_control_id, value_text):
             print("[DataRegisterDialog] Value validation failed")
             return False
         
@@ -231,7 +275,11 @@ class DataRegisterDialog(BaseDialog):
         """
         JSON定義からコントロールを生成・追加
         """
+        print(f"[DataRegisterDialog] Creating {len(self.definition['controls'])} controls...")
         for control_def in self.definition["controls"]:
+            control_id = control_def.get("id", "unknown")
+            control_type = control_def.get("type", "unknown")
+            
             # ControlFactoryでコントロールを生成
             control = self.factory.create_control(control_def)
             
@@ -241,6 +289,12 @@ class DataRegisterDialog(BaseDialog):
                 
                 # イベントハンドラーを設定
                 self._setup_control_events(control, control_def)
+                
+                print(f"[DataRegisterDialog] Control created: {control_id} ({control_type}) -> {type(control).__name__}")
+            else:
+                print(f"[DataRegisterDialog] Failed to create control: {control_id} ({control_type})")
+        
+        print(f"[DataRegisterDialog] Final control list: {list(self.controls.keys())}")
     
     def _setup_control_events(self, control, control_def: dict) -> None:
         """
@@ -278,7 +332,7 @@ class DataRegisterDialog(BaseDialog):
     
     def _on_enter_pressed(self, control):
         """Enterキー処理"""
-        if control.id in ["address_input", "value_input"]:
+        if control.id in ["address_input", "value_input", "operand_input"]:
             self._handle_ok_click()
     
     def show(self):

@@ -108,18 +108,12 @@ class DialogManager:
             print(f"  Execution: {current_execution}")
             print(f"  Error State: '{current_error}'")
             
-            # JSON駆動ダイアログ作成（DropdownControl統合版）
-            dialog = self._create_enhanced_data_register_dialog(
+            # シンプルダイアログ作成・実行（既存パターン準拠）
+            result = self._create_enhanced_data_register_dialog(
                 current_address, current_operation, current_operand, current_execution, current_error
             )
             
-            if not dialog:
-                raise RuntimeError("Failed to create data register dialog")
-            
-            # ダイアログ表示・結果取得
-            result = dialog.show_and_get_result()
-            
-            if result and result.get('success', False):
+            if result:
                 # WindSurf提案: 包括的エラーハンドリング付きデバイス更新
                 self._update_device_with_validation(device, result, row, col)
             else:
@@ -136,28 +130,37 @@ class DialogManager:
     
     def _create_enhanced_data_register_dialog(self, address: str, operation: str, operand: int, 
                                             execution: bool, error_state: str):
-        """拡張データレジスタダイアログ作成（WindSurf改善版）"""
+        """既存のDataRegisterDialogを使用（最も確実な解決策）"""
         try:
-            from DialogManager.dialogs.enhanced_data_register_dialog import EnhancedDataRegisterDialog
+            # 既存の動作確認済みDataRegisterDialogを使用
+            from DialogManager.dialogs.data_register_dialog import DataRegisterDialog
             
-            # 設定辞書を作成
-            dialog_config = {
-                'address': address,
-                'operation_type': operation,
-                'operand_value': operand,
-                'execution_enabled': execution,
-                'error_state': error_state,
-                'json_definition': 'data_register_settings.json'
-            }
+            print(f"[DialogManager] Using existing DataRegisterDialog for {address}")
             
-            return EnhancedDataRegisterDialog(dialog_config)
+            # 既存のダイアログで基本値設定を実行（操作種別も渡す）
+            dialog = DataRegisterDialog(address, operand, operation)
+            dialog.show()
             
+            result = dialog.get_result()
+            if result:
+                # 結果を新形式に変換（操作種別も正しく取得）
+                selected_operation = result.get('operation_type', operation)  # ダイアログからの選択値を使用
+                return {
+                    'success': True,
+                    'address': result.get('address', address),
+                    'operation_type': selected_operation,  # ダイアログで選択された操作種別
+                    'operand_value': result.get('value', operand),  # 'value' → 'operand_value' 変換
+                    'execution_enabled': execution  # 維持
+                }
+            else:
+                return {'success': False}
+                
         except ImportError:
-            print("[DialogManager] Enhanced dialog not available, using fallback")
+            print("[DialogManager] DataRegisterDialog not available, using fallback")
             return self._create_fallback_data_register_dialog(address, operand)
         except Exception as e:
-            print(f"[DialogManager] Error creating enhanced dialog: {e}")
-            return None
+            print(f"[DialogManager] Error with DataRegisterDialog: {e}")
+            return self._create_fallback_data_register_dialog(address, operand)
     
     def _update_device_with_validation(self, device, result: dict, row: int, col: int) -> None:
         """WindSurf提案: バリデーション付きデバイス更新"""
