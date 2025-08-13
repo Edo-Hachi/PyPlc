@@ -5,9 +5,9 @@
 import pyxel
 import re
 from typing import Optional, Tuple
-from .base_dialog import BaseDialog
-from .json_dialog_loader import JSONDialogLoader
-from .control_factory import ControlFactory
+from DialogManager.core.base_dialog import BaseDialog
+from DialogManager.core.json_dialog_loader import JSONDialogLoader
+from DialogManager.core.control_factory import ControlFactory
 from config import DeviceType, TimerConfig, CounterConfig
 
 

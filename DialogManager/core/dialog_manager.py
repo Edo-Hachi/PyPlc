@@ -8,6 +8,9 @@ PyPlc Ver3 - DialogManager統合管理システム v2
 
 from typing import Callable, Optional
 from config import DeviceType
+from DialogManager.dialogs.data_register_dialog import DataRegisterDialog
+from DialogManager.dialogs.device_id_dialog import show_device_id_dialog
+# TODO: 他のダイアログもインポート予定
 
 
 class DialogManager:
@@ -68,8 +71,25 @@ class DialogManager:
     
     def _show_data_register_dialog(self, device, row: int, col: int, grid_system) -> None:
         """データレジスタ編集ダイアログ表示"""
-        # TODO: data_register_dialog_json.pyからの実装移植
-        pass
+        if device.device_type != DeviceType.DATA_REGISTER:
+            return
+        
+        # 現在のアドレスと値を取得
+        current_address = device.address if device.address else f"D{row}"
+        current_value = getattr(device, 'data_value', 0)
+        
+        # データレジスタダイアログを作成・表示
+        dialog = DataRegisterDialog(current_address, current_value)
+        dialog.show()
+        
+        # 結果を取得してデバイスに反映
+        result = dialog.get_result()
+        if result:
+            device.address = result["address"]
+            device.data_value = result["value"]
+            print(f"[DialogManager] Data register updated: {result['address']} = {result['value']}")
+        else:
+            print("[DialogManager] Data register edit canceled")
     
     def _show_compare_dialog(self, device, row: int, col: int, grid_system) -> None:
         """比較命令編集ダイアログ表示"""

@@ -159,7 +159,7 @@ button = factory.create_control(button_def)
 ### コンストラクタ
 ```python
 JSONDialogLoader(
-    definitions_path: str = "DialogManager_v2/definitions",
+    definitions_path: str = "DialogManager/definitions",
     enable_validation: bool = True
 )
 ```

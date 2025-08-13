@@ -26,13 +26,11 @@ from core.circuit_analyzer import CircuitAnalyzer
 from core.device_palette import DevicePalette
 from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システムをインポート
 # 古いdialogs/システムは削除済み（Phase Cで完全移行）
-from DialogManager.new_dialog_manager import NewDialogManager  # 新DialogManagerシステム
-from DialogManager.new_file_dialog_manager import NewFileDialogManager  # 新FileDialogManagerシステム
+# DialogManager 統合システム
+from DialogManager import DialogManager
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
-from DialogManager.integration_test_dialog import show_integration_test_dialog  # Phase 1統合テスト用
-from DialogManager.phase2_integration_test import show_phase2_integration_test_dialog  # Phase 2統合テスト用
-from DialogManager.phase3_integration_test import run_phase3_test  # Phase 3統合テスト用
-from DialogManager.file_load_dialog_json import FileLoadDialogJSON  # Phase 3実装
+# TODO: 必要に応じてファイルダイアログ機能を追加
+# from DialogManager.dialogs.file_load_dialog import FileLoadDialogJSON
 
 class PyPlcVer3:
     """PyPlc Ver3 - PLC標準仕様準拠シミュレーター"""
@@ -63,8 +61,9 @@ class PyPlcVer3:
         self.device_palette = DevicePalette()  # デバイスパレット追加
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
         # 新DialogManagerシステム（Phase C完全移行）
-        self.dialog_manager = NewDialogManager()  # 新DialogManagerシステム
-        self.file_dialog_manager = NewFileDialogManager(self.csv_manager)  # 新FileDialogManagerシステム
+        self.dialog_manager = DialogManager()  # DialogManager v2統合システム
+        # TODO: ファイルダイアログマネージャーは後で実装
+        # self.file_dialog_manager = FileDialogManager(self.csv_manager)
         
         self.mouse_state: MouseState = MouseState()
 
@@ -96,45 +95,31 @@ class PyPlcVer3:
         # F6キーでの全システムリセット (Ver1実装継承)
         self._handle_full_system_reset()
         
-        # Ctrl+S: ファイル保存ダイアログ表示（EDITモードのみ）
+        # Ctrl+S: ファイル保存ダイアログ表示（EDITモードのみ）- TODO: 再実装予定
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
             if self.current_mode == SimulatorMode.EDIT:
-                # 保存前に回路状態をリセット（クリーンな状態で保存）
-                self._reset_circuit_for_save()
-                self.file_dialog_manager.show_save_dialog()
+                self._show_status_message("Save: TODO - File dialog implementation needed", 3.0)
             else:
                 self._show_status_message("Save: EDIT mode only. Press TAB to switch.", 4.0)
             
-        # Ctrl+O: ファイル読み込みダイアログ表示（EDITモードのみ）
+        # Ctrl+O: ファイル読み込みダイアログ表示（EDITモードのみ）- TODO: 再実装予定
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
             if self.current_mode == SimulatorMode.EDIT:
-                self.file_dialog_manager.show_load_dialog()
+                self._show_status_message("Load: TODO - File dialog implementation needed", 3.0)
             else:
                 self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)
         
-        # T: Phase 1統合テスト - 新ダイアログシステムのテスト
+        # T, U, V: 古いテスト関数は削除済み - TODO: 必要に応じて新しいテスト機能を追加
         if pyxel.btnp(pyxel.KEY_T):
-            print("🚀 Phase 1 Integration Test: Showing test dialog...")
-            result = show_integration_test_dialog()
-            print(f"📋 Integration Test Result: {result}")
-        
-        # U: Phase 2統合テスト - DeviceIDDialogJSONのテスト
+            self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
         if pyxel.btnp(pyxel.KEY_U):
-            print("🚀 Phase 2 Integration Test: Showing DeviceIDDialogJSON...")
-            result = show_phase2_integration_test_dialog()
-            print(f"📋 Phase 2 Integration Test Result: {result}")
-        
-        # V: Phase 3統合テスト - FileListControlのテスト
+            self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
         if pyxel.btnp(pyxel.KEY_V):
-            print("🚀 Phase 3 Integration Test: FileListControl Test...")
-            run_phase3_test()
+            self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
         
-        # W: Phase 3実装テスト - FileLoadDialogJSONの実動作テスト
+        # W: 古いファイルダイアログテストも削除済み
         if pyxel.btnp(pyxel.KEY_W):
-            print("🚀 Phase 3 Implementation Test: Showing FileLoadDialogJSON...")
-            dialog = FileLoadDialogJSON()
-            success, file_path = dialog.show_load_dialog()
-            print(f"📋 FileLoadDialog Result: success={success}, file_path='{file_path}'")
+            self._show_status_message("File dialog test removed - TODO: Implement new file system", 3.0)
         
         # デバイスパレット入力処理（EDITモードでのみ有効）
         if self.current_mode == SimulatorMode.EDIT:
@@ -590,9 +575,9 @@ class PyPlcVer3:
             tab_hint = "TAB:Mode F6:Reset F5:PLC [Save/Load: EDIT mode only]"
         pyxel.text(10, status_bar_y + 2, tab_hint, pyxel.COLOR_WHITE)
         
-        # 現在編集中のファイル名表示（下部ステータスバー）
-        current_file = self.file_dialog_manager.get_current_filename()
-        file_display = f"File: {current_file}"
+        # 現在編集中のファイル名表示（下部ステータスバー）- TODO: ファイルダイアログ実装後に復旧
+        # current_file = self.file_dialog_manager.get_current_filename()
+        file_display = "File: [No file system yet]"
         file_x = DisplayConfig.WINDOW_WIDTH - len(file_display) * 4 - 10  # 右端から10px余白
         pyxel.text(file_x, DisplayConfig.WINDOW_HEIGHT - 20, file_display, pyxel.COLOR_CYAN)
         

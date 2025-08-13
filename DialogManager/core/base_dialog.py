@@ -8,7 +8,7 @@ PyPlc Ver3 Dialog System - Phase 1 MVP Implementation
 import pyxel
 from typing import Dict, List, Any, Callable, Optional
 from abc import ABC, abstractmethod
-from .events.event_system import EventSystem
+from DialogManager.events.event_system import EventSystem
 
 
 class BaseDialog(ABC):

@@ -7,7 +7,7 @@ import os
 import glob
 from datetime import datetime
 from typing import List, Optional, Dict, Any
-from ..events.event_system import EventSystem
+from DialogManager.events.event_system import EventSystem
 
 class FileListControl:
     """

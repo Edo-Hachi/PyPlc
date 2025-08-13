@@ -35,8 +35,8 @@ __author__ = "PyPlc Ver3 Development Team"
 __description__ = "統合ダイアログシステム - JSON駆動UI構成"
 
 # パッケージレベルの設定
-DEFAULT_DEFINITIONS_PATH = "DialogManager_v2/definitions"
-DEFAULT_SCHEMAS_PATH = "DialogManager_v2/definitions/schemas"
+DEFAULT_DEFINITIONS_PATH = "DialogManager/definitions"
+DEFAULT_SCHEMAS_PATH = "DialogManager/definitions/schemas"
 
 __all__ = [
     # Core classes

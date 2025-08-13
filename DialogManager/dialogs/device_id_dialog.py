@@ -5,9 +5,9 @@ PyPlc Ver3 Dialog System - Phase 2 Implementation
 既存DeviceIDDialogと同等の機能をJSON定義で実現
 """
 
-from DialogManager.base_dialog import BaseDialog
-from DialogManager.json_dialog_loader import JSONDialogLoader
-from DialogManager.control_factory import ControlFactory
+from DialogManager.core.base_dialog import BaseDialog
+from DialogManager.core.json_dialog_loader import JSONDialogLoader
+from DialogManager.core.control_factory import ControlFactory
 from DialogManager.events.event_system import get_dialog_event_system
 from DialogManager.validation.validator import create_validator_from_config
 from config import DeviceType

@@ -10,7 +10,7 @@ DialogManager v2は、PyPlc Ver3のすべてのダイアログ機能を統合管
 
 ### ディレクトリ構造
 ```
-DialogManager_v2/
+DialogManager/
 ├── __init__.py              # パッケージエクスポート
 ├── core/                    # コアシステム
 │   ├── dialog_manager.py    # メイン管理クラス
@@ -67,7 +67,7 @@ DialogManager_v2/
 ### 基本的な使用例
 
 ```python
-from DialogManager_v2 import DialogManager
+from DialogManager import DialogManager
 
 # DialogManager初期化
 dialog_manager = DialogManager()
@@ -85,7 +85,7 @@ dialog_manager.show_device_edit_dialog(
 ### カスタムダイアログの作成
 
 ```python
-from DialogManager_v2 import BaseDialog, ControlFactory
+from DialogManager import BaseDialog, ControlFactory
 
 class CustomDialog(BaseDialog):
     def __init__(self):
@@ -102,7 +102,7 @@ class CustomDialog(BaseDialog):
 
 ### テスト実行
 ```bash
-cd DialogManager_v2
+cd DialogManager
 python -m pytest tests/
 ```
 
