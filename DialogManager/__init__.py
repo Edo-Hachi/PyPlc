@@ -27,6 +27,7 @@ from .core.schema_validator import SchemaValidator
 from .dialogs.data_register_dialog import DataRegisterDialog
 from .dialogs.device_id_dialog import show_device_id_dialog
 from .dialogs.timer_counter_dialog import show_timer_counter_preset_dialog
+from .dialogs.compare_dialog import show_compare_dialog
 from .dialogs.file_load_dialog import FileLoadDialogJSON
 from .dialogs.file_save_dialog import FileSaveDialogJSON
 
@@ -52,6 +53,7 @@ __all__ = [
     "DataRegisterDialog",
     "show_device_id_dialog",
     "show_timer_counter_preset_dialog", 
+    "show_compare_dialog",
     "FileLoadDialogJSON",
     "FileSaveDialogJSON",
     

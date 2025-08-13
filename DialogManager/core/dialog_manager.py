@@ -10,7 +10,7 @@ from typing import Callable, Optional
 from config import DeviceType
 from DialogManager.dialogs.data_register_dialog import DataRegisterDialog
 from DialogManager.dialogs.device_id_dialog import show_device_id_dialog
-# TODO: 他のダイアログもインポート予定
+# 全ダイアログクラス統合完了
 
 
 class DialogManager:
@@ -26,7 +26,7 @@ class DialogManager:
     
     def __init__(self):
         """DialogManager初期化"""
-        pass
+        # DialogManagerは現在状態を持たないためpassのまま
     
     def show_device_edit_dialog(
         self,
@@ -61,13 +61,27 @@ class DialogManager:
     
     def _show_device_id_dialog(self, device, row: int, col: int, grid_system) -> None:
         """デバイスID編集ダイアログ表示"""
-        # TODO: device_id_dialog_json.pyからの実装移植
-        pass
+        from DialogManager.dialogs.device_id_dialog import show_device_id_dialog
+        
+        # デバイスID編集ダイアログを表示
+        success, new_address = show_device_id_dialog(device.device_type, device.address)
+        
+        if success and new_address:
+            # アドレスを更新
+            device.address = new_address
+            print(f"[DialogManager] Device address updated: {device.device_type.value} = {new_address}")
     
     def _show_timer_counter_dialog(self, device, row: int, col: int, grid_system) -> None:
         """タイマー・カウンタープリセット値編集ダイアログ表示"""
-        # TODO: timer_counter_dialog_json.pyからの実装移植
-        pass
+        from DialogManager.dialogs.timer_counter_dialog import show_timer_counter_preset_dialog
+        
+        # タイマー・カウンタープリセット値編集ダイアログを表示
+        success, new_preset = show_timer_counter_preset_dialog(device.device_type, device.preset_value)
+        
+        if success and new_preset is not None:
+            # プリセット値を更新
+            device.preset_value = new_preset
+            print(f"[DialogManager] Timer/Counter preset updated: {device.device_type.value} = {new_preset}")
     
     def _show_data_register_dialog(self, device, row: int, col: int, grid_system) -> None:
         """データレジスタ編集ダイアログ表示"""
@@ -93,8 +107,18 @@ class DialogManager:
     
     def _show_compare_dialog(self, device, row: int, col: int, grid_system) -> None:
         """比較命令編集ダイアログ表示"""
-        # TODO: compare_dialog_json.pyからの実装移植
-        pass
+        from DialogManager.dialogs.compare_dialog import show_compare_dialog
+        
+        # 現在の条件式を取得（未設定時はデフォルト値）
+        current_condition = getattr(device, 'condition', "")
+        
+        # 比較命令編集ダイアログを表示
+        success, new_condition = show_compare_dialog(current_condition)
+        
+        if success and new_condition:
+            # 条件式を更新
+            device.condition = new_condition
+            print(f"[DialogManager] Compare condition updated: {new_condition}")
     
     def validate_device_for_id_edit(self, device) -> bool:
         """

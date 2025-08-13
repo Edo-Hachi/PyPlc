@@ -10,10 +10,13 @@
 
 
 #Todo
-#OK Timer Counterのアドレスを編集できるように ✅完了
-#OK RSTの実装 ✅完了（Phase 1基本動作 + Phase 2 ZRST範囲リセット）
+#D_DeviceEditDialogの実装（以下のオプションを追加。DialogManagerのData_register_dialogにラジオボタンが必要）
+# - [MOV] : データ転送
+# - [ADD] : 加算演算
+# - [SUB] : 減算演算
+# - [MUL] : 乗算演算
+# - [DIV] : 除算演算
 
-# OK !編集中のファイル名が確定しているなら、セーブするときにそのファイル名を使う
 
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
 
@@ -29,8 +32,7 @@ from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システム�
 # DialogManager 統合システム
 from DialogManager import DialogManager, FileManager
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
-# TODO: 必要に応じてファイルダイアログ機能を追加
-# from DialogManager.dialogs.file_load_dialog import FileLoadDialogJSON
+# ファイルダイアログ機能は既にFileManagerに統合済み
 
 class PyPlcVer3:
     """PyPlc Ver3 - PLC標準仕様準拠シミュレーター"""
@@ -121,17 +123,15 @@ class PyPlcVer3:
             else:
                 self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)
         
-        # T, U, V: 古いテスト関数は削除済み - TODO: 必要に応じて新しいテスト機能を追加
+        # T, U, V, W: 古いテスト関数は削除済み - 新システムに統合済み
         if pyxel.btnp(pyxel.KEY_T):
             self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
         if pyxel.btnp(pyxel.KEY_U):
             self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
         if pyxel.btnp(pyxel.KEY_V):
             self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
-        
-        # W: 古いファイルダイアログテストも削除済み
         if pyxel.btnp(pyxel.KEY_W):
-            self._show_status_message("File dialog test removed - TODO: Implement new file system", 3.0)
+            self._show_status_message("File system is implemented - Use Ctrl+S/O", 3.0)
         
         # デバイスパレット入力処理（EDITモードでのみ有効）
         if self.current_mode == SimulatorMode.EDIT:
@@ -375,8 +375,8 @@ class PyPlcVer3:
         self._draw_address_highlight()
         
         # RUNモード時のデバイス情報表示（マウスオーバー）
-        # if self.current_mode == SimulatorMode.RUN:
-        #     self._draw_device_info_on_hover()
+        if self.current_mode == SimulatorMode.RUN:
+            self._draw_device_info_on_hover()
         
         # UI情報描画
         self._draw_cursor_and_status()
