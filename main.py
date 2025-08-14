@@ -75,9 +75,9 @@ class PyPlcVer3:
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
         
         # --- ダイアログシステム選択フラグ ---
-        # True: DialogManager_v3を使用（テスト用）
-        # False: 既存DialogManagerを使用（デフォルト）
-        self.use_dialogmanager_v3 = False  # TODO: 将来的にTrueに変更
+        # True: DialogManager_v3を使用（推奨・新システム）
+        # False: 既存DialogManagerを使用（レガシー）
+        self.use_dialogmanager_v3 = True  # DialogManager_v3をデフォルトに変更 (2025-08-14)
         
         if self.use_dialogmanager_v3:
             # DialogManager_v3システム（新機能テスト用）
