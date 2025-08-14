@@ -198,7 +198,16 @@ class TextBoxControl(ControlBase):
         elif key == 35:  # End
             self.cursor_position = len(self._text)
         else:
-            handled = False
+            # 文字変換処理を試行
+            char = self._convert_key_to_char(key)
+            if char is not None:
+                # フィルタリングを通して文字を入力
+                if self._is_character_allowed(char):
+                    handled = self.on_text(char)
+                else:
+                    handled = True  # フィルターで拒否されたが、キーは処理済み
+            else:
+                handled = False
         
         # テキストが変更されたことを通知
         if handled:
@@ -502,3 +511,36 @@ class TextBoxControl(ControlBase):
             pyxel.KEY_BACKSLASH: ('\\', '|'), pyxel.KEY_BACKQUOTE: ('`', '~'), 
             pyxel.KEY_SPACE: (' ', ' ')
         }
+    
+    def _convert_key_to_char(self, key: int) -> Optional[str]:
+        """
+        キーコードを文字に変換します。
+        
+        Args:
+            key: 押されたキーのコード
+            
+        Returns:
+            Optional[str]: 変換された文字、変換できない場合はNone
+        """
+        import pyxel
+        
+        # 英字キー（A-Z）の処理
+        if hasattr(pyxel, 'KEY_A') and hasattr(pyxel, 'KEY_Z'):
+            if pyxel.KEY_A <= key <= pyxel.KEY_Z:
+                char = chr(ord('a') + (key - pyxel.KEY_A))
+                # Shift状態の確認（pyxel.btn()でShiftキーの状態取得）
+                if pyxel.btn(pyxel.KEY_SHIFT):
+                    char = char.upper()
+                return char
+        
+        # キーマッピング辞書からの変換
+        if key in self._key_mappings:
+            normal_char, shift_char = self._key_mappings[key]
+            # Shift状態の確認
+            if pyxel.btn(pyxel.KEY_SHIFT):
+                return shift_char
+            else:
+                return normal_char
+        
+        # 変換できないキー
+        return None
