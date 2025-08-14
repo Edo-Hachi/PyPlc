@@ -8,6 +8,14 @@ import pyxel
 from typing import Optional, Dict, Any, List, Tuple
 from .control_base import ControlBase
 
+# ファイル選択連携用のインポート
+try:
+    from ..filesystem import FileInfo, FileType
+except ImportError:
+    # FileInfoが利用できない場合のダミー定義
+    FileInfo = None
+    FileType = None
+
 # Pyxelのデフォルトフォントサイズ定数
 PYXEL_FONT_WIDTH = 4  # 1文字の幅（ピクセル）
 PYXEL_FONT_HEIGHT = 6  # 1文字の高さ（ピクセル）
@@ -544,3 +552,120 @@ class TextBoxControl(ControlBase):
         
         # 変換できないキー
         return None
+    
+    # ファイル名選択連携機能
+    def set_filename_from_selection(self, file_info) -> bool:
+        """
+        ファイル・フォルダ選択からファイル名を設定します。
+        
+        Args:
+            file_info: ファイル情報（FileInfoオブジェクト）
+            
+        Returns:
+            bool: ファイルが選択された場合True、フォルダの場合False
+        """
+        if file_info is None:
+            self.clear_filename()
+            return False
+        
+        # FileInfoオブジェクトの場合
+        if hasattr(file_info, 'file_type') and hasattr(file_info, 'name'):
+            if FileType and hasattr(FileType, 'FILE') and file_info.file_type == FileType.FILE:
+                # ファイルの場合：そのまま設定
+                self.text = file_info.name
+                # カーソルを末尾に移動
+                self.cursor_position = len(self.text)
+                return True
+            elif FileType and hasattr(FileType, 'DIRECTORY') and file_info.file_type == FileType.DIRECTORY:
+                # フォルダの場合：テキストをクリア
+                self.text = ""
+                self.cursor_position = 0
+                return False
+        
+        # 辞書形式の場合（後方互換性）
+        elif isinstance(file_info, dict):
+            if file_info.get('file_type') == 'FILE':
+                self.text = file_info.get('name', '')
+                self.cursor_position = len(self.text)
+                return True
+            elif file_info.get('file_type') == 'DIRECTORY':
+                self.text = ""
+                self.cursor_position = 0
+                return False
+        
+        return False
+    
+    def get_edited_filename(self) -> Optional[str]:
+        """
+        編集されたファイル名を取得します（バリデーション付き）。
+        
+        Returns:
+            Optional[str]: 有効なファイル名、無効な場合はNone
+        """
+        if not self.text.strip():
+            return None
+        
+        filename = self.text.strip()
+        
+        # 基本的なファイル名バリデーション
+        if len(filename) == 0:
+            return None
+        
+        # 危険な文字のチェック（OS依存の禁止文字）
+        dangerous_chars = ['<', '>', ':', '"', '|', '?', '*']
+        if any(char in filename for char in dangerous_chars):
+            return None
+        
+        # Windowsの予約名チェック
+        reserved_names = ['CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 
+                         'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1', 'LPT2', 
+                         'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9']
+        base_name = filename.split('.')[0].upper()
+        if base_name in reserved_names:
+            return None
+        
+        return filename
+    
+    def suggest_filename(self, base_name: str, extension: str = "") -> None:
+        """
+        ファイル名の提案設定を行います。
+        
+        Args:
+            base_name: ベースとなるファイル名
+            extension: 拡張子（ドット付き、例: ".csv"）
+        """
+        if not base_name:
+            # ベース名が空の場合はクリア
+            self.clear_filename()
+            return
+        
+        # 拡張子の正規化
+        if extension and not extension.startswith('.'):
+            extension = '.' + extension
+        
+        suggested = base_name + extension
+        self.text = suggested
+        
+        # カーソルを拡張子の前に移動（編集しやすく）
+        if extension:
+            cursor_pos = len(base_name)
+        else:
+            cursor_pos = len(suggested)
+        
+        self.cursor_position = cursor_pos
+    
+    def has_valid_filename(self) -> bool:
+        """
+        現在のテキストが有効なファイル名かどうかを確認します。
+        
+        Returns:
+            bool: 有効なファイル名の場合True
+        """
+        return self.get_edited_filename() is not None
+    
+    def clear_filename(self) -> None:
+        """
+        ファイル名をクリアします。
+        """
+        self.text = ""
+        self.cursor_position = 0

@@ -336,9 +336,8 @@ class FileLoadDialogJSON(BaseDialog):
             
             self._last_click_time = pyxel.frame_count
             
-            # ファイル名を入力フィールドに設定
-            if 'filename_input' in self.controls and selected.file_type == FileType.FILE:
-                self.controls['filename_input']['text'] = selected.name
+            # ファイル名を入力フィールドに設定（TextBoxControl APIを使用）
+            self.filename_textbox.set_filename_from_selection(selected)
     
     def _on_up_clicked(self):
         """「上へ」ボタンがクリックされたときの処理"""
@@ -356,8 +355,8 @@ class FileLoadDialogJSON(BaseDialog):
                 self.selected_file = selected.path
                 self.visible = False
         else:
-            # 入力フィールドからファイル名を取得
-            filename = self.controls.get('filename_input', {}).get('text', '').strip()
+            # TextBoxControlから編集されたファイル名を取得
+            filename = self.filename_textbox.get_edited_filename()
             if filename:
                 file_path = os.path.join(self.current_dir, filename)
                 if os.path.exists(file_path):
@@ -428,9 +427,8 @@ class FileLoadDialogJSON(BaseDialog):
             self.selected_index = new_index
             selected = self.filtered_files[new_index]
             
-            # ファイル名を入力フィールドに設定
-            if 'filename_input' in self.controls and selected.file_type == FileType.FILE:
-                self.controls['filename_input']['text'] = selected.name
+            # ファイル名を入力フィールドに設定（TextBoxControl APIを使用）
+            self.filename_textbox.set_filename_from_selection(selected)
             
             # スクロール位置を調整
             self._ensure_visible(new_index)
@@ -687,36 +685,8 @@ class FileLoadDialogJSON(BaseDialog):
                     if pyxel.btnp(key):
                         self.handle_key_input(key)
                 
-                # 包括的なキーボード入力処理
-                # TextBoxControlのinput_filterで文字フィルタリングを行うため、
-                # ここではすべての印字可能文字を送信
-                
-                # 英字入力処理
-                if hasattr(pyxel, 'KEY_A') and hasattr(pyxel, 'KEY_Z'):
-                    for key_code in range(pyxel.KEY_A, pyxel.KEY_Z + 1):
-                        if pyxel.btnp(key_code):
-                            char = chr(ord('a') + (key_code - pyxel.KEY_A))
-                            if pyxel.btn(pyxel.KEY_SHIFT):
-                                char = char.upper()
-                            self.handle_text_input(char)
-                
-                # 数字・記号入力処理
-                key_mappings = {
-                    pyxel.KEY_0: ('0', ')'), pyxel.KEY_1: ('1', '!'), pyxel.KEY_2: ('2', '@'),
-                    pyxel.KEY_3: ('3', '#'), pyxel.KEY_4: ('4', '$'), pyxel.KEY_5: ('5', '%'),
-                    pyxel.KEY_6: ('6', '^'), pyxel.KEY_7: ('7', '&'), pyxel.KEY_8: ('8', '*'),
-                    pyxel.KEY_9: ('9', '('), pyxel.KEY_PERIOD: ('.', '>'), pyxel.KEY_MINUS: ('-', '_'),
-                    pyxel.KEY_EQUALS: ('=', '+'), pyxel.KEY_COMMA: (',', '<'), pyxel.KEY_SLASH: ('/', '?'), 
-                    pyxel.KEY_SEMICOLON: (';', ':'), pyxel.KEY_QUOTE: ("'", '"'), 
-                    pyxel.KEY_LEFTBRACKET: ('[', '{'), pyxel.KEY_RIGHTBRACKET: (']', '}'), 
-                    pyxel.KEY_BACKSLASH: ('\\', '|'), pyxel.KEY_BACKQUOTE: ('`', '~'), 
-                    pyxel.KEY_SPACE: (' ', ' ')
-                }
-                
-                for key, (normal_char, shift_char) in key_mappings.items():
-                    if hasattr(pyxel, 'KEY_0') and pyxel.btnp(key):
-                        char = shift_char if pyxel.btn(pyxel.KEY_SHIFT) else normal_char
-                        self.handle_text_input(char)
+                # キーボード入力はTextBoxControlが自動処理（簡略化）
+                # 30行の複雑なキーボード処理を削除し、TextBoxControlに委譲
                 
                 # 画面をクリアして描画
                 pyxel.cls(pyxel.COLOR_BLACK)
