@@ -73,9 +73,27 @@ class PyPlcVer3:
         self.circuit_analyzer = CircuitAnalyzer(self.grid_system)
         self.device_palette = DevicePalette()  # デバイスパレット追加
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
-        # 新DialogManagerシステム（Phase C完全移行）
-        self.dialog_manager = DialogManager()  # DialogManager統合システム
-        self.file_manager = FileManager(self.csv_manager)  # ファイル管理システム
+        
+        # --- ダイアログシステム選択フラグ ---
+        # True: DialogManager_v3を使用（テスト用）
+        # False: 既存DialogManagerを使用（デフォルト）
+        self.use_dialogmanager_v3 = False  # TODO: 将来的にTrueに変更
+        
+        if self.use_dialogmanager_v3:
+            # DialogManager_v3システム（新機能テスト用）
+            try:
+                from DialogManager_v3 import FileManagerV3
+                self.file_manager = FileManagerV3(self.csv_manager)
+                print("[PyPlc] Using DialogManager_v3 system")
+            except ImportError as e:
+                print(f"[PyPlc] DialogManager_v3 import failed: {e}")
+                print("[PyPlc] Falling back to existing DialogManager")
+                self.dialog_manager = DialogManager()
+                self.file_manager = FileManager(self.csv_manager)
+        else:
+            # 既存DialogManagerシステム（Phase C完全移行）
+            self.dialog_manager = DialogManager()  # DialogManager統合システム
+            self.file_manager = FileManager(self.csv_manager)  # ファイル管理システム
         
         self.mouse_state: MouseState = MouseState()
 
@@ -124,15 +142,23 @@ class PyPlcVer3:
         # Ctrl+O: ファイル読み込みダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
             if self.current_mode == SimulatorMode.EDIT:
+                # 使用中のシステムを表示
+                system_name = "DialogManager_v3" if self.use_dialogmanager_v3 else "DialogManager"
+                print(f"[PyPlc] Opening file dialog using {system_name}")
+                
                 success = self.file_manager.show_load_dialog()
                 if success:
-                    self._show_status_message("File loaded successfully!", 3.0, "success")
+                    self._show_status_message(f"File loaded! ({system_name})", 3.0, "success")
                     # 読み込み後は回路を再解析
                     self.circuit_analyzer.solve_ladder()
                 else:
                     self._show_status_message("Load canceled or failed", 2.0, "error")
             else:
                 self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)
+        
+        # Ctrl+Shift+D: DialogManager切り替え（テスト用）
+        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btn(pyxel.KEY_SHIFT) and pyxel.btnp(pyxel.KEY_D):
+            self._toggle_dialog_system()
         
         # T, U, V, W: 古いテスト関数は削除済み - 新システムに統合済み
         if pyxel.btnp(pyxel.KEY_T):
@@ -297,6 +323,32 @@ class PyPlcVer3:
             # 将来的にタイマー、カウンターなども追加予定
         }
         return device.device_type in operable_types
+    
+    def _toggle_dialog_system(self) -> None:
+        """
+        ダイアログシステムをDialogManager <-> DialogManager_v3で切り替え
+        テスト用機能
+        """
+        try:
+            self.use_dialogmanager_v3 = not self.use_dialogmanager_v3
+            
+            if self.use_dialogmanager_v3:
+                # DialogManager_v3に切り替え
+                from DialogManager_v3 import FileManagerV3
+                self.file_manager = FileManagerV3(self.csv_manager)
+                self._show_status_message("Switched to DialogManager_v3", 3.0, "success")
+                print("[PyPlc] Switched to DialogManager_v3 system")
+            else:
+                # 既存DialogManagerに切り替え
+                self.dialog_manager = DialogManager()
+                self.file_manager = FileManager(self.csv_manager)
+                self._show_status_message("Switched to DialogManager", 3.0, "success")
+                print("[PyPlc] Switched to DialogManager system")
+                
+        except ImportError as e:
+            self._show_status_message("DialogManager_v3 not available", 3.0, "error")
+            print(f"[PyPlc] DialogManager_v3 import failed: {e}")
+            self.use_dialogmanager_v3 = False
     
     def _show_status_message(self, message: str, duration_seconds: float = 3.0, message_type: str = "info") -> None:
         """
@@ -596,7 +648,7 @@ class PyPlcVer3:
         
         # TABキーヒント表示（左端） - モード別表示
         if self.current_mode == SimulatorMode.EDIT:
-            tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load"
+            tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load Ctrl+Shift+D:DialogV3"
         else:
             tab_hint = "TAB:Mode F6:Reset F5:PLC [Save/Load: EDIT mode only]"
         pyxel.text(10, status_bar_y + 2, tab_hint, pyxel.COLOR_WHITE)
@@ -606,6 +658,13 @@ class PyPlcVer3:
         file_display = f"File: {current_file}"
         file_x = DisplayConfig.WINDOW_WIDTH - len(file_display) * 4 - 10  # 右端から10px余白
         pyxel.text(file_x, DisplayConfig.WINDOW_HEIGHT - 20, file_display, pyxel.COLOR_CYAN)
+        
+        # ダイアログシステム表示（右端）
+        dialog_system = "DialogV3" if self.use_dialogmanager_v3 else "Dialog"
+        dialog_display = f"[{dialog_system}]"
+        dialog_x = DisplayConfig.WINDOW_WIDTH - len(dialog_display) * 4 - 10
+        pyxel.text(dialog_x, DisplayConfig.WINDOW_HEIGHT - 8, dialog_display, 
+                  pyxel.COLOR_LIME if self.use_dialogmanager_v3 else pyxel.COLOR_WHITE)
         
         # ステータスメッセージ表示（画面下部）- 色分け対応
         if self.status_message:

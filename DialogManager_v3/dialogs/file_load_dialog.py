@@ -498,6 +498,46 @@ class FileLoadDialogJSON(BaseDialog):
         abs_y = self.y + ctrl['y']
         return (abs_x <= pyxel.mouse_x < abs_x + ctrl['width'] and 
                 abs_y <= pyxel.mouse_y < abs_y + ctrl['height'])
+    
+    def show_load_dialog(self) -> tuple:
+        """
+        既存FileManagerとの互換性のためのメソッド
+        ファイル読み込みダイアログを表示し、結果を返す
+        
+        Returns:
+            tuple: (success: bool, file_path: str)
+                success: ファイル選択が成功した場合True
+                file_path: 選択されたファイルのパス（失敗時は空文字列）
+        """
+        try:
+            # ダイアログを表示状態に設定
+            self.visible = True
+            self.cancelled = False
+            self.selected_file = None
+            
+            # メインループ（既存システムと同じ方式）
+            while self.visible:
+                self.update()
+                
+                # 画面をクリアして描画
+                pyxel.cls(pyxel.COLOR_BLACK)
+                self.draw()
+                pyxel.flip()
+                
+                # ESCキーで強制終了
+                if pyxel.btnp(pyxel.KEY_ESCAPE):
+                    self.cancelled = True
+                    self.visible = False
+            
+            # 結果を返す（既存FileManagerと同じインターフェース）
+            if self.cancelled or self.selected_file is None:
+                return False, ""  # キャンセル時
+            else:
+                return True, self.selected_file  # 成功時
+                
+        except Exception as e:
+            print(f"[FileLoadDialogJSON] Error in show_load_dialog: {e}")
+            return False, ""
 
 def show_file_load_dialog(
     initial_dir: Optional[str] = None,

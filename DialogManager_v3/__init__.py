@@ -10,6 +10,7 @@ __version__ = "0.1.0"
 
 # 主要なクラスと関数を公開
 from .core.base_dialog import BaseDialog
+from .core.file_manager_v3 import FileManagerV3
 from .control_factory import ControlFactory, factory
 from .json_dialog_loader import JsonDialogLoader, dialog_loader
 
@@ -28,6 +29,7 @@ __all__ = [
     # コアクラス
     'BaseDialog',
     'Dialog',
+    'FileManagerV3',
     'ControlFactory',
     'factory',
     'JsonDialogLoader',
