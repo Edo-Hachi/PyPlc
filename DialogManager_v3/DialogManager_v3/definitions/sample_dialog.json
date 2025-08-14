@@ -1,0 +1,27 @@
+{
+  "title": "サンプルダイアログ",
+  "width": 300,
+  "height": 200,
+  "modal": true,
+  "controls": [
+    {
+      "type": "label",
+      "id": "lbl_message",
+      "x": 20,
+      "y": 20,
+      "text": "こんにちは、これはサンプルダイアログです",
+      "color": 7
+    },
+    {
+      "type": "button",
+      "id": "btn_ok",
+      "x": 100,
+      "y": 150,
+      "width": 80,
+      "height": 24,
+      "text": "OK",
+      "color": 5,
+      "hover_color": 13
+    }
+  ]
+}
