@@ -4,8 +4,13 @@
 ユーザーがテキストを入力・編集できるテキストボックスコンポーネントを提供します。
 """
 import time
+import pyxel
 from typing import Optional, Dict, Any, List, Tuple
 from .control_base import ControlBase
+
+# Pyxelのデフォルトフォントサイズ定数
+PYXEL_FONT_WIDTH = 4  # 1文字の幅（ピクセル）
+PYXEL_FONT_HEIGHT = 6  # 1文字の高さ（ピクセル）
 
 
 class TextBoxControl(ControlBase):
@@ -15,7 +20,8 @@ class TextBoxControl(ControlBase):
     ユーザーがテキストを入力・編集できるテキストボックスを表示します。
     """
     
-    def __init__(self, x: int, y: int, width: int, text: str = "", **kwargs):
+    def __init__(self, x: int, y: int, width: int, text: str = "", 
+                 input_filter: str = "normal", **kwargs):
         """
         テキストボックスコントロールを初期化します。
         
@@ -24,6 +30,7 @@ class TextBoxControl(ControlBase):
             y: Y座標
             width: テキストボックスの幅
             text: 初期テキスト
+            input_filter: 入力フィルター ("normal", "filename_safe", "numeric_only")
             **kwargs: 追加のプロパティ
         """
         # デフォルトの高さを設定
@@ -45,6 +52,9 @@ class TextBoxControl(ControlBase):
         self._readonly = kwargs.get('readonly', False)
         self._password_char = kwargs.get('password_char', None)  # パスワード表示用の文字
         self.can_focus = True
+        
+        # 入力フィルター設定
+        self._input_filter = input_filter
         
         # テキストの表示開始位置（スクロール用）
         self._scroll_offset = 0
@@ -209,6 +219,10 @@ class TextBoxControl(ControlBase):
         # 最大文字数チェック
         if self._max_length > 0 and len(self._text) >= self._max_length:
             return False
+        
+        # 入力フィルターチェック
+        if not self._is_character_allowed(char):
+            return False
             
         # 選択範囲がある場合は削除
         if self._has_selection():
@@ -265,22 +279,20 @@ class TextBoxControl(ControlBase):
         y = offset_y + self.y
         
         # テキストボックスの背景を描画
-        # 実際のPyxelのAPIに合わせて調整が必要
-        # pyxel.rect(x, y, self.width, self.height, self._bg_color)
-        # pyxel.rectb(x, y, self.width, self.height, 7)  # 白い枠
+        pyxel.rect(x, y, self.width, self.height, pyxel.COLOR_BLACK)
+        pyxel.rectb(x, y, self.width, self.height, pyxel.COLOR_WHITE)  # 白い枠
         
         # フォーカスがある場合はハイライト
         if self.parent and self.parent.focused_control == self:
-            # pyxel.rectb(x-1, y-1, self.width+2, self.height+2, 7)  # フォーカス枠
-            pass
+            pyxel.rectb(x-1, y-1, self.width+2, self.height+2, pyxel.COLOR_YELLOW)  # フォーカス枠
         
         # テキストを描画
         text = self._get_display_text()
         text_x = x + 4  # 左パディング
         text_y = y + (self.height - 8) // 2  # 垂直中央揃え
         
-        # 実際のPyxelのAPIに合わせて調整が必要
-        # pyxel.text(text_x, text_y, text, self._color)
+        # テキストを描画
+        pyxel.text(text_x, text_y, text, pyxel.COLOR_WHITE)
         
         # 選択範囲を描画
         if self._has_selection() and self._selection_start is not None and self._selection_end is not None:
@@ -292,7 +304,7 @@ class TextBoxControl(ControlBase):
             cursor_x = x + 4 + self._get_text_width(text[:self._cursor_pos])
             cursor_y = y + 2
             cursor_height = self.height - 4
-            # pyxel.line(cursor_x, cursor_y, cursor_x, cursor_y + cursor_height - 1, 7)  # 白い縦線
+            pyxel.line(cursor_x, cursor_y, cursor_x, cursor_y + cursor_height - 1, pyxel.COLOR_WHITE)  # 白い縦線
     
     def _get_display_text(self) -> str:
         """表示用のテキストを取得します。"""
@@ -302,7 +314,7 @@ class TextBoxControl(ControlBase):
     
     def _get_text_width(self, text: str) -> int:
         """テキストの表示幅を取得します。"""
-        return len(text) * 6  # 1文字6ピクセルを仮定
+        return len(text) * PYXEL_FONT_WIDTH
     
     def _update_cursor_position(self, local_x: int) -> None:
         """クリック位置に基づいてカーソル位置を更新します。"""
@@ -317,7 +329,7 @@ class TextBoxControl(ControlBase):
         # 各文字の右端の位置を計算して、クリック位置を超える最初の位置を見つける
         total_width = 0
         for i, char in enumerate(text):
-            char_width = 6  # 1文字6ピクセルを仮定
+            char_width = PYXEL_FONT_WIDTH
             if total_width + char_width / 2 > click_x:
                 self.cursor_position = i
                 return
@@ -377,3 +389,92 @@ class TextBoxControl(ControlBase):
         self._selection_start = None
         self._selection_end = None
         self._dirty = True
+    
+    def _is_character_allowed(self, char: str) -> bool:
+        """
+        入力フィルターに基づいて文字が許可されるかチェックします。
+        
+        Args:
+            char: チェックする文字
+            
+        Returns:
+            bool: 文字が許可される場合True
+        """
+        if self._input_filter == "normal":
+            # 通常モード：すべての印字可能文字を許可
+            return len(char) == 1 and (char.isprintable() or char == '\t')
+        
+        elif self._input_filter == "filename_safe":
+            # ファイル名安全モード：ファイル名に適した文字のみ許可
+            return self._is_filename_safe_character(char)
+        
+        elif self._input_filter == "numeric_only":
+            # 数値のみモード：数字、小数点、符号のみ許可
+            return char in "0123456789.-+"
+        
+        else:
+            # 未知のフィルター：通常モードと同じ
+            return len(char) == 1 and (char.isprintable() or char == '\t')
+    
+    def _is_filename_safe_character(self, char: str) -> bool:
+        """
+        ファイル名に安全な文字かどうかをチェックします。
+        
+        Args:
+            char: チェックする文字
+            
+        Returns:
+            bool: ファイル名に安全な文字の場合True
+        """
+        # 基本文字（英数字・スペース）
+        if char.isalnum() or char == ' ':
+            return True
+        
+        # 安全な記号
+        safe_symbols = {
+            '.', '-', '_', ',', '/', '?', ';', ':', "'", '"',
+            '[', '{', ']', '}', '\\', '|', '`', '~'
+        }
+        
+        # Shift+数字の記号
+        shift_number_symbols = {
+            '!', '@', '#', '$', '%', '^', '&', '*', '(', ')'
+        }
+        
+        # 危険な文字（除外）
+        unsafe_chars = {'=', '+', '<', '>'}
+        
+        if char in unsafe_chars:
+            return False
+        
+        return char in safe_symbols or char in shift_number_symbols
+    
+    @property
+    def input_filter(self) -> str:
+        """入力フィルターを取得します。"""
+        return self._input_filter
+    
+    @input_filter.setter
+    def input_filter(self, value: str) -> None:
+        """入力フィルターを設定します。"""
+        valid_filters = {"normal", "filename_safe", "numeric_only"}
+        if value in valid_filters:
+            self._input_filter = value
+        else:
+            raise ValueError(f"Invalid input_filter: {value}. Must be one of {valid_filters}")
+    
+    def get_allowed_characters(self) -> str:
+        """
+        現在の入力フィルターで許可される文字の説明を返します。
+        
+        Returns:
+            str: 許可される文字の説明
+        """
+        if self._input_filter == "normal":
+            return "すべての印字可能文字"
+        elif self._input_filter == "filename_safe":
+            return "ファイル名安全文字（A-Z, a-z, 0-9, . - _ , / ? ; : ' \" [ { ] } \\ | ` ~ ! @ # $ % ^ & * ( )）"
+        elif self._input_filter == "numeric_only":
+            return "数値文字（0-9, ., -, +）"
+        else:
+            return "不明なフィルター"

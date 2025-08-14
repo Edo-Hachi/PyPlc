@@ -10,6 +10,7 @@ from pathlib import Path
 from ..core.base_dialog import BaseDialog
 from ..control_factory import ControlFactory
 from ..json_dialog_loader import JsonDialogLoader
+from ..controls.textbox_control import TextBoxControl
 from ..filesystem import (
     FileSystemError,
     FileType,
@@ -32,8 +33,8 @@ class FileLoadDialogJSON(BaseDialog):
                  initial_dir: Optional[str] = None, 
                  file_pattern: str = "*",
                  title: str = "Open File",
-                 width: int = 480,
-                 height: int = 320):
+                 width: int = 340,
+                 height: int = 280):
         """
         ファイルロードダイアログの初期化
         
@@ -70,7 +71,7 @@ class FileLoadDialogJSON(BaseDialog):
         self.controls['path_label'] = {
             'type': 'label',
             'x': 10,
-            'y': 10,
+            'y': 30, #10,
             'text': 'Folder:',
             'color': 7
         }
@@ -78,7 +79,7 @@ class FileLoadDialogJSON(BaseDialog):
         self.controls['path_text'] = {
             'type': 'textbox',
             'x': 60,
-            'y': 8,
+            'y': 20, # 8,
             'width': self.width - 140,
             'height': 18,
             'text': self.current_dir,
@@ -90,7 +91,7 @@ class FileLoadDialogJSON(BaseDialog):
         self.controls['up_button'] = {
             'type': 'button',
             'x': self.width - 70,
-            'y': 8,
+            'y': 20, # 8,
             'width': 60,
             'height': 18,
             'text': 'Up',
@@ -103,7 +104,8 @@ class FileLoadDialogJSON(BaseDialog):
             'x': 10,
             'y': 40,
             'width': self.width - 20,
-            'height': self.height - 120,
+            'height': self.height - 140,
+            #'height': self.height - 120,
             'items': [],
             'id': 'file_list'
         }
@@ -112,19 +114,29 @@ class FileLoadDialogJSON(BaseDialog):
         self.controls['filter_label'] = {
             'type': 'label',
             'x': 10,
-            'y': self.height - 70,
+            'y': self.height - 90,
+            #'y': self.height - 70,
             'text': 'File Type:',
             'color': 7
         }
         
+        # 初期フィルター選択の決定
+        filter_items = ['All Files (*.*)', 'Text Files (*.txt)', 'CSV Files (*.csv)', 'Image Files (*.png, *.jpg)']
+        initial_filter_index = 0
+        
+        # CSVファイルパターンの場合はCSVフィルターを初期選択
+        if self.file_pattern.lower() == "*.csv":
+            initial_filter_index = 2
+        
         self.controls['filter_combo'] = {
             'type': 'dropdown',
-            'x': 100,
-            'y': self.height - 72,
-            'width': 200,
+            'x': 80,
+            'y': self.height - 92,
+            #'y': self.height - 72,
+            'width': min(150, self.width - 100),  # 小さなダイアログに適応
             'height': 20,
-            'items': ['All Files (*.*)', 'Text Files (*.txt)', 'CSV Files (*.csv)', 'Image Files (*.png, *.jpg)'],
-            'selected_index': 0,
+            'items': filter_items,
+            'selected_index': initial_filter_index,
             'id': 'filter_combo'
         }
         
@@ -132,38 +144,40 @@ class FileLoadDialogJSON(BaseDialog):
         self.controls['filename_label'] = {
             'type': 'label',
             'x': 10,
-            'y': self.height - 40,
+            'y': self.height - 60,
+            #'y': self.height - 40,
             'text': 'File Name:',
             'color': 7
         }
         
         self.controls['filename_input'] = {
             'type': 'textbox',
-            'x': 100,
-            'y': self.height - 42,
-            'width': self.width - 210,
+            'x': 80,
+            'y': self.height - 62,
+            #'y': self.height - 42,
+            'width': self.width - 160,  # ボタン幅を考慮した調整
             'height': 20,
             'text': '',
             'id': 'filename_input'
         }
         
-        # ボタン
+        # ボタン（小さなダイアログ用に調整）
         self.controls['open_button'] = {
             'type': 'button',
-            'x': self.width - 200,
-            'y': self.height - 80,
-            'width': 90,
-            'height': 28,
+            'x': self.width - 160,
+            'y': self.height - 35,
+            'width': 70,
+            'height': 25,
             'text': 'Open',
             'id': 'open_button'
         }
         
         self.controls['cancel_button'] = {
             'type': 'button',
-            'x': self.width - 100,
-            'y': self.height - 80,
-            'width': 90,
-            'height': 28,
+            'x': self.width - 80,
+            'y': self.height - 35,
+            'width': 70,
+            'height': 25,
             'text': 'Cancel',
             'id': 'cancel_button'
         }
@@ -171,6 +185,27 @@ class FileLoadDialogJSON(BaseDialog):
         # ダイアログ結果
         self.selected_file = None
         self.cancelled = False
+        
+        # 実際のTextBoxControlインスタンスを作成（filename_safeモード使用）
+        self.filename_textbox = TextBoxControl(
+            x=self.controls['filename_input']['x'],
+            y=self.controls['filename_input']['y'],
+            width=self.controls['filename_input']['width'],
+            text=self.controls['filename_input']['text'],
+            height=self.controls['filename_input']['height'],
+            input_filter="filename_safe"
+        )
+        self.filename_textbox.parent = self  # 親ダイアログを設定
+        
+        # BaseDialogのcontrolsリストにTextBoxControlを追加
+        # BaseDialogのcontrolsはリストであることが期待される
+        base_controls = getattr(BaseDialog, 'controls', [])
+        if not hasattr(self, '_base_controls'):
+            self._base_controls = []
+        self._base_controls.append(self.filename_textbox)
+        
+        # 初期フォーカスをTextBoxControlに設定
+        self.focused_control = self.filename_textbox
         
         # 初期状態では非表示
         self.visible = False
@@ -204,8 +239,19 @@ class FileLoadDialogJSON(BaseDialog):
             
             # ファイル名パターンフィルターを適用
             if self.file_pattern != "*":
-                pattern = self.file_pattern.lstrip('*')
-                files = [f for f in files if f.name.endswith(pattern)]
+                filtered_files = []
+                
+                # 複数パターンに対応（例: "*.png,*.jpg"）
+                patterns = self.file_pattern.split(',')
+                
+                for file_info in files:
+                    for pattern in patterns:
+                        pattern = pattern.strip().lstrip('*.')
+                        if pattern and file_info.name.lower().endswith('.' + pattern.lower()):
+                            filtered_files.append(file_info)
+                            break  # 一つでもマッチしたらこのファイルを含める
+                
+                files = filtered_files
             
             # 結合してソート（ディレクトリ→ファイル、名前順）
             self.filtered_files = sorted(
@@ -251,6 +297,12 @@ class FileLoadDialogJSON(BaseDialog):
         listbox = self.controls.get('file_list')
         if listbox and self._is_point_in_rect(x, y, listbox):
             self._on_file_selected(x, y, listbox)
+            return
+        
+        # ドロップダウンクリックを処理
+        filter_combo = self.controls.get('filter_combo')
+        if filter_combo and self._is_point_in_rect(x, y, filter_combo):
+            self._on_filter_changed()
             return
         
         # ボタンクリックを処理
@@ -316,6 +368,43 @@ class FileLoadDialogJSON(BaseDialog):
         """「キャンセル」ボタンがクリックされたときの処理"""
         self.cancelled = True
         self.visible = False
+    
+    def _on_filter_changed(self):
+        """ファイルフィルターが変更されたときの処理"""
+        try:
+            filter_combo = self.controls.get('filter_combo')
+            if not filter_combo:
+                return
+            
+            # ドロップダウンの選択を循環させる（簡易実装）
+            current_index = filter_combo.get('selected_index', 0)
+            items = filter_combo.get('items', [])
+            
+            if items:
+                new_index = (current_index + 1) % len(items)
+                filter_combo['selected_index'] = new_index
+                
+                # フィルターパターンを更新
+                self._update_filter_pattern(new_index)
+                
+                # ファイルリストを再フィルタリング
+                self._apply_filters()
+                
+                print(f"[FileDialog] Filter changed to: {items[new_index]}")
+        
+        except Exception as e:
+            print(f"[FileDialog] Error in filter change: {e}")
+    
+    def _update_filter_pattern(self, filter_index: int):
+        """フィルターインデックスに基づいてfile_patternを更新"""
+        filter_patterns = {
+            0: "*",           # All Files (*.*) 
+            1: "*.txt",       # Text Files (*.txt)
+            2: "*.csv",       # CSV Files (*.csv)  
+            3: "*.png,*.jpg"  # Image Files (*.png, *.jpg)
+        }
+        
+        self.file_pattern = filter_patterns.get(filter_index, "*")
     
     def _change_directory(self, new_dir: str):
         """ディレクトリを変更"""
@@ -393,7 +482,14 @@ class FileLoadDialogJSON(BaseDialog):
                     ctrl.get('color', pyxel.COLOR_WHITE)
                 )
             elif ctrl['type'] == 'textbox':
-                self._draw_textbox(ctrl)
+                if ctrl['id'] == 'filename_input':
+                    # 実際のTextBoxControlを使用
+                    self.filename_textbox.draw(self.x, self.y)
+                else:
+                    # その他のテキストボックスは従来の描画
+                    self._draw_textbox(ctrl)
+            elif ctrl['type'] == 'dropdown':
+                self._draw_dropdown(ctrl)
             elif ctrl['type'] == 'button':
                 self._draw_button(ctrl)
     
@@ -409,6 +505,33 @@ class FileLoadDialogJSON(BaseDialog):
         # テキスト
         text = ctrl.get('text', '')
         pyxel.text(x + 4, y + 4, text, pyxel.COLOR_WHITE)
+    
+    def _draw_dropdown(self, ctrl: Dict):
+        """ドロップダウンを描画"""
+        x = self.x + ctrl['x']
+        y = self.y + ctrl['y']
+        
+        # ドロップダウンボックス
+        pyxel.rect(x, y, ctrl['width'], ctrl['height'], pyxel.COLOR_DARK_BLUE)
+        pyxel.rectb(x, y, ctrl['width'], ctrl['height'], pyxel.COLOR_WHITE)
+        
+        # 選択中のテキストを表示
+        items = ctrl.get('items', [])
+        selected_index = ctrl.get('selected_index', 0)
+        
+        if 0 <= selected_index < len(items):
+            selected_text = items[selected_index]
+            # テキストが長すぎる場合は短縮
+            max_chars = (ctrl['width'] - 20) // 4  # 1文字4px想定
+            if len(selected_text) > max_chars:
+                selected_text = selected_text[:max_chars-3] + "..."
+            
+            pyxel.text(x + 4, y + 4, selected_text, pyxel.COLOR_WHITE)
+        
+        # ドロップダウン矢印（簡易表現）
+        arrow_x = x + ctrl['width'] - 12
+        arrow_y = y + 8
+        pyxel.text(arrow_x, arrow_y, "v", pyxel.COLOR_WHITE)
     
     def _draw_button(self, ctrl: Dict):
         """ボタンを描画"""
@@ -499,6 +622,46 @@ class FileLoadDialogJSON(BaseDialog):
         return (abs_x <= pyxel.mouse_x < abs_x + ctrl['width'] and 
                 abs_y <= pyxel.mouse_y < abs_y + ctrl['height'])
     
+    def handle_key_input(self, key: int) -> bool:
+        """
+        キーボード入力を処理
+        
+        Args:
+            key: 押されたキーのコード
+            
+        Returns:
+            bool: イベントが処理された場合True
+        """
+        # BaseDialogのhandle_key_inputメソッドを呼び出し
+        if hasattr(super(), 'handle_key_input'):
+            return super().handle_key_input(key)
+        
+        # フォーカスされたコントロールにキーイベントを転送
+        if self.focused_control and hasattr(self.focused_control, 'on_key'):
+            return self.focused_control.on_key(key)
+        
+        return False
+    
+    def handle_text_input(self, char: str) -> bool:
+        """
+        テキスト入力を処理
+        
+        Args:
+            char: 入力された文字
+            
+        Returns:
+            bool: イベントが処理された場合True
+        """
+        # BaseDialogのhandle_text_inputメソッドを呼び出し
+        if hasattr(super(), 'handle_text_input'):
+            return super().handle_text_input(char)
+        
+        # フォーカスされたコントロールにテキスト入力を転送
+        if self.focused_control and hasattr(self.focused_control, 'on_text'):
+            return self.focused_control.on_text(char)
+        
+        return False
+    
     def show_load_dialog(self) -> tuple:
         """
         既存FileManagerとの互換性のためのメソッド
@@ -518,6 +681,42 @@ class FileLoadDialogJSON(BaseDialog):
             # メインループ（既存システムと同じ方式）
             while self.visible:
                 self.update()
+                
+                # キーボードイベント処理
+                for key in range(256):
+                    if pyxel.btnp(key):
+                        self.handle_key_input(key)
+                
+                # 包括的なキーボード入力処理
+                # TextBoxControlのinput_filterで文字フィルタリングを行うため、
+                # ここではすべての印字可能文字を送信
+                
+                # 英字入力処理
+                if hasattr(pyxel, 'KEY_A') and hasattr(pyxel, 'KEY_Z'):
+                    for key_code in range(pyxel.KEY_A, pyxel.KEY_Z + 1):
+                        if pyxel.btnp(key_code):
+                            char = chr(ord('a') + (key_code - pyxel.KEY_A))
+                            if pyxel.btn(pyxel.KEY_SHIFT):
+                                char = char.upper()
+                            self.handle_text_input(char)
+                
+                # 数字・記号入力処理
+                key_mappings = {
+                    pyxel.KEY_0: ('0', ')'), pyxel.KEY_1: ('1', '!'), pyxel.KEY_2: ('2', '@'),
+                    pyxel.KEY_3: ('3', '#'), pyxel.KEY_4: ('4', '$'), pyxel.KEY_5: ('5', '%'),
+                    pyxel.KEY_6: ('6', '^'), pyxel.KEY_7: ('7', '&'), pyxel.KEY_8: ('8', '*'),
+                    pyxel.KEY_9: ('9', '('), pyxel.KEY_PERIOD: ('.', '>'), pyxel.KEY_MINUS: ('-', '_'),
+                    pyxel.KEY_EQUALS: ('=', '+'), pyxel.KEY_COMMA: (',', '<'), pyxel.KEY_SLASH: ('/', '?'), 
+                    pyxel.KEY_SEMICOLON: (';', ':'), pyxel.KEY_QUOTE: ("'", '"'), 
+                    pyxel.KEY_LEFTBRACKET: ('[', '{'), pyxel.KEY_RIGHTBRACKET: (']', '}'), 
+                    pyxel.KEY_BACKSLASH: ('\\', '|'), pyxel.KEY_BACKQUOTE: ('`', '~'), 
+                    pyxel.KEY_SPACE: (' ', ' ')
+                }
+                
+                for key, (normal_char, shift_char) in key_mappings.items():
+                    if hasattr(pyxel, 'KEY_0') and pyxel.btnp(key):
+                        char = shift_char if pyxel.btn(pyxel.KEY_SHIFT) else normal_char
+                        self.handle_text_input(char)
                 
                 # 画面をクリアして描画
                 pyxel.cls(pyxel.COLOR_BLACK)

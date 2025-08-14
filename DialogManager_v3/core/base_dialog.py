@@ -167,6 +167,24 @@ class BaseDialog:
         # フォーカスされたコントロールにキー入力を転送
         return self.focused_control.on_key(key)
     
+    def handle_text_input(self, char: str) -> bool:
+        """
+        テキスト入力イベントを処理します。
+        
+        Args:
+            char: 入力された文字
+            
+        Returns:
+            bool: イベントが処理された場合はTrue、それ以外はFalse
+        """
+        if not self.visible or not self.focused_control:
+            return False
+            
+        # フォーカスされたコントロールにテキスト入力を転送
+        if hasattr(self.focused_control, 'on_text'):
+            return self.focused_control.on_text(char)
+        return False
+    
     def update(self) -> None:
         """
         ダイアログの状態を更新します。

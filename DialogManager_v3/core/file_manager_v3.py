@@ -43,10 +43,13 @@ class FileManagerV3:
         """
         try:
             # DialogManager_v3のFileLoadDialogJSONを使用
+            # PyPlc Ver3ウィンドウサイズ（384x384）に適したサイズで作成
             dialog = FileLoadDialogJSON(
                 initial_dir=self.base_directory,
                 file_pattern="*.csv",  # CSVファイルのみ表示
-                title="Load Circuit File"
+                title="Load Circuit File",
+                width=340,   # PyPlc Ver3に適したサイズ
+                height=280   # PyPlc Ver3に適したサイズ
             )
             
             # ダイアログ表示
