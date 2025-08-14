@@ -58,6 +58,9 @@ class TextBoxControl(ControlBase):
         
         # テキストの表示開始位置（スクロール用）
         self._scroll_offset = 0
+        
+        # キーマッピング辞書（キーコード → (通常文字, Shift文字)）
+        self._key_mappings = self._create_key_mappings()
     
     @property
     def text(self) -> str:
@@ -478,3 +481,24 @@ class TextBoxControl(ControlBase):
             return "数値文字（0-9, ., -, +）"
         else:
             return "不明なフィルター"
+    
+    def _create_key_mappings(self) -> Dict[int, Tuple[str, str]]:
+        """
+        キーマッピング辞書を作成します。
+        
+        Returns:
+            Dict[int, Tuple[str, str]]: キーコード → (通常文字, Shift文字)
+        """
+        import pyxel
+        
+        return {
+            pyxel.KEY_0: ('0', ')'), pyxel.KEY_1: ('1', '!'), pyxel.KEY_2: ('2', '@'),
+            pyxel.KEY_3: ('3', '#'), pyxel.KEY_4: ('4', '$'), pyxel.KEY_5: ('5', '%'),
+            pyxel.KEY_6: ('6', '^'), pyxel.KEY_7: ('7', '&'), pyxel.KEY_8: ('8', '*'),
+            pyxel.KEY_9: ('9', '('), pyxel.KEY_PERIOD: ('.', '>'), pyxel.KEY_MINUS: ('-', '_'),
+            pyxel.KEY_EQUALS: ('=', '+'), pyxel.KEY_COMMA: (',', '<'), pyxel.KEY_SLASH: ('/', '?'), 
+            pyxel.KEY_SEMICOLON: (';', ':'), pyxel.KEY_QUOTE: ("'", '"'), 
+            pyxel.KEY_LEFTBRACKET: ('[', '{'), pyxel.KEY_RIGHTBRACKET: (']', '}'), 
+            pyxel.KEY_BACKSLASH: ('\\', '|'), pyxel.KEY_BACKQUOTE: ('`', '~'), 
+            pyxel.KEY_SPACE: (' ', ' ')
+        }
