@@ -3,6 +3,7 @@
 
 JSON定義からコントロールを動的に生成するためのファクトリクラスを提供します。
 """
+import pyxel
 from typing import Dict, Any, Type, Optional, List, TypeVar, Generic
 from .controls.control_base import ControlBase
 from .controls.label_control import LabelControl
@@ -111,20 +112,20 @@ class ControlFactory:
         if control_type == 'label':
             properties.update({
                 'text': control_def.get('text', ''),
-                'color': control_def.get('color', 7),  # デフォルトは白
+                'color': control_def.get('color', pyxel.COLOR_WHITE),  # デフォルトは白
                 'shadow': control_def.get('shadow', False),
-                'shadow_color': control_def.get('shadow_color', 0),  # デフォルトは黒
+                'shadow_color': control_def.get('shadow_color', pyxel.COLOR_BLACK),  # デフォルトは黒
                 'align': control_def.get('align', 'left'),  # left, center, right
             })
         
         elif control_type == 'button':
             properties.update({
                 'text': control_def.get('text', 'Button'),
-                'color': control_def.get('color', 7),  # デフォルトは白
-                'bg_color': control_def.get('bg_color', 5),  # デフォルトは紫
-                'hover_color': control_def.get('hover_color', 3),  # デフォルトは水色
-                'pressed_color': control_def.get('pressed_color', 8),  # デフォルトは赤紫
-                'disabled_color': control_def.get('disabled_color', 13),  # デフォルトは灰色
+                'color': control_def.get('color', pyxel.COLOR_WHITE),  # デフォルトは白
+                'bg_color': control_def.get('bg_color', pyxel.COLOR_DARK_BLUE),  # デフォルトは濃青
+                'hover_color': control_def.get('hover_color', pyxel.COLOR_GREEN),  # デフォルトは緑
+                'pressed_color': control_def.get('pressed_color', pyxel.COLOR_RED),  # デフォルトは赤
+                'disabled_color': control_def.get('disabled_color', pyxel.COLOR_GRAY),  # デフォルトは灰色
             })
         
         elif control_type == 'textbox':
@@ -132,10 +133,10 @@ class ControlFactory:
                 'text': control_def.get('text', ''),
                 'max_length': control_def.get('max_length', 255),
                 'placeholder': control_def.get('placeholder', ''),
-                'color': control_def.get('color', 7),  # デフォルトは白
-                'bg_color': control_def.get('bg_color', 0),  # デフォルトは黒
-                'cursor_color': control_def.get('cursor_color', 7),  # デフォルトは白
-                'selection_color': control_def.get('selection_color', 4),  # デフォルトは青
+                'color': control_def.get('color', pyxel.COLOR_WHITE),  # デフォルトは白
+                'bg_color': control_def.get('bg_color', pyxel.COLOR_BLACK),  # デフォルトは黒
+                'cursor_color': control_def.get('cursor_color', pyxel.COLOR_WHITE),  # デフォルトは白
+                'selection_color': control_def.get('selection_color', pyxel.COLOR_BROWN),  # デフォルトは茶
                 'readonly': control_def.get('readonly', False),
                 'password_char': control_def.get('password_char', ''),  # パスワード表示用の文字
             })
@@ -145,10 +146,10 @@ class ControlFactory:
                 'items': control_def.get('items', []),
                 'selected_index': control_def.get('selected_index', -1),
                 'button_text': control_def.get('button_text', 'Select...'),
-                'color': control_def.get('color', 7),  # デフォルトは白
-                'bg_color': control_def.get('bg_color', 5),  # デフォルトは紫
-                'hover_color': control_def.get('hover_color', 3),  # デフォルトは水色
-                'disabled_color': control_def.get('disabled_color', 13),  # デフォルトは灰色
+                'color': control_def.get('color', pyxel.COLOR_WHITE),  # デフォルトは白
+                'bg_color': control_def.get('bg_color', pyxel.COLOR_DARK_BLUE),  # デフォルトは濃青
+                'hover_color': control_def.get('hover_color', pyxel.COLOR_GREEN),  # デフォルトは緑
+                'disabled_color': control_def.get('disabled_color', pyxel.COLOR_GRAY),  # デフォルトは灰色
                 'item_height': control_def.get('item_height', 20),
                 'max_visible_items': control_def.get('max_visible_items', 5),
             })
@@ -157,10 +158,10 @@ class ControlFactory:
             properties.update({
                 'items': control_def.get('items', []),
                 'selected_index': control_def.get('selected_index', -1),
-                'color': control_def.get('color', 7),  # デフォルトは白
-                'bg_color': control_def.get('bg_color', 0),  # デフォルトは黒
-                'hover_color': control_def.get('hover_color', 1),  # デフォルトは青
-                'selection_color': control_def.get('selection_color', 4),  # デフォルトは青
+                'color': control_def.get('color', pyxel.COLOR_WHITE),  # デフォルトは白
+                'bg_color': control_def.get('bg_color', pyxel.COLOR_BLACK),  # デフォルトは黒
+                'hover_color': control_def.get('hover_color', pyxel.COLOR_NAVY),  # デフォルトは濃青
+                'selection_color': control_def.get('selection_color', pyxel.COLOR_BROWN),  # デフォルトは茶
                 'item_height': control_def.get('item_height', 20),
                 'multi_select': control_def.get('multi_select', False),
             })

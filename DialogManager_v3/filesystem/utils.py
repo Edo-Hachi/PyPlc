@@ -3,12 +3,13 @@ File system utilities for DialogManager_v3
 
 Provides higher-level file operations and utilities on top of the file system abstraction.
 """
+import os
 from typing import List, Optional, Callable, Dict, Any, Union, Tuple
 from pathlib import Path
 import fnmatch
 import re
 from datetime import datetime
-from . import FileInfo, FileType, fs
+from . import FileInfo, FileType, fs, FileSystemError
 
 class FileFilter:
     """File filtering utilities"""
