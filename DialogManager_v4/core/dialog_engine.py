@@ -14,7 +14,7 @@ from .action_engine import ActionEngine
 from .event_binder import EventBinder
 from .coordinate_system import CoordinateSystem
 from .base_dialog import BaseDialog
-from ..controls import LabelControl, ButtonControl
+from ..controls import LabelControl, ButtonControl, TextBoxControl, DropdownControl, ListBoxControl
 
 
 class DialogEngine:
@@ -162,20 +162,85 @@ class DialogEngine:
         
         if control_type == "label":
             text = control_def.get("text", "")
-            color = control_def.get("color", 7)
+            color = self._resolve_color(control_def.get("color", pyxel.COLOR_WHITE))
             return LabelControl(x, y, text, color, visible=visible, enabled=enabled)
         
         elif control_type == "button":
             text = control_def.get("text", "")
-            color = control_def.get("color", 7)
-            bg_color = control_def.get("bg_color", 5)
+            color = self._resolve_color(control_def.get("color", pyxel.COLOR_WHITE))
+            bg_color = self._resolve_color(control_def.get("bg_color", pyxel.COLOR_GRAY))
             return ButtonControl(x, y, width, height, text, color, bg_color, 
                                visible=visible, enabled=enabled)
+        
+        elif control_type == "textbox":
+            text = control_def.get("text", "")
+            color = self._resolve_color(control_def.get("color", pyxel.COLOR_WHITE))
+            bg_color = self._resolve_color(control_def.get("bg_color", pyxel.COLOR_LIGHT_BLUE))
+            readonly = control_def.get("readonly", False)
+            placeholder = control_def.get("placeholder", "")
+            return TextBoxControl(x, y, width, height, text, color, bg_color, 
+                                readonly, placeholder, visible=visible, enabled=enabled)
+        
+        elif control_type == "dropdown":
+            items = control_def.get("items", [])
+            selected_index = control_def.get("selected_index", 0)
+            color = self._resolve_color(control_def.get("color", pyxel.COLOR_WHITE))
+            bg_color = self._resolve_color(control_def.get("bg_color", pyxel.COLOR_LIGHT_BLUE))
+            return DropdownControl(x, y, width, height, items, selected_index, 
+                                 color, bg_color, visible=visible, enabled=enabled)
+        
+        elif control_type == "listbox":
+            items = control_def.get("items", [])
+            selected_index = control_def.get("selected_index", -1)
+            color = self._resolve_color(control_def.get("color", pyxel.COLOR_WHITE))
+            bg_color = self._resolve_color(control_def.get("bg_color", pyxel.COLOR_BLACK))
+            item_height = control_def.get("item_height", 12)
+            return ListBoxControl(x, y, width, height, items, selected_index, 
+                                color, bg_color, item_height, visible=visible, enabled=enabled)
         
         else:
             if self.debug_system:
                 self.debug_system.log("WARNING", f"Unsupported control type: {control_type}")
             return None
+    
+    def _resolve_color(self, color_value):
+        """色定数解決（JSON互換性とDESIGN.md準拠）"""
+        # 既に数値の場合はそのまま返す（後方互換性）
+        if isinstance(color_value, int):
+            return color_value
+        
+        # 文字列の場合は色定数に変換
+        if isinstance(color_value, str):
+            color_map = {
+                "COLOR_BLACK": pyxel.COLOR_BLACK,
+                "COLOR_NAVY": pyxel.COLOR_NAVY,
+                "COLOR_PURPLE": pyxel.COLOR_PURPLE,
+                "COLOR_GREEN": pyxel.COLOR_GREEN,
+                "COLOR_BROWN": pyxel.COLOR_BROWN,
+                "COLOR_DARK_BLUE": pyxel.COLOR_DARK_BLUE,
+                "COLOR_BLUE": pyxel.COLOR_DARK_BLUE,  # COLOR_BLUEはCOLOR_DARK_BLUEとして解釈
+                "COLOR_LIGHT_BLUE": pyxel.COLOR_LIGHT_BLUE,
+                "COLOR_WHITE": pyxel.COLOR_WHITE,
+                "COLOR_RED": pyxel.COLOR_RED,
+                "COLOR_ORANGE": pyxel.COLOR_ORANGE,
+                "COLOR_YELLOW": pyxel.COLOR_YELLOW,
+                "COLOR_LIME": pyxel.COLOR_LIME,
+                "COLOR_CYAN": pyxel.COLOR_CYAN,
+                "COLOR_GRAY": pyxel.COLOR_GRAY,
+                "COLOR_PINK": pyxel.COLOR_PINK,
+                "COLOR_PEACH": pyxel.COLOR_PEACH
+            }
+            
+            # "pyxel.COLOR_WHITE" 形式も対応
+            color_key = color_value.replace("pyxel.", "")
+            if color_key in color_map:
+                return color_map[color_key]
+            
+            if self.debug_system:
+                self.debug_system.log("WARNING", f"Unknown color constant: {color_value}")
+        
+        # デフォルト値
+        return pyxel.COLOR_WHITE
     
     def _bind_events(self, dialog, definition: Dict[str, Any]):
         """イベントバインディング"""
