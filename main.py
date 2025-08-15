@@ -44,6 +44,8 @@ from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システム�
 from DialogManager import DialogManager, FileManager
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 # ファイルダイアログ機能は既にFileManagerに統合済み
+from DialogManager_v3.dialogs.device_id_dialog import DeviceIdDialog
+
 
 class PyPlcVer3:
     """PyPlc Ver3 - PLC標準仕様準拠シミュレーター"""
@@ -235,11 +237,21 @@ class PyPlcVer3:
         if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
             device = self.grid_system.get_device(row, col)
             if device:
-                self.dialog_manager.show_device_edit_dialog(
-                    device, row, col, 
-                    self._draw_background_for_dialog,
-                    self.grid_system
-                )
+                # TODO: Add logic to determine which dialog to show based on device type
+                # For now, we only have DeviceIdDialog
+                
+                # Use the new DialogManager_v3 DeviceIdDialog
+                dialog = DeviceIdDialog(device.device_type, device.address)
+                success, new_id = dialog.show()
+                
+                if success:
+                    # Update the device address if a new one was entered
+                    device.address = new_id
+                    # After editing, it's good practice to re-solve the ladder
+                    self.circuit_analyzer.solve_ladder()
+                    self._show_status_message(f"Device ID set to {new_id}", 2.0, "success")
+                else:
+                    self._show_status_message("Device edit canceled", 2.0, "info")
 
     def _place_single_device(self, row: int, col: int, device_type: DeviceType) -> None:
         """単一のデバイスを配置するヘルパーメソッド"""
