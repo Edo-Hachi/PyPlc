@@ -671,32 +671,18 @@ class FileLoadDialogJSON(BaseDialog):
                 file_path: 選択されたファイルのパス（失敗時は空文字列）
         """
         try:
-            # ダイアログを表示状態に設定
-            self.visible = True
-            self.cancelled = False
+            # ダイアログ状態初期化
             self.selected_file = None
             
-            # メインループ（既存システムと同じ方式）
-            while self.visible:
-                self.update()
-                
-                # キーボードイベント処理
-                for key in range(256):
-                    if pyxel.btnp(key):
-                        self.handle_key_input(key)
-                
-                # キーボード入力はTextBoxControlが自動処理（簡略化）
-                # 30行の複雑なキーボード処理を削除し、TextBoxControlに委譲
-                
-                # 画面をクリアして描画
-                pyxel.cls(pyxel.COLOR_BLACK)
-                self.draw()
-                pyxel.flip()
-                
-                # ESCキーで強制終了
-                if pyxel.btnp(pyxel.KEY_ESCAPE):
-                    self.cancelled = True
-                    self.visible = False
+            print("[FileLoadDialogJSON] Starting dialog using unified modal loop")
+            
+            # BaseDialog統一モーダルループを使用（Phase G2-1で実装）
+            result = self.show_modal_loop(
+                escape_key_enabled=True,
+                background_color=pyxel.COLOR_BLACK
+            )
+            
+            print(f"[FileLoadDialogJSON] Modal loop ended, selected_file: {self.selected_file}, cancelled: {self.cancelled}")
             
             # 結果を返す（既存FileManagerと同じインターフェース）
             if self.cancelled or self.selected_file is None:
@@ -706,6 +692,8 @@ class FileLoadDialogJSON(BaseDialog):
                 
         except Exception as e:
             print(f"[FileLoadDialogJSON] Error in show_load_dialog: {e}")
+            import traceback
+            traceback.print_exc()
             return False, ""
 
 def show_file_load_dialog(

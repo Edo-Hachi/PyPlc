@@ -76,6 +76,77 @@ class BaseDialog:
         # メインループは外部で実装（Pyxelのループに統合）
         return self.result
     
+    def show_modal_loop(self, escape_key_enabled: bool = True, 
+                       background_color: int = None) -> Any:
+        """
+        統一モーダルループ実装
+        各ダイアログの重複コードを削減
+        
+        Args:
+            escape_key_enabled: ESCキーでの終了を有効にするか（デフォルト: True）
+            background_color: 背景クリア色（Noneの場合はpyxel.COLOR_BLACK）
+            
+        Returns:
+            Any: ダイアログの結果
+        """
+        # デフォルト背景色設定（pyxelをインポート確認後）
+        if background_color is None:
+            background_color = pyxel.COLOR_BLACK
+            
+        # ダイアログ状態初期化
+        self.visible = True
+        self.modal = True
+        if not hasattr(self, 'cancelled'):
+            self.cancelled = False
+        
+        print(f"[BaseDialog] Starting modal loop for '{self.title}'")
+        
+        try:
+            while self.visible:
+                # 更新処理
+                self.update()
+                
+                # マウス処理（ダイアログが独自実装を持つ場合はスキップ）
+                if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                    if hasattr(self, '_handle_mouse_click') and callable(self._handle_mouse_click):
+                        # ダイアログが独自のマウス処理を持つ場合
+                        self._handle_mouse_click(pyxel.mouse_x, pyxel.mouse_y)
+                    else:
+                        # BaseDialogの標準マウス処理
+                        self.handle_mouse(pyxel.mouse_x, pyxel.mouse_y, True)
+                
+                # キーボード処理（ダイアログが独自実装を持つ場合は併用）
+                for key in range(256):
+                    if pyxel.btnp(key):
+                        if key == pyxel.KEY_ESCAPE and escape_key_enabled:
+                            print(f"[BaseDialog] ESC key pressed - closing dialog")
+                            self.cancelled = True
+                            self.visible = False
+                            break
+                        else:
+                            # ダイアログが独自のキーボード処理を持つ場合はそれを使用
+                            if hasattr(self, 'handle_key_input') and callable(self.handle_key_input):
+                                self.handle_key_input(key)
+                            else:
+                                # BaseDialogの標準キーボード処理
+                                self.handle_key(key)
+                
+                # 描画
+                pyxel.cls(background_color)
+                self.draw()
+                pyxel.flip()
+                
+            print(f"[BaseDialog] Modal loop ended for '{self.title}', result: {self.result}")
+            return self.result
+            
+        except Exception as e:
+            print(f"[BaseDialog] Modal loop error: {e}")
+            import traceback
+            traceback.print_exc()
+            self.visible = False
+            self.cancelled = True
+            return None
+    
     def close(self, result: Any = None) -> None:
         """
         ダイアログを閉じます。

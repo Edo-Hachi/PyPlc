@@ -347,40 +347,27 @@ class FileSaveDialogJSON(BaseDialog):
     def show_save_dialog(self) -> Tuple[bool, str]:
         """
         保存ダイアログを表示
-        既存FileManagerとの互換性インターフェース（FileLoadDialogJSONと同様の実装）
+        既存FileManagerとの互換性インターフェース（統一モーダルループ使用）
         
         Returns:
             (success: bool, filename: str): 成功フラグとファイル名のタプル
         """
         try:
-            # ダイアログを表示状態に設定
-            self.visible = True
-            self.cancelled = False
+            # ダイアログ状態初期化
             self.dialog_result = None
             
             # 初期フォーカス設定
             self.focused_control = self.filename_textbox
             
-            # メインループ（FileLoadDialogJSONと同様）
-            while self.visible:
-                self.update()
-                
-                # キーボードイベント処理
-                for key in range(256):
-                    if pyxel.btnp(key):
-                        self.handle_key_input(key)
-                
-                # キーボード入力はTextBoxControlが自動処理（Phase Fパターン）
-                
-                # 画面をクリアして描画
-                pyxel.cls(pyxel.COLOR_BLACK)
-                self.draw()
-                pyxel.flip()
-                
-                # ESCキーで強制終了
-                if pyxel.btnp(pyxel.KEY_ESCAPE):
-                    self.cancelled = True
-                    self.visible = False
+            print("[FileSaveDialogJSON] Starting dialog using unified modal loop")
+            
+            # BaseDialog統一モーダルループを使用（Phase G2-1で実装）
+            result = self.show_modal_loop(
+                escape_key_enabled=True,
+                background_color=pyxel.COLOR_BLACK
+            )
+            
+            print(f"[FileSaveDialogJSON] Modal loop ended, dialog_result: {self.dialog_result}, cancelled: {self.cancelled}")
             
             # 結果を返す（既存FileManagerと同じインターフェース）
             if self.cancelled or not self.dialog_result:
@@ -390,6 +377,8 @@ class FileSaveDialogJSON(BaseDialog):
                 
         except Exception as e:
             print(f"[FileSaveDialogJSON] Error: {e}")
+            import traceback
+            traceback.print_exc()
             return False, ""
 
 
