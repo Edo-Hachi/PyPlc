@@ -9,6 +9,7 @@ PyPlc Ver3 - DialogManager_v3用ファイル管理システム
 import os
 from typing import Optional, Tuple
 from ..dialogs.file_load_dialog import FileLoadDialogJSON
+from ..dialogs.file_save_dialog import FileSaveDialogJSON
 
 
 class FileManagerV3:
@@ -108,12 +109,50 @@ class FileManagerV3:
     def show_save_dialog(self) -> bool:
         """
         ファイル保存ダイアログを表示
-        TODO: 今後DialogManager_v3の保存ダイアログと統合予定
-        現在は既存システムにフォールバック
+        既存FileManagerと同じインターフェース
         
         Returns:
             bool: 保存が成功した場合True
         """
-        # TODO: DialogManager_v3の保存ダイアログを実装後に更新
-        print("[FileManagerV3] Save dialog not yet implemented for DialogManager_v3")
-        return False
+        try:
+            # デフォルトファイル名を生成
+            default_name = self.current_filename or "my_circuit"
+            if default_name.endswith('.csv'):
+                default_name = default_name[:-4]  # .csv拡張子を除去
+            
+            # DialogManager_v3のFileSaveDialogJSONを使用
+            # PyPlc Ver3ウィンドウサイズ（384x384）に適したサイズで作成
+            dialog = FileSaveDialogJSON(
+                default_filename=default_name,
+                title="Save Circuit File",
+                width=340,   # LoadDialogと同じサイズ
+                height=280   # LoadDialogと同じサイズ
+            )
+            
+            # ダイアログ表示
+            success, filename = dialog.show_save_dialog()
+            
+            if success and filename:
+                # .csv拡張子を付加
+                if not filename.endswith('.csv'):
+                    filename = f"{filename}.csv"
+                
+                # フルパス生成
+                filepath = os.path.join(self.base_directory, filename)
+                
+                # CircuitCsvManagerを使用してファイル保存
+                success = self.csv_manager.save_circuit_to_csv(filepath)
+                
+                if success:
+                    self.current_filename = filename
+                    print(f"[FileManagerV3] File saved: {filepath}")
+                    return True
+                else:
+                    print(f"[FileManagerV3] Failed to save CSV: {filepath}")
+                    return False
+            
+            return False
+            
+        except Exception as e:
+            print(f"[FileManagerV3] Save error: {e}")
+            return False
