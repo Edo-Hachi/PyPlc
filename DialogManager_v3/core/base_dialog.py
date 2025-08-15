@@ -101,44 +101,49 @@ class BaseDialog:
         
         print(f"[BaseDialog] Starting modal loop for '{self.title}'")
         
+        # Add a flag to ignore input on the first frame
+        # This prevents the key press that opened the dialog from being processed by the dialog itself.
+        first_frame = True
+
         try:
             while self.visible:
-                # 更新処理
-                self.update()
-                
-                # マウス処理（ダイアログが独自実装を持つ場合はスキップ）
-                if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-                    print(f"[DEBUG] BaseDialog.show_modal_loop: Mouse LEFT clicked at ({pyxel.mouse_x}, {pyxel.mouse_y})")
-                    if hasattr(self, '_handle_mouse_click') and callable(self._handle_mouse_click):
-                        # ダイアログが独自のマウス処理を持つ場合
-                        print(f"[DEBUG] BaseDialog: Using custom _handle_mouse_click")
-                        self._handle_mouse_click(pyxel.mouse_x, pyxel.mouse_y)
-                    else:
-                        # BaseDialogの標準マウス処理
-                        print(f"[DEBUG] BaseDialog: Using standard handle_mouse")
-                        self.handle_mouse(pyxel.mouse_x, pyxel.mouse_y, True)
-                
-                # キーボード処理（ダイアログが独自実装を持つ場合は併用）
-                for key in range(256):
-                    if pyxel.btnp(key):
-                        if key == pyxel.KEY_ESCAPE and escape_key_enabled:
-                            print(f"[BaseDialog] ESC key pressed - closing dialog")
-                            self.cancelled = True
-                            self.visible = False
-                            break
+                # --- Input Handling ---
+                if not first_frame:
+                    # Mouse Input
+                    if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                        if hasattr(self, '_handle_mouse_click') and callable(self._handle_mouse_click):
+                            self._handle_mouse_click(pyxel.mouse_x, pyxel.mouse_y)
                         else:
-                            # ダイアログが独自のキーボード処理を持つ場合はそれを使用
-                            if hasattr(self, 'handle_key_input') and callable(self.handle_key_input):
-                                self.handle_key_input(key)
+                            self.handle_mouse(pyxel.mouse_x, pyxel.mouse_y, True)
+                    
+                    # Keyboard Input
+                    for key in range(256):
+                        if pyxel.btnp(key):
+                            if key == pyxel.KEY_ESCAPE and escape_key_enabled:
+                                self.cancelled = True
+                                self.visible = False
+                                break
                             else:
-                                # BaseDialogの標準キーボード処理
-                                self.handle_key(key)
+                                if hasattr(self, 'handle_key_input') and callable(self.handle_key_input):
+                                    self.handle_key_input(key)
+                                else:
+                                    self.handle_key(key)
                 
-                # 描画
+                if pyxel.btnr(pyxel.KEY_ESCAPE):
+                    if first_frame: # Ensure ESC works even on the first frame for quick cancels
+                        self.cancelled = True
+                        self.visible = False
+
+                # --- Update and Draw ---
+                self.update()
                 pyxel.cls(background_color)
                 self.draw()
                 pyxel.flip()
                 
+                # After the first frame, start processing input
+                if first_frame:
+                    first_frame = False
+            
             print(f"[BaseDialog] Modal loop ended for '{self.title}', result: {self.result}")
             return self.result
             
