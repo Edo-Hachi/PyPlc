@@ -1,0 +1,153 @@
+{
+  "dialog": {
+    "title": "Open File",
+    "width": 340,
+    "height": 280,
+    "modal": true,
+    "position": "center"
+  },
+  "controls": [
+    {
+      "type": "label",
+      "id": "path_label",
+      "x": 10,
+      "y": 8,
+      "text": "Current Folder:",
+      "color": 7
+    },
+    {
+      "type": "textbox",
+      "id": "path_textbox",
+      "x": 10,
+      "y": 20,
+      "width": 250,
+      "height": 18,
+      "readonly": true,
+      "color": 7,
+      "bg_color": 6
+    },
+    {
+      "type": "button",
+      "id": "up_button",
+      "x": 270,
+      "y": 20,
+      "width": 60,
+      "height": 18,
+      "text": "Up",
+      "color": 7,
+      "bg_color": 5
+    },
+    {
+      "type": "listbox",
+      "id": "file_list_box",
+      "x": 10,
+      "y": 45,
+      "width": 320,
+      "height": 150,
+      "color": 7,
+      "bg_color": 0
+    },
+    {
+      "type": "label",
+      "id": "filename_label",
+      "x": 10,
+      "y": 205,
+      "text": "File Name:",
+      "color": 7
+    },
+    {
+      "type": "textbox",
+      "id": "filename_textbox",
+      "x": 80,
+      "y": 203,
+      "width": 250,
+      "height": 20,
+      "color": 7,
+      "bg_color": 6
+    },
+    {
+      "type": "label",
+      "id": "filter_label",
+      "x": 10,
+      "y": 230,
+      "text": "File Type:",
+      "color": 7
+    },
+    {
+      "type": "dropdown",
+      "id": "filter_dropdown",
+      "x": 80,
+      "y": 228,
+      "width": 150,
+      "height": 20,
+      "items": ["All Files (*.*)", "CSV Files (*.csv)", "Text Files (*.txt)"],
+      "selected_index": 1,
+      "color": 7,
+      "bg_color": 6
+    },
+    {
+      "type": "button",
+      "id": "open_button",
+      "x": 180,
+      "y": 250,
+      "width": 70,
+      "height": 25,
+      "text": "Open",
+      "color": 7,
+      "bg_color": 5
+    },
+    {
+      "type": "button",
+      "id": "cancel_button",
+      "x": 260,
+      "y": 250,
+      "width": 70,
+      "height": 25,
+      "text": "Cancel",
+      "color": 7,
+      "bg_color": 5
+    }
+  ],
+  "events": {
+    "up_button.click": "navigate_up",
+    "file_list_box.select": "file_selected",
+    "file_list_box.activate": "file_activated",
+    "filter_dropdown.change": "update_file_filter",
+    "filename_textbox.enter": "open_selected_file",
+    "open_button.click": "open_selected_file",
+    "cancel_button.click": "close_dialog"
+  },
+  "actions": {
+    "navigate_up": {
+      "type": "file_operation",
+      "operation": "navigate_parent"
+    },
+    "file_selected": {
+      "type": "file_operation",
+      "operation": "update_filename",
+      "source": "file_list_box.selected_item",
+      "target": "filename_textbox"
+    },
+    "file_activated": {
+      "type": "file_operation",
+      "operation": "navigate_or_select",
+      "source": "file_list_box.selected_item"
+    },
+    "update_file_filter": {
+      "type": "file_filter",
+      "filter_source": "filter_dropdown.selected_value",
+      "target": "file_list_box"
+    },
+    "open_selected_file": {
+      "type": "file_operation",
+      "operation": "select_file",
+      "source": "filename_textbox.text",
+      "result_key": "selected_file"
+    },
+    "close_dialog": {
+      "type": "dialog_action",
+      "operation": "close",
+      "result": false
+    }
+  }
+}

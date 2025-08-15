@@ -1,0 +1,40 @@
+{
+  "dialog": {
+    "title": "DialogManager v4 Test",
+    "width": 280,
+    "height": 120,
+    "modal": true,
+    "position": "center"
+  },
+  "controls": [
+    {
+      "type": "label",
+      "id": "test_label",
+      "x": 20,
+      "y": 20,
+      "text": "v4 JSON完全定義テスト",
+      "color": 7
+    },
+    {
+      "type": "button",
+      "id": "ok_button",
+      "x": 100,
+      "y": 70,
+      "width": 80,
+      "height": 24,
+      "text": "OK",
+      "color": 7,
+      "bg_color": 5
+    }
+  ],
+  "events": {
+    "ok_button.click": "close_dialog"
+  },
+  "actions": {
+    "close_dialog": {
+      "type": "dialog_action",
+      "operation": "close",
+      "result": true
+    }
+  }
+}
