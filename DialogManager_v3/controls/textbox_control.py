@@ -506,7 +506,7 @@ class TextBoxControl(ControlBase):
         Returns:
             Dict[int, Tuple[str, str]]: キーコード → (通常文字, Shift文字)
         """
-        import pyxel
+        #import pyxel
         
         return {
             pyxel.KEY_0: ('0', ')'), pyxel.KEY_1: ('1', '!'), pyxel.KEY_2: ('2', '@'),
@@ -530,7 +530,7 @@ class TextBoxControl(ControlBase):
         Returns:
             Optional[str]: 変換された文字、変換できない場合はNone
         """
-        import pyxel
+        #import pyxel
         
         # 英字キー（A-Z）の処理
         if hasattr(pyxel, 'KEY_A') and hasattr(pyxel, 'KEY_Z'):
