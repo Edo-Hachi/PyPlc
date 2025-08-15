@@ -4,6 +4,7 @@ PyPlc Ver3 - DeviceIdDialog for DialogManager_v3
 Allows users to input a device ID (address) for PLC devices like contacts and coils.
 This is a core component for setting device parameters.
 """
+import re
 import pyxel
 from typing import Tuple, Optional
 
@@ -94,20 +95,61 @@ class DeviceIdDialog(BaseDialog):
         # Set initial focus
         self.focused_control = self.device_id_input
 
+    def _validate_address(self, address: str) -> Tuple[bool, str]:
+        """
+        Validates the PLC device address based on its type.
+
+        Args:
+            address: The device ID string to validate.
+
+        Returns:
+            A tuple (is_valid, error_message).
+        """
+        address = address.strip().upper()
+        if not address:
+            return False, "ID cannot be empty."
+
+        # General format check (e.g., X1, M100, T20)
+        match = re.match(r'^([XYMLTCD])(\d+)$', address)
+        if not match:
+            return False, "Format error. Use e.g., X0, M100."
+
+        prefix = match.group(1)
+        number = int(match.group(2))
+
+        # --- Type-specific prefix validation ---
+        valid_prefixes = {
+            DeviceType.CONTACT_A: "XYMLTC",
+            DeviceType.CONTACT_B: "XYMLTC",
+            DeviceType.COIL_STD: "YM",
+            DeviceType.COIL_REV: "YM",
+            DeviceType.TIMER_TON: "T",
+            DeviceType.COUNTER_CTU: "C",
+        }.get(self.device_type)
+
+        if valid_prefixes and prefix not in valid_prefixes:
+            return False, f"'{prefix}' is not valid for {self.device_type.name}."
+
+        # --- Number range checks (example) ---
+        if prefix in "TC" and not (0 <= number <= 255):
+            return False, "T/C number must be 0-255."
+
+        return True, ""
+
     def _on_enter_pressed(self, sender, data):
         """Handles the Enter key press event in the textbox."""
         self._on_ok_clicked(sender, data)
 
     def _on_ok_clicked(self, sender, data):
         """Handles the OK button click event."""
-        # Basic validation for now
-        input_text = self.device_id_input.text.strip()
-        if input_text:
-            # TODO: Implement proper PLC address validation
-            self.result_id = input_text.upper()
-            self.close(True) # Close dialog with a success result
+        input_text = self.device_id_input.text
+        is_valid, error_message = self._validate_address(input_text)
+
+        if is_valid:
+            self.result_id = input_text.strip().upper()
+            self.close(True)
         else:
-            self.error_label.text = "ID cannot be empty."
+            self.error_label.text = error_message
             self.error_label.visible = True
 
     def _on_cancel_clicked(self, sender, data):
@@ -124,10 +166,10 @@ class DeviceIdDialog(BaseDialog):
         """
         # The show_modal_loop is inherited from BaseDialog
         # It will handle the event loop, drawing, and input processing.
+        self.error_label.visible = False # Hide error on show
         success = self.show_modal_loop()
 
         if success and self.result_id is not None:
             return (True, self.result_id)
         else:
             return (False, "")
-
