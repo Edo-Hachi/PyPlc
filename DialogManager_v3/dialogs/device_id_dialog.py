@@ -95,6 +95,22 @@ class DeviceIdDialog(BaseDialog):
         # Set initial focus
         self.focused_control = self.device_id_input
 
+        # Add event handler for text changes for real-time validation
+        self.device_id_input.on('change', self._on_text_changed)
+
+    def _on_text_changed(self, sender, data):
+        """Handles the text change event for real-time validation."""
+        input_text = data.get('value', '')
+        is_valid, error_message = self._validate_address(input_text)
+
+        # Show error only if there's text and it's invalid
+        if not is_valid and input_text:
+            self.error_label.text = error_message
+            self.error_label.visible = True
+        else:
+            # Hide error if valid or empty
+            self.error_label.visible = False
+
     def _validate_address(self, address: str) -> Tuple[bool, str]:
         """
         Validates the PLC device address based on its type.
