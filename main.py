@@ -144,14 +144,19 @@ class PyPlcVer3:
             if self.current_mode == SimulatorMode.EDIT:
                 # 使用中のシステムを表示
                 system_name = "DialogManager_v3" if self.use_dialogmanager_v3 else "DialogManager"
-                print(f"[PyPlc] Opening file dialog using {system_name}")
+                print(f"[DEBUG] [PyPlc] Opening file dialog using {system_name}")
+                print(f"[DEBUG] [PyPlc] Calling file_manager.show_load_dialog()...")
                 
                 success = self.file_manager.show_load_dialog()
+                
+                print(f"[DEBUG] [PyPlc] show_load_dialog() returned: success={success}")
                 if success:
+                    print(f"[DEBUG] [PyPlc] File was loaded successfully!")
                     self._show_status_message(f"File loaded! ({system_name})", 3.0, "success")
                     # 読み込み後は回路を再解析
                     self.circuit_analyzer.solve_ladder()
                 else:
+                    print(f"[DEBUG] [PyPlc] File loading was cancelled or failed")
                     self._show_status_message("Load canceled or failed", 2.0, "error")
             else:
                 self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)

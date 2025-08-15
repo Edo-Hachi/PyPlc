@@ -272,9 +272,15 @@ class FileLoadDialogJSON(BaseDialog):
     
     def update(self):
         """ダイアログの状態を更新"""
-        # マウスイベント処理
-        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-            self._handle_mouse_click(pyxel.mouse_x, pyxel.mouse_y)
+        # マウスイベント処理は統一モーダルループで処理されるためスキップ
+        # （統一モーダルループを使わない場合のみ有効）
+        if not getattr(self, 'modal', False):
+            if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                print(f"[DEBUG] Mouse LEFT button pressed at: ({pyxel.mouse_x}, {pyxel.mouse_y})")
+                print(f"[DEBUG] Calling _handle_mouse_click from update() (non-modal mode)")
+                self._handle_mouse_click(pyxel.mouse_x, pyxel.mouse_y)
+        else:
+            print(f"[DEBUG] Skipping mouse handling in update() - using modal loop")
         
         # キーボードイベント処理
         if pyxel.btnp(pyxel.KEY_UP):
@@ -288,16 +294,29 @@ class FileLoadDialogJSON(BaseDialog):
     
     def _handle_mouse_click(self, x: int, y: int):
         """マウスクリックを処理"""
+        print(f"[DEBUG] _handle_mouse_click called: x={x}, y={y}")
+        print(f"[DEBUG] Dialog bounds: x={self.x}, y={self.y}, width={self.width}, height={self.height}")
+        
         # ダイアログ外をクリックした場合は無視
         if not (self.x <= x < self.x + self.width and 
                 self.y <= y < self.y + self.height):
+            print(f"[DEBUG] Click outside dialog bounds, ignoring")
             return
             
+        print(f"[DEBUG] Click inside dialog, checking controls...")
+        
         # リストボックス内のクリックを処理
         listbox = self.controls.get('file_list')
-        if listbox and self._is_point_in_rect(x, y, listbox):
-            self._on_file_selected(x, y, listbox)
-            return
+        print(f"[DEBUG] Listbox control: {listbox is not None}")
+        if listbox:
+            print(f"[DEBUG] Listbox bounds: x={listbox['x']}, y={listbox['y']}, width={listbox['width']}, height={listbox['height']}")
+            is_in_listbox = self._is_point_in_rect(x, y, listbox)
+            print(f"[DEBUG] Point in listbox: {is_in_listbox}")
+            
+            if is_in_listbox:
+                print(f"[DEBUG] Calling _on_file_selected from _handle_mouse_click")
+                self._on_file_selected(x, y, listbox)
+                return
         
         # ドロップダウンクリックを処理
         filter_combo = self.controls.get('filter_combo')
@@ -318,26 +337,74 @@ class FileLoadDialogJSON(BaseDialog):
     
     def _on_file_selected(self, x: int, y: int, listbox: Dict):
         """ファイル/フォルダが選択されたときの処理"""
+        print(f"[DEBUG] _on_file_selected called: x={x}, y={y}")
+        
         # クリック位置から選択されたアイテムのインデックスを計算
         item_height = 12  # 1行の高さ
         relative_y = y - (self.y + listbox['y'])
         clicked_index = (relative_y // item_height) + self.scroll_offset
         
+        print(f"[DEBUG] Calculated clicked_index: {clicked_index}, filtered_files count: {len(self.filtered_files)}")
+        
         if 0 <= clicked_index < len(self.filtered_files):
-            self.selected_index = clicked_index
             selected = self.filtered_files[clicked_index]
+            current_time = pyxel.frame_count
             
-            # ダブルクリックのチェック（簡易実装）
-            if hasattr(self, '_last_click_time') and (pyxel.frame_count - self._last_click_time) < 10:
+            print(f"[DEBUG] Selected file: '{selected.name}', type: {selected.file_type}")
+            print(f"[DEBUG] Current frame: {current_time}")
+            
+            # デバッグ: 前回のクリック情報
+            has_last_time = hasattr(self, '_last_click_time')
+            has_last_index = hasattr(self, '_last_clicked_index')
+            print(f"[DEBUG] Has last_click_time: {has_last_time}")
+            print(f"[DEBUG] Has last_clicked_index: {has_last_index}")
+            
+            if has_last_time:
+                print(f"[DEBUG] Last click time: {self._last_click_time}")
+                print(f"[DEBUG] Time difference: {current_time - self._last_click_time}")
+            
+            if has_last_index:
+                print(f"[DEBUG] Last clicked index: {self._last_clicked_index}")
+                print(f"[DEBUG] Same index: {self._last_clicked_index == clicked_index}")
+            
+            # ダブルクリック判定の改善
+            is_double_click = False
+            if (has_last_time and has_last_index and
+                self._last_clicked_index == clicked_index and
+                (current_time - self._last_click_time) < 30):  # 30フレーム = 約1秒（30FPS想定）
+                is_double_click = True
+            
+            print(f"[DEBUG] Double-click detected: {is_double_click}")
+            
+            # 選択状態の更新（シングルクリック時）
+            self.selected_index = clicked_index
+            
+            if is_double_click:
+                # ダブルクリック時の動作
+                print(f"[DEBUG] Executing DOUBLE-CLICK action")
                 if selected.file_type == FileType.DIRECTORY:
                     self._change_directory(selected.path)
+                    print(f"[FileLoadDialog] Double-click: Opening directory '{selected.name}'")
                 else:
+                    print(f"[DEBUG] Calling _on_open_clicked() for double-click")
                     self._on_open_clicked()
+                    print(f"[FileLoadDialog] Double-click: Opening file '{selected.name}'")
+            else:
+                # シングルクリック時の動作（テキストボックスに反映のみ）
+                print(f"[DEBUG] Executing SINGLE-CLICK action")
+                print(f"[FileLoadDialog] Single-click: Selected '{selected.name}'")
+                
+                # ファイル名を入力フィールドに設定（TextBoxControl APIを使用）
+                print(f"[DEBUG] Setting filename in textbox...")
+                self.filename_textbox.set_filename_from_selection(selected)
+                print(f"[DEBUG] Filename set in textbox completed")
             
-            self._last_click_time = pyxel.frame_count
-            
-            # ファイル名を入力フィールドに設定（TextBoxControl APIを使用）
-            self.filename_textbox.set_filename_from_selection(selected)
+            # クリック情報を記録
+            self._last_click_time = current_time
+            self._last_clicked_index = clicked_index
+            print(f"[DEBUG] Updated last_click_time: {current_time}, last_clicked_index: {clicked_index}")
+        else:
+            print(f"[DEBUG] Clicked index {clicked_index} out of range (0-{len(self.filtered_files)-1})")
     
     def _on_up_clicked(self):
         """「上へ」ボタンがクリックされたときの処理"""
@@ -347,21 +414,39 @@ class FileLoadDialogJSON(BaseDialog):
     
     def _on_open_clicked(self):
         """「開く」ボタンがクリックされたときの処理"""
+        print(f"[DEBUG] _on_open_clicked called!")
+        print(f"[DEBUG] selected_index: {self.selected_index}, filtered_files count: {len(self.filtered_files)}")
+        
         if 0 <= self.selected_index < len(self.filtered_files):
             selected = self.filtered_files[self.selected_index]
+            print(f"[DEBUG] Opening selected file: '{selected.name}', type: {selected.file_type}")
+            
             if selected.file_type == FileType.DIRECTORY:
+                print(f"[DEBUG] Changing to directory: {selected.path}")
                 self._change_directory(selected.path)
             else:
+                print(f"[DEBUG] Setting selected_file: {selected.path}")
+                print(f"[DEBUG] Closing dialog (setting visible=False)")
                 self.selected_file = selected.path
                 self.visible = False
         else:
             # TextBoxControlから編集されたファイル名を取得
+            print(f"[DEBUG] No valid selection, checking textbox filename...")
             filename = self.filename_textbox.get_edited_filename()
+            print(f"[DEBUG] Textbox filename: '{filename}'")
+            
             if filename:
                 file_path = os.path.join(self.current_dir, filename)
+                print(f"[DEBUG] Constructed file path: {file_path}")
+                
                 if os.path.exists(file_path):
+                    print(f"[DEBUG] File exists, setting selected_file and closing dialog")
                     self.selected_file = file_path
                     self.visible = False
+                else:
+                    print(f"[DEBUG] File does not exist: {file_path}")
+            else:
+                print(f"[DEBUG] No filename in textbox")
     
     def _on_cancel_clicked(self):
         """「キャンセル」ボタンがクリックされたときの処理"""

@@ -108,11 +108,14 @@ class BaseDialog:
                 
                 # マウス処理（ダイアログが独自実装を持つ場合はスキップ）
                 if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+                    print(f"[DEBUG] BaseDialog.show_modal_loop: Mouse LEFT clicked at ({pyxel.mouse_x}, {pyxel.mouse_y})")
                     if hasattr(self, '_handle_mouse_click') and callable(self._handle_mouse_click):
                         # ダイアログが独自のマウス処理を持つ場合
+                        print(f"[DEBUG] BaseDialog: Using custom _handle_mouse_click")
                         self._handle_mouse_click(pyxel.mouse_x, pyxel.mouse_y)
                     else:
                         # BaseDialogの標準マウス処理
+                        print(f"[DEBUG] BaseDialog: Using standard handle_mouse")
                         self.handle_mouse(pyxel.mouse_x, pyxel.mouse_y, True)
                 
                 # キーボード処理（ダイアログが独自実装を持つ場合は併用）

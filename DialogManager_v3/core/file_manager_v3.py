@@ -45,6 +45,7 @@ class FileManagerV3:
         try:
             # DialogManager_v3のFileLoadDialogJSONを使用
             # PyPlc Ver3ウィンドウサイズ（384x384）に適したサイズで作成
+            print(f"[DEBUG] [FileManagerV3] Creating FileLoadDialogJSON...")
             dialog = FileLoadDialogJSON(
                 initial_dir=self.base_directory,
                 file_pattern="*.csv",  # CSVファイルのみ表示
@@ -52,9 +53,12 @@ class FileManagerV3:
                 width=340,   # PyPlc Ver3に適したサイズ
                 height=280   # PyPlc Ver3に適したサイズ
             )
+            print(f"[DEBUG] [FileManagerV3] FileLoadDialogJSON created successfully")
             
             # ダイアログ表示
+            print(f"[DEBUG] [FileManagerV3] Calling dialog.show_load_dialog()...")
             success, filepath = dialog.show_load_dialog()
+            print(f"[DEBUG] [FileManagerV3] dialog.show_load_dialog() returned: success={success}, filepath='{filepath}'")
             
             if success and filepath:
                 # ファイルの存在確認
