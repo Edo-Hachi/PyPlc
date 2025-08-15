@@ -32,7 +32,7 @@ class LabelControl(ControlBase):
         super().__init__(x, y, width, height, **kwargs)
         
         self._text = text
-        self._color = kwargs.get('color', 7)  # デフォルトは白
+        self._color = kwargs.get('color', 0)  # デフォルトは黒に変更
         self._align = kwargs.get('align', 'left')  # left, center, right
         self._shadow = kwargs.get('shadow', False)  # 影付きテキスト
         self._shadow_color = kwargs.get('shadow_color', 0)  # 影の色（デフォルトは黒）

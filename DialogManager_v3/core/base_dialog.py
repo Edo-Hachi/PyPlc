@@ -103,6 +103,7 @@ class BaseDialog:
         
         # Add a flag to ignore input on the first frame
         # This prevents the key press that opened the dialog from being processed by the dialog itself.
+        # これがないと、Ctrl＋Sなどの「S」をテキストボックスとかが拾ってしまうことがある。
         first_frame = True
 
         try:
@@ -116,6 +117,11 @@ class BaseDialog:
                         else:
                             self.handle_mouse(pyxel.mouse_x, pyxel.mouse_y, True)
                     
+                    # Mouse Wheel Input
+                    if pyxel.mouse_wheel != 0:
+                        if self.hovered_control and hasattr(self.hovered_control, 'on_mouse_wheel'):
+                            self.hovered_control.on_mouse_wheel(pyxel.mouse_wheel)
+
                     # Keyboard Input
                     for key in range(256):
                         if pyxel.btnp(key):
@@ -199,10 +205,22 @@ class BaseDialog:
         
         # ホバー状態の更新
         new_hovered = None
+        print(f"[DEBUG] BaseDialog: Checking hover at local ({local_x}, {local_y})")
         for control in reversed(self.controls):
+            # DropdownControlの場合は詳細情報も表示
+            if control.__class__.__name__ == 'DropdownControl':
+                print(f"[DEBUG] BaseDialog: Checking DropdownControl - is_open={getattr(control, '_is_open', False)}")
+                if hasattr(control, '_list_box'):
+                    lb = control._list_box
+                    print(f"[DEBUG] BaseDialog: DropdownControl listbox bounds: x={control.x + lb.x}, y={control.y + lb.y}, w={lb.width}, h={lb.height}")
+            
             if control.is_inside(local_x, local_y):
+                print(f"[DEBUG] BaseDialog: Found hovered control: {control.__class__.__name__}")
                 new_hovered = control
                 break
+        
+        if new_hovered is None:
+            print(f"[DEBUG] BaseDialog: No control found at ({local_x}, {local_y})")
         
         # ホバー状態の変化を検出
         if new_hovered != self.hovered_control:
@@ -214,6 +232,8 @@ class BaseDialog:
         
         # クリック処理
         if clicked and new_hovered:
+            print(f"[DEBUG] BaseDialog: Clicking on {new_hovered.__class__.__name__} at relative ({local_x - new_hovered.x}, {local_y - new_hovered.y})")
+            
             # フォーカスの移動
             if self.focused_control and self.focused_control != new_hovered:
                 self.focused_control.on_lose_focus()
@@ -225,7 +245,10 @@ class BaseDialog:
                     new_hovered.on_gain_focus()
             
             # コントロールのクリックイベントを発火
+            print(f"[DEBUG] BaseDialog: Calling on_click for {new_hovered.__class__.__name__}")
             new_hovered.on_click(local_x - new_hovered.x, local_y - new_hovered.y)
+        elif clicked:
+            print(f"[DEBUG] BaseDialog: Click detected but no hovered control")
             return True
             
         return False
@@ -297,14 +320,26 @@ class BaseDialog:
             pyxel.text(self.x + 4, self.y + 4, self.title, 7)  # 7: 白
         
         # コントロールの描画（ダイアログの相対座標を渡す）
+        # 展開中のDropdownControlを最前面に描画するため、2段階で描画
+        expanded_dropdowns = []
+        
+        # 第1段階: 通常のコントロールを描画（展開中のDropdownは除く）
         for control in self.controls:
             if hasattr(control, 'visible') and control.visible:
-                # コントロールの描画メソッドが存在することを確認
                 if hasattr(control, 'draw'):
-                    # コントロールの座標はダイアログからの相対座標で管理されていると仮定
-                    control.draw(self.x, self.y)
+                    # DropdownControlかつ展開中の場合は後回し
+                    if (hasattr(control, '_is_open') and 
+                        control._is_open and 
+                        control.__class__.__name__ == 'DropdownControl'):
+                        expanded_dropdowns.append(control)
+                    else:
+                        control.draw(self.x, self.y)
                 else:
                     print(f"Warning: Control {control} does not have a draw method")
+        
+        # 第2段階: 展開中のDropdownControlを最前面に描画
+        for dropdown in expanded_dropdowns:
+            dropdown.draw(self.x, self.y)
     
     def add_control(self, control: Any) -> None:
         """

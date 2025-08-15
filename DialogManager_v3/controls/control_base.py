@@ -31,9 +31,10 @@ class ControlBase:
         self.visible = kwargs.get('visible', True)
         self.enabled = kwargs.get('enabled', True)
         self.can_focus = kwargs.get('can_focus', False)
+        self.has_focus = False  # フォーカス状態を自身で管理
         self.id = kwargs.get('id', '')
         self.tag = kwargs.get('tag', '')
-        self.parent = None  # type: Optional[Any]  # 親ダイアログへの参照
+        self.parent = None  # type: Optional[Any]  # 親コントロールやダイアログへの参照
         self._event_handlers = {}  # type: Dict[str, Callable]
         self._dirty = True  # 再描画が必要かどうか
         
@@ -95,7 +96,8 @@ class ControlBase:
         """
         if not self.enabled or not self.visible:
             return
-            
+        
+        self.has_focus = True
         self._dirty = True
         self.emit('focus')
     
@@ -106,6 +108,7 @@ class ControlBase:
         if not self.enabled or not self.visible:
             return
             
+        self.has_focus = False
         self._dirty = True
         self.emit('blur')
     
