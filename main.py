@@ -44,6 +44,7 @@ from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システム�
 from DialogManager import DialogManager, FileManager
 # DialogManager v4 - 次世代JSON完全定義システム
 from DialogManager_v4.core.dialog_engine import DialogEngine
+from DialogManager_v4.core.file_manager_v4 import FileManagerV4
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 # ファイルダイアログ機能は既にFileManagerに統合済み
 from DialogManager_v3.dialogs.device_id_dialog import DeviceIdDialog
@@ -78,66 +79,31 @@ class PyPlcVer3:
         self.device_palette = DevicePalette()  # デバイスパレット追加
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
         
-        # --- ダイアログシステム選択フラグ ---
-        # DialogManager バージョン選択: "v4", "v3", "legacy"
-        self.dialog_version = "v4"  # DialogManager v4をデフォルトに設定 (2025-08-16)
-        
-        # 後方互換性のためのv3フラグ
-        self.use_dialogmanager_v3 = (self.dialog_version == "v3")
-        
-        # DialogManager初期化
-        self._initialize_dialog_system()
+        # DialogManager v4固定初期化
+        self._initialize_dialog_v4()
     
-    def _initialize_dialog_system(self):
-        """ダイアログシステム初期化"""
-        if self.dialog_version == "v4":
-            # DialogManager v4システム（JSON完全定義主義）
-            try:
-                print("[PyPlc] Initializing DialogManager v4...")
-                self.dialog_engine = DialogEngine(debug=True)
-                print("[PyPlc] ✅ DialogEngine initialized successfully")
-                print("[PyPlc] Using DialogManager v4 system (JSON Complete Definition)")
-                
-                # v4では統合されたファイル管理も利用可能
-                # TODO: v4でのファイル管理実装
-                self.file_manager = None  # 後で実装
-                print("[PyPlc] ⚠️ v4 File Manager: TODO - not yet implemented")
-                
-            except ImportError as e:
-                print(f"[PyPlc] DialogManager v4 import failed: {e}")
-                print("[PyPlc] Falling back to DialogManager v3")
-                self.dialog_version = "v3"
-                self.use_dialogmanager_v3 = True
-                self._initialize_dialog_system()  # v3で再試行
-                return
-        
-        elif self.use_dialogmanager_v3:
-            # DialogManager_v3システム（レガシー）
-            try:
-                from DialogManager_v3 import FileManagerV3
-                self.file_manager = FileManagerV3(self.csv_manager)
-                print("[PyPlc] Using DialogManager_v3 system")
-            except ImportError as e:
-                print(f"[PyPlc] DialogManager_v3 import failed: {e}")
-                print("[PyPlc] Falling back to legacy DialogManager")
-                self.dialog_version = "legacy"
-                self._initialize_dialog_system()  # legacyで再試行
-                return
-        
-        else:  # legacy
-            # 既存DialogManagerシステム（レガシー）
-            self.dialog_manager = DialogManager()  # DialogManager統合システム
-            self.file_manager = FileManager(self.csv_manager)  # ファイル管理システム
-            print("[PyPlc] Using legacy DialogManager system")
+    def _initialize_dialog_v4(self):
+        """DialogManager v4固定初期化"""
+        try:
+            print("[PyPlc] Initializing DialogManager v4 (fixed version)...")
+            self.dialog_engine = DialogEngine(debug=True)
+            print("[PyPlc] ✅ DialogEngine initialized successfully")
+            
+            # v4ファイル管理システム初期化
+            self.file_manager = FileManagerV4(self.csv_manager, debug=True)
+            print("[PyPlc] ✅ v4 File Manager initialized successfully")
+            print("[PyPlc] Using DialogManager v4 system (JSON Complete Definition)")
+            
+        except Exception as e:
+            print(f"[PyPlc] CRITICAL ERROR: DialogManager v4 initialization failed: {e}")
+            print("[PyPlc] Application cannot continue without DialogManager v4")
+            import traceback
+            traceback.print_exc()
+            raise RuntimeError("DialogManager v4 initialization failed")
     
     def _show_device_id_dialog(self, device):
-        """Device ID編集ダイアログ表示（バージョン別処理）"""
-        if self.dialog_version == "v4":
-            return self._show_device_id_dialog_v4(device)
-        elif self.dialog_version == "v3":
-            return self._show_device_id_dialog_v3(device)
-        else:
-            return self._show_device_id_dialog_legacy(device)
+        """Device ID編集ダイアログ表示（DialogManager v4固定）"""
+        return self._show_device_id_dialog_v4(device)
     
     def _show_device_id_dialog_v4(self, device):
         """DialogManager v4でのDevice ID編集"""
@@ -175,26 +141,10 @@ class PyPlcVer3:
                 return False, None
                 
         except Exception as e:
-            print(f"[PyPlc] v4 Device ID dialog error: {e}")
+            print(f"[PyPlc] Device ID dialog error: {e}")
             import traceback
             traceback.print_exc()
-            # v3にフォールバック
-            return self._show_device_id_dialog_v3(device)
-    
-    def _show_device_id_dialog_v3(self, device):
-        """DialogManager v3でのDevice ID編集"""
-        try:
-            dialog = DeviceIdDialog(device.device_type, device.address)
-            return dialog.show()
-        except Exception as e:
-            print(f"[PyPlc] v3 Device ID dialog error: {e}")
             return False, None
-    
-    def _show_device_id_dialog_legacy(self, device):
-        """Legacy DialogManagerでのDevice ID編集"""
-        # TODO: Legacy実装
-        print(f"[PyPlc] Legacy Device ID dialog not implemented")
-        return False, None
         
         self.mouse_state: MouseState = MouseState()
 
@@ -230,41 +180,24 @@ class PyPlcVer3:
         # Ctrl+S: ファイル保存ダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
             if self.current_mode == SimulatorMode.EDIT:
-                if self.file_manager is not None:
-                    # 保存前に回路状態をリセット（クリーンな状態で保存）
-                    self._reset_circuit_for_save()
-                    success = self.file_manager.show_save_dialog()
-                    if success:
-                        self._show_status_message("File saved successfully!", 3.0, "success")
-                    else:
-                        self._show_status_message("Save canceled or failed", 2.0, "error")
+                # 保存前に回路状態をリセット（クリーンな状態で保存）
+                self._reset_circuit_for_save()
+                success = self.file_manager.show_save_dialog()
+                if success:
+                    self._show_status_message("File saved successfully!", 3.0, "success")
                 else:
-                    # DialogManager v4: ファイル管理機能未実装
-                    self._show_status_message("v4 Save: TODO - File management not yet implemented", 3.0, "warning")
+                    self._show_status_message("Save canceled or failed", 2.0, "error")
             else:
                 self._show_status_message("Save: EDIT mode only. Press TAB to switch.", 4.0)
             
         # Ctrl+O: ファイル読み込みダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_O):
             if self.current_mode == SimulatorMode.EDIT:
-                # 使用中のシステムを表示
-                # DialogManagerバージョン表示
-                if self.dialog_version == "v4":
-                    system_name = "DialogManager_v4"
-                elif self.dialog_version == "v3":
-                    system_name = "DialogManager_v3"
-                else:
-                    system_name = "DialogManager_legacy"
+                # DialogManager v4固定使用
+                system_name = "DialogManager_v4"
                 print(f"[DEBUG] [PyPlc] Opening file dialog using {system_name}")
-                
-                if self.file_manager is not None:
-                    print(f"[DEBUG] [PyPlc] Calling file_manager.show_load_dialog()...")
-                    success = self.file_manager.show_load_dialog()
-                else:
-                    # DialogManager v4: ファイル管理機能未実装
-                    print(f"[DEBUG] [PyPlc] v4 file management not yet implemented")
-                    self._show_status_message("v4 Load: TODO - File management not yet implemented", 3.0, "warning")
-                    success = False
+                print(f"[DEBUG] [PyPlc] Calling file_manager.show_load_dialog()...")
+                success = self.file_manager.show_load_dialog()
                 
                 print(f"[DEBUG] [PyPlc] show_load_dialog() returned: success={success}")
                 if success:
@@ -278,9 +211,7 @@ class PyPlcVer3:
             else:
                 self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)
         
-        # Ctrl+Shift+D: DialogManager切り替え（テスト用）
-        if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btn(pyxel.KEY_SHIFT) and pyxel.btnp(pyxel.KEY_D):
-            self._toggle_dialog_system()
+        # Ctrl+Shift+D: 削除済み（DialogManager v4固定）
         
         # T, U, V, W: 古いテスト関数は削除済み - 新システムに統合済み
         if pyxel.btnp(pyxel.KEY_T):
@@ -451,32 +382,6 @@ class PyPlcVer3:
             # 将来的にタイマー、カウンターなども追加予定
         }
         return device.device_type in operable_types
-    
-    def _toggle_dialog_system(self) -> None:
-        """
-        ダイアログシステムをDialogManager <-> DialogManager_v3で切り替え
-        テスト用機能
-        """
-        try:
-            self.use_dialogmanager_v3 = not self.use_dialogmanager_v3
-            
-            if self.use_dialogmanager_v3:
-                # DialogManager_v3に切り替え
-                from DialogManager_v3 import FileManagerV3
-                self.file_manager = FileManagerV3(self.csv_manager)
-                self._show_status_message("Switched to DialogManager_v3", 3.0, "success")
-                print("[PyPlc] Switched to DialogManager_v3 system")
-            else:
-                # 既存DialogManagerに切り替え
-                self.dialog_manager = DialogManager()
-                self.file_manager = FileManager(self.csv_manager)
-                self._show_status_message("Switched to DialogManager", 3.0, "success")
-                print("[PyPlc] Switched to DialogManager system")
-                
-        except ImportError as e:
-            self._show_status_message("DialogManager_v3 not available", 3.0, "error")
-            print(f"[PyPlc] DialogManager_v3 import failed: {e}")
-            self.use_dialogmanager_v3 = False
     
     def _show_status_message(self, message: str, duration_seconds: float = 3.0, message_type: str = "info") -> None:
         """
@@ -776,32 +681,21 @@ class PyPlcVer3:
         
         # TABキーヒント表示（左端） - モード別表示
         if self.current_mode == SimulatorMode.EDIT:
-            tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load Ctrl+Shift+D:DialogV3"
+            tab_hint = "TAB:Mode F6:Reset Ctrl+S:Save Ctrl+O:Load"
         else:
             tab_hint = "TAB:Mode F6:Reset F5:PLC [Save/Load: EDIT mode only]"
         pyxel.text(10, status_bar_y + 2, tab_hint, pyxel.COLOR_WHITE)
         
         # 現在編集中のファイル名表示（下部ステータスバー）
-        if self.file_manager is not None:
-            current_file = self.file_manager.get_current_filename()
-            file_display = f"File: {current_file}"
-        else:
-            # DialogManager v4: ファイル管理未実装
-            file_display = f"File: [v4 file manager: TODO]"
+        current_file = self.file_manager.get_current_filename()
+        file_display = f"File: {current_file}"
         
         file_x = DisplayConfig.WINDOW_WIDTH - len(file_display) * 4 - 10  # 右端から10px余白
         pyxel.text(file_x, DisplayConfig.WINDOW_HEIGHT - 20, file_display, pyxel.COLOR_CYAN)
         
-        # ダイアログシステム表示（右端）
-        if self.dialog_version == "v4":
-            dialog_system = "DialogV4"
-            dialog_color = pyxel.COLOR_YELLOW  # v4は黄色
-        elif self.dialog_version == "v3":
-            dialog_system = "DialogV3"
-            dialog_color = pyxel.COLOR_LIME  # v3は緑
-        else:
-            dialog_system = "Dialog"
-            dialog_color = pyxel.COLOR_WHITE  # legacyは白
+        # ダイアログシステム表示（右端）- DialogManager v4固定
+        dialog_system = "DialogV4"
+        dialog_color = pyxel.COLOR_YELLOW  # v4固定（黄色）
         
         dialog_display = f"[{dialog_system}]"
         dialog_x = DisplayConfig.WINDOW_WIDTH - len(dialog_display) * 4 - 10
