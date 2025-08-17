@@ -120,6 +120,7 @@ class GridSystem:
         """グリッド線、バスバー、そして配置されたデバイスを描画する"""
         self._draw_grid_lines() # 背景グリッド線を先に描画
         self._draw_devices()
+        self._draw_timer_counter_values() # タイマー・カウンター数字を最前面に描画
 
     def _draw_grid_lines(self) -> None:
         """グリッド線を描画する"""
@@ -170,9 +171,6 @@ class GridSystem:
                         pyxel.blt(draw_x, draw_y, 0, coords[0], coords[1], sprite_size, sprite_size, 0)
                         device_count += 1  # 描画カウント
                         
-                        # タイマー・カウンター現在値表示（PLC標準準拠）
-                        self._draw_timer_counter_value(device, draw_x, draw_y, sprite_size)
-                        
                     else:
                         # スプライトが見つからない場合のフォールバック
                         pyxel.rect(draw_x, draw_y, sprite_size, sprite_size, pyxel.COLOR_PINK)
@@ -181,6 +179,21 @@ class GridSystem:
         # デバッグ用描画情報（画面下部に表示）
         if device_count > 2:  # バスバー以外のデバイスがある場合のみ表示
             pyxel.text(10, 360, f"Drawing {device_count} devices", pyxel.COLOR_WHITE)
+
+    def _draw_timer_counter_values(self) -> None:
+        """
+        全タイマー・カウンターの現在値を最前面に描画
+        グリッド線の後で描画するため、線に隠れることがない
+        """
+        sprite_size = sprite_manager.sprite_size
+        
+        for r in range(self.rows):
+            for c in range(self.cols):
+                device = self.get_device(r, c)
+                if device and device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+                    draw_x = self.origin_x + c * self.cell_size - sprite_size // 2
+                    draw_y = self.origin_y + r * self.cell_size - sprite_size // 2
+                    self._draw_timer_counter_value(device, draw_x, draw_y, sprite_size)
 
     def _draw_timer_counter_value(self, device: PLCDevice, draw_x: int, draw_y: int, sprite_size: int) -> None:
         """
