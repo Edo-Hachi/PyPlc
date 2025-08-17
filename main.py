@@ -208,18 +208,21 @@ class PyPlcVer3:
                 self._show_status_message("Device edit canceled", 2.0, "info")
             self.editing_device_pos = None # 処理後にリセット
 
-        # タイマー・カウンタープリセット値編集の結果を処理
-        preset_result = self.timer_counter_controller.get_result()
-        if preset_result and self.editing_device_pos:
-            success, new_value = preset_result
-            if success:
+        # タイマー・カウンター設定編集の結果を処理
+        timer_counter_result = self.timer_counter_controller.get_result()
+        if timer_counter_result and self.editing_device_pos:
+            success = timer_counter_result[0]
+            if success and len(timer_counter_result) >= 3:
+                new_device_id = timer_counter_result[1]
+                new_preset_value = timer_counter_result[2]
                 device = self.grid_system.get_device(*self.editing_device_pos)
                 if device:
-                    device.preset_value = new_value
+                    device.address = new_device_id
+                    device.preset_value = new_preset_value
                     self.circuit_analyzer.solve_ladder()
-                    self._show_status_message(f"Preset value set to {new_value}", 2.0, "success")
+                    self._show_status_message(f"Timer/Counter updated: {new_device_id}, Preset: {new_preset_value}", 3.0, "success")
             else:
-                self._show_status_message("Preset edit canceled", 2.0, "info")
+                self._show_status_message("Timer/Counter edit canceled", 2.0, "info")
             self.editing_device_pos = None # 処理後にリセット
 
         # データレジスタ編集の結果を処理（現在はモックアップのため何もしない）
@@ -272,10 +275,8 @@ class PyPlcVer3:
                 self.editing_device_pos = (row, col)
                 # デバイスタイプに応じて表示するダイアログを振り分ける
                 if device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
-                    self.timer_counter_controller.show_dialog(device.device_type, device.preset_value)
-                elif device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
-                    self.data_register_controller.show_dialog()
-                elif device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.RST, DeviceType.ZRST]:
+                    self.timer_counter_controller.show_dialog(device.device_type, device.preset_value, device.address)
+                elif device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B, DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.RST, DeviceType.ZRST]:
                     self.device_id_controller.show_dialog(device.device_type, device.address)
                 # 他のデバイスタイプは現状ダイアログなし
 

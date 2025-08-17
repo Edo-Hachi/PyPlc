@@ -28,10 +28,13 @@ class LabelWidget(WidgetBase):
             self.width = len(self.text) * pyxel.FONT_WIDTH
         if self.height == 0:
             self.height = pyxel.FONT_HEIGHT
+        # 色の設定（デフォルトは黒）
+        self.color = definition.get("color", pyxel.COLOR_BLACK)
 
     def draw(self):
         # ダイアログの座標系に合わせて描画
-        pyxel.text(self.dialog.x + self.x, self.dialog.y + self.y, self.text, pyxel.COLOR_BLACK)
+        if self.text:  # テキストが空でない場合のみ描画
+            pyxel.text(self.dialog.x + self.x, self.dialog.y + self.y, self.text, self.color)
 
 class ButtonWidget(WidgetBase):
     """クリック可能なボタンウィジェット"""

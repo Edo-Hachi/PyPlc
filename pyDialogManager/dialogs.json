@@ -301,35 +301,50 @@
   },
   "IDD_DEVICE_ID_EDIT": {
     "title": "Edit Device ID",
-    "x": 80,
-    "y": 80,
-    "width": 180,
-    "height": 100,
+    "x": 70,
+    "y": 70,
+    "width": 220,
+    "height": 140,
     "widgets": [
       {
         "type": "label",
+        "id": "IDC_LABEL_TYPE",
+        "text": "Device Type:",
+        "x": 20,
+        "y": 25
+      },
+      {
+        "type": "label",
         "id": "IDC_LABEL_PROMPT",
-        "text": "Enter new ID:",
-        "x": 10,
-        "y": 20
+        "text": "Enter Device ID:",
+        "x": 20,
+        "y": 45
       },
       {
         "type": "textbox",
         "id": "IDC_ID_INPUT",
         "text": "",
-        "x": 10,
-        "y": 35,
-        "width": 160,
+        "x": 20,
+        "y": 65,
+        "width": 180,
         "height": 20,
         "max_length": 20
+      },
+      {
+        "type": "label",
+        "id": "IDC_ERROR_MESSAGE",
+        "text": "",
+        "x": 20,
+        "y": 90,
+        "width": 180
       },
       {
         "type": "button",
         "id": "IDOK",
         "text": "OK",
-        "x": 60,
-        "y": 70,
-        "width": 50,
+        "x": 20,
+        "y": 110,
+        "width": 80,
         "height": 20
       },
       {
@@ -337,43 +352,75 @@
         "id": "IDCANCEL",
         "text": "Cancel",
         "x": 120,
-        "y": 70,
-        "width": 50,
+        "y": 110,
+        "width": 80,
         "height": 20
       }
     ]
   },
   "IDD_TIMER_COUNTER_EDIT": {
-    "title": "Edit Preset Value",
-    "x": 80,
-    "y": 80,
-    "width": 180,
-    "height": 100,
+    "title": "Edit Timer/Counter Settings",
+    "x": 60,
+    "y": 60,
+    "width": 240,
+    "height": 200,
     "widgets": [
       {
         "type": "label",
-        "id": "IDC_LABEL_PROMPT",
-        "text": "Enter Preset Value:",
-        "x": 10,
-        "y": 20
+        "id": "IDC_LABEL_TYPE",
+        "text": "Device Type:",
+        "x": 20,
+        "y": 25
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_DEVICE_ID",
+        "text": "Device ID:",
+        "x": 20,
+        "y": 50
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_DEVICE_ID_INPUT",
+        "text": "",
+        "x": 20,
+        "y": 70,
+        "width": 200,
+        "height": 20,
+        "max_length": 10
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_PRESET",
+        "text": "Preset Value:",
+        "x": 20,
+        "y": 100
       },
       {
         "type": "textbox",
         "id": "IDC_PRESET_INPUT",
         "text": "",
-        "x": 10,
-        "y": 35,
-        "width": 160,
+        "x": 20,
+        "y": 120,
+        "width": 200,
         "height": 20,
         "max_length": 5
+      },
+      {
+        "type": "label",
+        "id": "IDC_ERROR_MESSAGE",
+        "text": "",
+        "x": 20,
+        "y": 145,
+        "width": 200
       },
       {
         "type": "button",
         "id": "IDOK",
         "text": "OK",
-        "x": 60,
-        "y": 70,
-        "width": 50,
+        "x": 20,
+        "y": 170,
+        "width": 80,
         "height": 20
       },
       {
@@ -381,8 +428,8 @@
         "id": "IDCANCEL",
         "text": "Cancel",
         "x": 120,
-        "y": 70,
-        "width": 50,
+        "y": 170,
+        "width": 80,
         "height": 20
       }
     ]
