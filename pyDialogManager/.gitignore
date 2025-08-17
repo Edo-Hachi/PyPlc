@@ -1,0 +1,6 @@
+__pycache__/
+*.__pycache__
+*.pyc
+DialogManager_v3/*
+venv/
+

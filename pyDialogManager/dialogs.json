@@ -1,0 +1,277 @@
+{
+  "IDD_MAIN_DIALOG": {
+    "title": "Main Dialog",
+    "x": 30,
+    "y": 30,
+    "width": 200,
+    "height": 150,
+    "widgets": [
+      {
+        "type": "label",
+        "id": "IDC_STATIC_TEXT",
+        "text": "This is a sample dialog.",
+        "x": 10,
+        "y": 15
+      },
+      {
+        "type": "button",
+        "id": "IDOK",
+        "text": "OK",
+        "x": 75,
+        "y": 110,
+        "width": 50,
+        "height": 20
+      },
+      {
+        "type": "button",
+        "id": "IDCANCEL",
+        "text": "Cancel",
+        "x": 135,
+        "y": 110,
+        "width": 50,
+        "height": 20
+      }
+    ]
+  },
+  "IDD_FILE_OPEN": {
+    "title": "Open File",
+    "x": 10,
+    "y": 10,
+    "width": 236,
+    "height": 236,
+    "widgets": [
+      {
+        "type": "label",
+        "id": "IDC_LABEL_PATH",
+        "text": "Current Path:",
+        "x": 10,
+        "y": 20
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_PATH_DISPLAY",
+        "text": "",
+        "x": 5,
+        "y": 35,
+        "width": 170,
+        "height": 18,
+        "readonly": true
+      },
+      {
+        "type": "button",
+        "id": "IDC_UP_BUTTON",
+        "text": "Up",
+        "x": 180,
+        "y": 35,
+        "width": 50,
+        "height": 18
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_FILES",
+        "text": "Files:",
+        "x": 5,
+        "y": 58
+      },
+      {
+        "type": "listbox",
+        "id": "IDC_FILE_LIST",
+        "x": 5,
+        "y": 70,
+        "width": 225,
+        "height": 120,
+        "item_height": 10
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_FILENAME",
+        "text": "Name:",
+        "x": 5,
+        "y": 195
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_FILENAME_INPUT",
+        "text": "",
+        "x": 40,
+        "y": 195,
+        "width": 190,
+        "height": 18,
+        "max_length": 255
+      },
+      {
+        "type": "button",
+        "id": "IDOK",
+        "text": "Open",
+        "x": 120,
+        "y": 218,
+        "width": 50,
+        "height": 16
+      },
+      {
+        "type": "button",
+        "id": "IDCANCEL",
+        "text": "Cancel",
+        "x": 175,
+        "y": 218,
+        "width": 55,
+        "height": 16
+      }
+    ]
+  },
+  "IDD_SAVE_AS": {
+    "title": "Save File",
+    "x": 10,
+    "y": 10,
+    "width": 236,
+    "height": 236,
+    "widgets": [
+      {
+        "type": "label",
+        "id": "IDC_LABEL_PATH",
+        "text": "Current Path:",
+        "x": 10,
+        "y": 20
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_PATH_DISPLAY",
+        "text": "",
+        "x": 5,
+        "y": 35,
+        "width": 170,
+        "height": 18,
+        "readonly": true
+      },
+      {
+        "type": "button",
+        "id": "IDC_UP_BUTTON",
+        "text": "Up",
+        "x": 180,
+        "y": 35,
+        "width": 50,
+        "height": 18
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_FILES",
+        "text": "Files:",
+        "x": 5,
+        "y": 58
+      },
+      {
+        "type": "listbox",
+        "id": "IDC_FILE_LIST",
+        "x": 5,
+        "y": 70,
+        "width": 225,
+        "height": 120,
+        "item_height": 10
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_FILENAME",
+        "text": "Name:",
+        "x": 5,
+        "y": 195
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_FILENAME_INPUT",
+        "text": "",
+        "x": 40,
+        "y": 195,
+        "width": 190,
+        "height": 18,
+        "max_length": 255
+      },
+      {
+        "type": "button",
+        "id": "IDOK",
+        "text": "Save",
+        "x": 120,
+        "y": 218,
+        "width": 50,
+        "height": 16
+      },
+      {
+        "type": "button",
+        "id": "IDCANCEL",
+        "text": "Cancel",
+        "x": 175,
+        "y": 218,
+        "width": 55,
+        "height": 16
+      }
+    ]
+  },
+  "IDD_TEXT_INPUT": {
+    "title": "Text Input Demo",
+    "x": 10,
+    "y": 10,
+    "width": 250,
+    "height": 160,
+    "widgets": [
+      {
+        "type": "label",
+        "id": "IDC_LABEL_NAME",
+        "text": "Name:",
+        "x": 10,
+        "y": 20
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_NAME",
+        "text": "",
+        "x": 60,
+        "y": 20,
+        "width": 180,
+        "height": 20,
+        "max_length": 50
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_EMAIL",
+        "text": "Email:",
+        "x": 10,
+        "y": 50
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_EMAIL",
+        "text": "",
+        "x": 60,
+        "y": 50,
+        "width": 180,
+        "height": 20,
+        "max_length": 100
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_COMMENT",
+        "text": "Comment:",
+        "x": 10,
+        "y": 80
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_COMMENT",
+        "text": "Enter your comment here...",
+        "x": 10,
+        "y": 100,
+        "width": 230,
+        "height": 20,
+        "max_length": 200
+      },
+      {
+        "type": "button",
+        "id": "IDOK",
+        "text": "OK",
+        "x": 120,
+        "y": 130,
+        "width": 50,
+        "height": 20
+      }
+    ]
+  }
+}
