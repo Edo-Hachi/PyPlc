@@ -40,12 +40,6 @@ from core.input_handler import InputHandler, MouseState
 from core.circuit_analyzer import CircuitAnalyzer
 from core.device_palette import DevicePalette
 from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システムをインポート
-# 古いdialogs/システムは削除済み（Phase Cで完全移行）
-# DialogManager 統合システム
-from DialogManager import DialogManager, FileManager
-# DialogManager v4 - 次世代JSON完全定義システム
-from DialogManager_v4.core.dialog_engine import DialogEngine
-from DialogManager_v4.core.file_manager_v4 import FileManagerV4
 # pyDialogManager - 新しい移行先システム
 from pyDialogManager.dialog_manager import DialogManager as PyDialogManager
 from pyDialogManager.file_open_dialog import FileOpenDialogController
@@ -54,8 +48,6 @@ from pyDialogManager.device_id_dialog_controller import DeviceIdDialogController
 from pyDialogManager.timer_counter_dialog_controller import TimerCounterDialogController
 from pyDialogManager.data_register_dialog_controller import DataRegisterDialogController
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
-# ファイルダイアログ機能は既にFileManagerに統合済み
-from DialogManager_v3.dialogs.device_id_dialog import DeviceIdDialog
 
 
 class PyPlcVer3:
@@ -87,11 +79,8 @@ class PyPlcVer3:
         self.device_palette = DevicePalette()  # デバイスパレット追加
         self.csv_manager = CircuitCsvManager(self.grid_system)  # CSV管理システム追加
         
-        # DialogManager v4固定初期化
-        self._initialize_dialog_v4()
-        
-        # --- pyDialogManager パイロット統合 ---
-        print("[PyPlc] Initializing pyDialogManager for pilot integration...")
+        # --- pyDialogManager 移行システム ---
+        print("[PyPlc] Initializing pyDialogManager...")
         self.py_dialog_manager = PyDialogManager("pyDialogManager/dialogs.json")
         self.file_open_controller = FileOpenDialogController(self.py_dialog_manager)
         self.file_save_controller = FileSaveDialogController(self.py_dialog_manager)
@@ -114,85 +103,6 @@ class PyPlcVer3:
         self.status_message_timer = 0  # メッセージ表示残り時間（フレーム数）
         self.status_message_type = "info"  # メッセージタイプ（info/success/error）
 
-        pyxel.run(self.update, self.draw)
-    
-    def _initialize_dialog_v4(self):
-        """DialogManager v4固定初期化"""
-        try:
-            print("[PyPlc] Initializing DialogManager v4 (fixed version)...")
-            self.dialog_engine = DialogEngine(debug=True)
-            print("[PyPlc] ✅ DialogEngine initialized successfully")
-            
-            # v4ファイル管理システム初期化
-            self.file_manager = FileManagerV4(self.csv_manager, debug=True)
-            print("[PyPlc] ✅ v4 File Manager initialized successfully")
-            print("[PyPlc] Using DialogManager v4 system (JSON Complete Definition)")
-            
-        except Exception as e:
-            print(f"[PyPlc] CRITICAL ERROR: DialogManager v4 initialization failed: {e}")
-            print("[PyPlc] Application cannot continue without DialogManager v4")
-            import traceback
-            traceback.print_exc()
-            raise RuntimeError("DialogManager v4 initialization failed")
-    
-    def _show_device_id_dialog(self, device):
-        """Device ID編集ダイアログ表示（DialogManager v4固定）"""
-        return self._show_device_id_dialog_v4(device)
-    
-    def _show_device_id_dialog_v4(self, device):
-        """DialogManager v4でのDevice ID編集"""
-        try:
-            print(f"[PyPlc] v4: Opening device ID dialog for {device.device_type.name}")
-            
-            # JSON定義から動的にダイアログ作成
-            dialog = self.dialog_engine.create_dialog_from_json("dialogs/device_id_simple.json")
-            
-            # デバイス情報をダイアログのタイトルに反映
-            dialog.title = f"Edit {device.device_type.name} ID"
-            
-            # 現在のアドレスを設定
-            device_id_control = dialog.get_control("device_id_input")
-            if device_id_control:
-                device_id_control.text = device.address or ""
-                print(f"[PyPlc] v4: Set initial text to: '{device.address}'")
-            
-            # モーダル表示
-            print(f"[PyPlc] v4: Showing modal dialog...")
-            success, result = dialog.show_modal()
-            
-            print(f"[PyPlc] v4: Dialog result: success={success}, result={result}")
-            
-            if success and result:
-                # シンプルなテキスト結果を想定
-                if isinstance(result, dict) and "device_id" in result:
-                    return True, result["device_id"]
-                else:
-                    # TODO: テキストボックスの値を取得する実装
-                    new_id = device_id_control.text if device_id_control else ""
-                    print(f"[PyPlc] v4: Returning device ID: '{new_id}'")
-                    return True, new_id
-            else:
-                return False, None
-                
-        except Exception as e:
-            print(f"[PyPlc] Device ID dialog error: {e}")
-            import traceback
-            traceback.print_exc()
-            return False, None
-        
-        self.mouse_state: MouseState = MouseState()
-
-        # --- LINK_HORZ ドラッグ配置用フラグ (Phase D) ---
-        self.is_dragging_link = False
-        self.drag_start_pos = None
-        self.last_drag_pos = None
-        # --- ここまで ---
-        
-        # --- メッセージ表示システム ---
-        self.status_message = ""  # 表示中のメッセージ
-        self.status_message_timer = 0  # メッセージ表示残り時間（フレーム数）
-        self.status_message_type = "info"  # メッセージタイプ（info/success/error）
-        
         pyxel.run(self.update, self.draw)
     
     def update(self) -> None:
@@ -241,18 +151,6 @@ class PyPlcVer3:
             else:
                 self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)
         
-        # Ctrl+Shift+D: 削除済み（DialogManager v4固定）
-        
-        # T, U, V, W: 古いテスト関数は削除済み - 新システムに統合済み
-        if pyxel.btnp(pyxel.KEY_T):
-            self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
-        if pyxel.btnp(pyxel.KEY_U):
-            self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
-        if pyxel.btnp(pyxel.KEY_V):
-            self._show_status_message("Old test functions removed - Use device dialogs instead", 3.0)
-        if pyxel.btnp(pyxel.KEY_W):
-            self._show_status_message("File system is implemented - Use Ctrl+S/O", 3.0)
-
         # --- pyDialogManager パイロット統合 テスト ---
         if pyxel.btnp(pyxel.KEY_F11):
             print("[PyPlc] F11 pressed, showing pilot test dialog...")
@@ -282,7 +180,7 @@ class PyPlcVer3:
         # ファイル保存の結果を処理
         save_path = self.file_save_controller.get_result()
         if save_path:
-            if self.csv_manager.save_circuit_to_file(save_path):
+            if self.csv_manager.save_circuit_to_csv(save_path):
                 self._show_status_message(f"Saved to {os.path.basename(save_path)}", 3.0, "success")
             else:
                 self._show_status_message("Failed to save file", 3.0, "error")
@@ -290,7 +188,7 @@ class PyPlcVer3:
         # ファイル読み込みの結果を処理
         load_path = self.file_open_controller.get_result()
         if load_path:
-            if self.csv_manager.load_circuit_from_file(load_path):
+            if self.csv_manager.load_circuit_from_csv(load_path):
                 self._show_status_message(f"Loaded {os.path.basename(load_path)}", 3.0, "success")
                 self.circuit_analyzer.solve_ladder()
             else:
@@ -376,10 +274,7 @@ class PyPlcVer3:
                 if device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
                     self.timer_counter_controller.show_dialog(device.device_type, device.preset_value)
                 elif device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B]:
-                    # TODO: 本来はデータレジスタダイアログだが、現在はID編集を呼び出す
-                    # データレジスタ機能が本格実装されたら、以下の行を有効化する
-                    # self.data_register_controller.show_dialog()
-                    self.device_id_controller.show_dialog(device.device_type, device.address)
+                    self.data_register_controller.show_dialog()
                 elif device.device_type in [DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.RST, DeviceType.ZRST]:
                     self.device_id_controller.show_dialog(device.device_type, device.address)
                 # 他のデバイスタイプは現状ダイアログなし
@@ -780,15 +675,15 @@ class PyPlcVer3:
         pyxel.text(10, status_bar_y + 2, tab_hint, pyxel.COLOR_WHITE)
         
         # 現在編集中のファイル名表示（下部ステータスバー）
-        current_file = self.file_manager.get_current_filename()
-        file_display = f"File: {current_file}"
+        # current_file = self.file_manager.get_current_filename()
+        # file_display = f"File: {current_file}"
         
-        file_x = DisplayConfig.WINDOW_WIDTH - len(file_display) * 4 - 10  # 右端から10px余白
-        pyxel.text(file_x, DisplayConfig.WINDOW_HEIGHT - 20, file_display, pyxel.COLOR_CYAN)
+        # file_x = DisplayConfig.WINDOW_WIDTH - len(file_display) * 4 - 10  # 右端から10px余白
+        # pyxel.text(file_x, DisplayConfig.WINDOW_HEIGHT - 20, file_display, pyxel.COLOR_CYAN)
         
         # ダイアログシステム表示（右端）- DialogManager v4固定
-        dialog_system = "DialogV4"
-        dialog_color = pyxel.COLOR_YELLOW  # v4固定（黄色）
+        dialog_system = "pyDialogManager"
+        dialog_color = pyxel.COLOR_LIME
         
         dialog_display = f"[{dialog_system}]"
         dialog_x = DisplayConfig.WINDOW_WIDTH - len(dialog_display) * 4 - 10

@@ -35,6 +35,10 @@ class DeviceIdDialogController:
 
     def update(self):
         """フレームごとの更新処理"""
+        # マネージャーと自身のアクティブダイアログが一致しない場合、自身を非アクティブ化
+        if self.active_dialog and self.active_dialog != self.dialog_manager.active_dialog:
+            self.active_dialog = None
+
         if not self.active_dialog:
             return
 
