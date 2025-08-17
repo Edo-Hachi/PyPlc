@@ -3,9 +3,10 @@
 
 ファイルシステムとダイアログウィジェットを連携させる機能を提供
 """
-from file_utils import FileManager
-from dialog_manager import DialogManager
-from system_settings import settings
+import os
+from .dialog_manager import DialogManager
+from .file_utils import FileManager, FileItem
+from .system_settings import settings
 
 class FileOpenDialogController:
     """ファイルオープンダイアログのコントローラークラス"""
@@ -14,9 +15,11 @@ class FileOpenDialogController:
         self.dialog_manager = dialog_manager
         self.file_manager = FileManager(initial_directory)
         self.active_dialog = None
+        self.result = None
         
     def show_file_open_dialog(self):
         """ファイルオープンダイアログを表示し、ファイルシステムと連携"""
+        self.result = None # 表示時に結果をリセット
         # ダイアログを表示
         self.dialog_manager.show("IDD_FILE_OPEN")
         self.active_dialog = self.dialog_manager.active_dialog
@@ -26,6 +29,12 @@ class FileOpenDialogController:
             self._initialize_dialog()
             self._refresh_file_list()
             self._setup_event_handlers()
+
+    def get_result(self):
+        """Get the result and clear it."""
+        result = self.result
+        self.result = None
+        return result
     
     def _initialize_dialog(self):
         """ダイアログの初期化"""
@@ -158,7 +167,7 @@ class FileOpenDialogController:
             return None
             
         selected_filename = filename_widget.text.strip()
-        full_path = self.file_manager.get_current_path() + "/" + selected_filename
+        full_path = os.path.join(self.file_manager.get_current_path(), selected_filename)
         
         print(f"Opening file: {full_path}")
         return full_path
@@ -166,6 +175,8 @@ class FileOpenDialogController:
     def handle_cancel_button(self):
         """Cancelボタンが押された時の処理"""
         print("File open dialog cancelled")
+        self.result = None
+        self.dialog_manager.close()
         return None
     
     def update(self):
@@ -204,5 +215,7 @@ class FileOpenDialogController:
                     result = self.handle_open_button()
                     if result:
                         print(f"File selected for opening: {result}")
+                        self.result = result
+                        self.dialog_manager.close()
                 elif widget.id == "IDCANCEL":
                     self.handle_cancel_button()

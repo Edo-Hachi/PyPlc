@@ -1,4 +1,5 @@
 import pyxel
+from .widgets import LabelWidget, ButtonWidget, TextBoxWidget, ListBoxWidget
 
 class Dialog:
     """

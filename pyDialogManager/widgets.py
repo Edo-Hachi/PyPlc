@@ -1,6 +1,6 @@
 import pyxel
 import time
-from system_settings import settings
+from .system_settings import settings
 
 class WidgetBase:
     """すべてのウィジェットの基底クラス"""

@@ -1,7 +1,7 @@
 import json
 import pyxel
-from dialog import Dialog
-from widgets import LabelWidget, ButtonWidget, TextBoxWidget, ListBoxWidget
+from .dialog import Dialog
+from .widgets import LabelWidget, ButtonWidget, TextBoxWidget, ListBoxWidget
 
 class DialogManager:
     """

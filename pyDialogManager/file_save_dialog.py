@@ -4,9 +4,9 @@
 ファイルシステムとダイアログウィジェットを連携させる機能を提供
 """
 import os
-from file_utils import FileManager
-from dialog_manager import DialogManager
-from system_settings import settings
+from .file_utils import FileManager
+from .dialog_manager import DialogManager
+from .system_settings import settings
 
 class FileSaveDialogController:
     """ファイル保存ダイアログのコントローラークラス"""
@@ -15,6 +15,7 @@ class FileSaveDialogController:
         self.dialog_manager = dialog_manager
         self.file_manager = FileManager(initial_directory)
         self.active_dialog = None
+        self.result = None
         
         # デフォルト拡張子（空文字列なら拡張子なし）
         self.default_extension = ".txt"
@@ -22,6 +23,7 @@ class FileSaveDialogController:
         
     def show_save_dialog(self, default_filename: str = "", default_extension: str = None):
         """ファイル保存ダイアログを表示し、ファイルシステムと連携"""
+        self.result = None # 表示時に結果をリセット
         # デフォルト拡張子の設定
         if default_extension is not None:
             self.default_extension = default_extension
@@ -36,6 +38,12 @@ class FileSaveDialogController:
             self._refresh_file_list()
             self._setup_event_handlers()
     
+    def get_result(self):
+        """Get the result and clear it."""
+        result = self.result
+        self.result = None
+        return result
+
     def _initialize_dialog(self, default_filename: str):
         """ダイアログの初期化"""
         if not self.active_dialog:
@@ -277,6 +285,8 @@ class FileSaveDialogController:
     def handle_cancel_button(self):
         """Cancelボタンが押された時の処理"""
         print("Save dialog cancelled")
+        self.result = None
+        self.dialog_manager.close()
         return None
     
     def update(self):
@@ -316,5 +326,7 @@ class FileSaveDialogController:
                     result = self.handle_save_button()
                     if result:
                         print(f"File selected for saving: {result}")
+                        self.result = result
+                        self.dialog_manager.close()
                 elif widget.id == "IDCANCEL":
                     self.handle_cancel_button()
