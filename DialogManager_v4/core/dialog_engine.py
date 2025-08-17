@@ -111,8 +111,14 @@ class DialogEngine:
         # 位置計算
         position = dialog_def.get("position", "center")
         if position == "center":
-            x = (pyxel.width - width) // 2
-            y = (pyxel.height - height) // 2
+            try:
+                # Pyxelが初期化されている場合のみ中央配置
+                x = (pyxel.width - width) // 2
+                y = (pyxel.height - height) // 2
+            except:
+                # Pyxel未初期化の場合はデフォルト位置
+                x = (800 - width) // 2  # デフォルト画面サイズを想定
+                y = (600 - height) // 2
         else:
             x = dialog_def.get("x", 0)
             y = dialog_def.get("y", 0)
