@@ -83,14 +83,10 @@ class DevicePalette:
         """ダイアログモードの設定"""
         if enabled:
             # ダイアログモード有効時は選択状態をクリア
-            if self.state.selected_index is not None:  # 既にNoneなら保存不要
-                self.previous_selection = self.state.selected_index  # 復元用に保存
-                self.state.selected_index = None
+            self.state.selected_index = None
         else:
-            # ダイアログモード無効時は前の選択状態を復元
-            if hasattr(self, 'previous_selection'):
-                self.state.selected_index = self.previous_selection
-                delattr(self, 'previous_selection')  # メモリクリーンアップ
+            # ダイアログモード無効時は選択状態をNoneのまま維持（復元しない）
+            self.state.selected_index = None
     
     def get_selected_device(self) -> Optional[PaletteDevice]:
         """現在選択中のPaletteDeviceを取得"""

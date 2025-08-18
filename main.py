@@ -92,7 +92,8 @@ class PyPlcVer3:
         # --- ダイアログ編集中の状態管理 ---
         self.editing_device_pos = None
         self.previous_dialog_active = False  # 前フレームのダイアログ状態
-        self.dialog_just_closed = False  # ダイアログが直前に閉じられたフラグ
+        # self.dialog_just_closed = False  # ダイアログが直前に閉じられたフラグ（現在未使用）
+        # 目的: ダイアログ終了時に残存する入力イベント（マウスクリック・キーボード入力・Enter/ESC等）による誤動作防止
 
         # --- LINK_HORZ ドラッグ配置用フラグ (Phase D) ---
         self.is_dragging_link = False
@@ -123,8 +124,6 @@ class PyPlcVer3:
         # ダイアログ表示状態に応じてデバイスパレットのモードを設定（状態変化時のみ）
         dialog_active = self.py_dialog_manager.active_dialog is not None
         if dialog_active != self.previous_dialog_active:
-            if dialog_active:  # ダイアログが開かれる直前に選択をクリア
-                self.device_palette.set_selection(-1, -1)  # 無効な行とインデックスで選択をクリア
             self.device_palette.set_dialog_mode(dialog_active)
             self.previous_dialog_active = dialog_active
 
@@ -191,7 +190,8 @@ class PyPlcVer3:
         # ファイル保存の結果を処理
         save_path = self.file_save_controller.get_result()
         if save_path:
-            self.dialog_just_closed = True  # ダイアログ終了フラグ設定
+            # self.dialog_just_closed = True  # ダイアログ終了フラグ設定（現在未使用）
+            # 目的: ダイアログOK決定時の入力イベント（クリック・Enter等）が次フレームで意図しない動作を引き起こすのを防止
             if self.csv_manager.save_circuit_to_csv(save_path):
                 self._show_status_message(f"Saved to {os.path.basename(save_path)}", 3.0, "success")
             else:
@@ -200,7 +200,8 @@ class PyPlcVer3:
         # ファイル読み込みの結果を処理
         load_path = self.file_open_controller.get_result()
         if load_path:
-            self.dialog_just_closed = True  # ダイアログ終了フラグ設定
+            # self.dialog_just_closed = True  # ダイアログ終了フラグ設定（現在未使用）
+            # 目的: ダイアログOK決定時の入力イベント（クリック・Enter等）が次フレームで意図しない動作を引き起こすのを防止
             # print(f"[DEBUG] Loading file: {load_path}")  # デバッグログ
             if self.csv_manager.load_circuit_from_csv(load_path):
                 self._show_status_message(f"Loaded {os.path.basename(load_path)}", 3.0, "success")
@@ -257,13 +258,18 @@ class PyPlcVer3:
         if self.mouse_state.hovered_pos is None or not self.mouse_state.is_snapped or not self.mouse_state.on_editable_area:
             return
             
-        # ダイアログが直前に閉じられた場合は1フレーム待つ
-        if self.dialog_just_closed:
-            self.dialog_just_closed = False
-            return
+        # ダイアログが直前に閉じられた場合は1フレーム待つ（現在未使用）
+        # 目的: ダイアログ終了直後の全入力イベント残存（マウス・キーボード・Enter/ESC等）による誤動作防止
+        # if self.dialog_just_closed:
+        #     self.dialog_just_closed = False
+        #     return
 
         row, col = self.mouse_state.hovered_pos
         selected_device_type = self.device_palette.get_selected_device_type()
+        
+        # EMPTYの場合は早期リターン（安全策）
+        if selected_device_type == DeviceType.EMPTY:
+            return
 
         # --- ドラッグ開始処理 (Phase D) ---
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
