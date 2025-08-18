@@ -1,4 +1,0 @@
-//For Ubuntu
-{
- "python.defaultInterpreterPath": "venv/bin/python"
-}
