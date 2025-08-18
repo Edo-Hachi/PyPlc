@@ -18,13 +18,16 @@ class DeviceIdDialogController:
 
     def show_dialog(self, device_type: DeviceType, initial_value: str = ""):
         """ダイアログを表示する"""
+        print(f"[DEBUG] DeviceIdDialogController.show_dialog called: type={device_type}, initial={initial_value}")
         self.result = None
         self.device_type = device_type
         self.last_input_text = initial_value
         self.dialog_manager.show("IDD_DEVICE_ID_EDIT")
         self.active_dialog = self.dialog_manager.active_dialog
+        print(f"[DEBUG] Dialog manager active_dialog: {self.active_dialog}")
 
         if self.active_dialog:
+            print(f"[DEBUG] Dialog successfully created and assigned")
             self.active_dialog.title = f"Edit {device_type.name} ID"
             
             # デバイスタイプ表示を更新
@@ -39,6 +42,8 @@ class DeviceIdDialogController:
             
             # エラーメッセージをクリア
             self._clear_error_message()
+        else:
+            print(f"[DEBUG] ERROR: Failed to create dialog 'IDD_DEVICE_ID_EDIT'")
 
     def get_result(self):
         """結果を取得し、クリアする"""

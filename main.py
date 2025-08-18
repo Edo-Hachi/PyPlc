@@ -127,8 +127,16 @@ class PyPlcVer3:
             self.device_palette.set_dialog_mode(dialog_active)
             self.previous_dialog_active = dialog_active
 
-        # ダイアログ表示中は他の処理をスキップ
+        # ダイアログ表示中はゲーム処理をスキップするが、ダイアログ処理は継続
         if dialog_active:
+            # ダイアログコントローラーの更新処理
+            self.device_id_controller.update()
+            self.timer_counter_controller.update()
+            self.file_save_controller.update()
+            self.file_open_controller.update()
+            
+            # ダイアログからの結果処理
+            self._handle_dialog_results()
             return
         
         # 1. 入力処理
@@ -252,10 +260,39 @@ class PyPlcVer3:
         LINK_HORZのドラッグ配置に対応 (Phase D)
         """
         if self.current_mode != SimulatorMode.EDIT:
+            print(f"[DEBUG] Skipping mouse input: not in EDIT mode (current: {self.current_mode})")
             return
         if not self.mouse_state.snap_mode:
+            print(f"[DEBUG] Skipping mouse input: snap_mode is False")
             return
+        # 右クリック処理の場合は is_snapped 条件を緩和（デバイス上であれば OK）
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
+            if self.mouse_state.hovered_pos is None or not self.mouse_state.on_editable_area:
+                print(f"[DEBUG] Skipping RIGHT CLICK: hovered_pos={self.mouse_state.hovered_pos}, on_editable_area={self.mouse_state.on_editable_area}")
+                return
+            # 右クリック処理を先に実行
+            row, col = self.mouse_state.hovered_pos
+            device = self.grid_system.get_device(row, col)
+            print(f"[DEBUG] Right click at ({row}, {col}), device: {device}")
+            if device:
+                print(f"[DEBUG] Device type: {device.device_type}, address: {device.address}")
+                self.editing_device_pos = (row, col)
+                # デバイスタイプに応じて表示するダイアログを振り分ける
+                if device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+                    print(f"[DEBUG] Showing timer/counter dialog")
+                    self.timer_counter_controller.show_dialog(device.device_type, device.preset_value, device.address)
+                elif device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B, DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.RST, DeviceType.ZRST]:
+                    print(f"[DEBUG] Showing device ID dialog for {device.device_type}")
+                    self.device_id_controller.show_dialog(device.device_type, device.address)
+                else:
+                    print(f"[DEBUG] No dialog for device type: {device.device_type}")
+            else:
+                print(f"[DEBUG] No device at ({row}, {col})")
+            return  # 右クリック処理後は他の処理をスキップ
+        
+        # 左クリック等の他の処理では、従来通り is_snapped 条件を適用
         if self.mouse_state.hovered_pos is None or not self.mouse_state.is_snapped or not self.mouse_state.on_editable_area:
+            print(f"[DEBUG] Skipping mouse input: hovered_pos={self.mouse_state.hovered_pos}, is_snapped={self.mouse_state.is_snapped}, on_editable_area={self.mouse_state.on_editable_area}")
             return
             
         # ダイアログが直前に閉じられた場合は1フレーム待つ（現在未使用）
@@ -293,17 +330,6 @@ class PyPlcVer3:
             else:
                 if selected_device_type not in [DeviceType.DEL, DeviceType.EMPTY]:
                     self._place_single_device(row, col, selected_device_type)
-        
-        if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
-            device = self.grid_system.get_device(row, col)
-            if device:
-                self.editing_device_pos = (row, col)
-                # デバイスタイプに応じて表示するダイアログを振り分ける
-                if device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
-                    self.timer_counter_controller.show_dialog(device.device_type, device.preset_value, device.address)
-                elif device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B, DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.RST, DeviceType.ZRST]:
-                    self.device_id_controller.show_dialog(device.device_type, device.address)
-                # 他のデバイスタイプは現状ダイアログなし
 
     def _place_single_device(self, row: int, col: int, device_type: DeviceType) -> None:
         """単一のデバイスを配置するヘルパーメソッド"""
