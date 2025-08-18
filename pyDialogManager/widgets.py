@@ -1,5 +1,6 @@
 import pyxel
 import time
+from typing import List, Optional
 from .system_settings import settings
 
 class WidgetBase:
@@ -499,3 +500,288 @@ class ListBoxWidget(WidgetBase):
         """二重下向き矢印を描画"""
         self._draw_down_arrow(cx, cy - 2)  # 上の矢印
         self._draw_down_arrow(cx, cy + 1)  # 下の矢印
+
+
+class DropdownWidget(WidgetBase):
+    """ドロップダウン選択ウィジェット"""
+    
+    def __init__(self, dialog, definition):
+        super().__init__(dialog, definition)
+        
+        # ドロップダウン固有の属性
+        self.items = definition.get("items", [])
+        self.selected_index = definition.get("selected_index", -1)
+        self.is_open = False
+        self.is_hover = False
+        self.hover_item_index = -1
+        
+        # 表示設定
+        self.item_height = definition.get("item_height", 12)
+        self.max_visible_items = definition.get("max_visible_items", 5)
+        
+        # ドロップダウンリストの高さを計算
+        visible_items = min(len(self.items), self.max_visible_items)
+        self.dropdown_height = visible_items * self.item_height
+        
+        # イベントハンドラー（動的属性システム）
+        # hasattr パターンでイベントハンドラーを実装
+        
+    def get_selected_value(self) -> Optional[str]:
+        """現在選択されている値を取得"""
+        if 0 <= self.selected_index < len(self.items):
+            return self.items[self.selected_index]
+        return None
+        
+    def get_display_text(self) -> str:
+        """ボタンに表示するテキストを取得"""
+        if 0 <= self.selected_index < len(self.items):
+            return self.items[self.selected_index]
+        return "Select..." if self.items else "No items"
+    
+    def update(self):
+        """マウス操作の処理"""
+        mx, my = pyxel.mouse_x, pyxel.mouse_y
+        dx, dy = self.dialog.x, self.dialog.y
+        
+        # ドロップダウンボタンの範囲チェック
+        button_x = dx + self.x
+        button_y = dy + self.y
+        
+        self.is_hover = (button_x <= mx < button_x + self.width and 
+                        button_y <= my < button_y + self.height)
+        
+        # ドロップダウンリストが開いている場合の処理
+        if self.is_open:
+            self._update_dropdown_list(mx, my, dx, dy)
+        
+        # クリック処理
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            if self.is_hover:
+                # ボタンクリック: ドロップダウンを開く/閉じる
+                self.is_open = not self.is_open
+                if self.is_open:
+                    self.hover_item_index = self.selected_index
+            elif self.is_open:
+                # ドロップダウンリスト内のクリック処理
+                self._handle_dropdown_click(mx, my, dx, dy)
+            else:
+                # 外部クリック: ドロップダウンを閉じる
+                self.is_open = False
+    
+    def _update_dropdown_list(self, mx, my, dx, dy):
+        """ドロップダウンリスト内のマウス処理"""
+        list_x = dx + self.x
+        list_y = dy + self.y + self.height
+        
+        self.hover_item_index = -1
+        
+        if (list_x <= mx < list_x + self.width and 
+            list_y <= my < list_y + self.dropdown_height):
+            
+            # ホバー中のアイテムインデックスを計算
+            relative_y = my - list_y
+            item_index = relative_y // self.item_height
+            
+            if 0 <= item_index < len(self.items):
+                self.hover_item_index = item_index
+    
+    def _handle_dropdown_click(self, mx, my, dx, dy):
+        """ドロップダウンリスト内でのクリック処理"""
+        list_x = dx + self.x
+        list_y = dy + self.y + self.height
+        
+        if (list_x <= mx < list_x + self.width and 
+            list_y <= my < list_y + self.dropdown_height):
+            
+            # クリックされたアイテムを計算
+            relative_y = my - list_y
+            clicked_index = relative_y // self.item_height
+            
+            if 0 <= clicked_index < len(self.items):
+                # 選択を更新
+                old_index = self.selected_index
+                self.selected_index = clicked_index
+                
+                # イベント発火（動的属性システム）
+                if hasattr(self, 'on_selection_changed'):
+                    print(f"[DEBUG] DropdownWidget: Firing on_selection_changed event: index={self.selected_index}, value='{self.get_selected_value()}'")
+                    self.on_selection_changed(self.selected_index, self.get_selected_value())
+                else:
+                    print(f"[DEBUG] DropdownWidget: No on_selection_changed handler found")
+                
+                # ドロップダウンを閉じる
+                self.is_open = False
+        else:
+            # 外部クリック: ドロップダウンを閉じる
+            self.is_open = False
+    
+    def draw(self):
+        """ドロップダウンウィジェットの描画"""
+        dx, dy = self.dialog.x, self.dialog.y
+        
+        # ドロップダウンボタンの描画
+        self._draw_button(dx, dy)
+        
+        # ドロップダウンリストの描画（開いている場合のみ）
+        if self.is_open:
+            self._draw_dropdown_list(dx, dy)
+    
+    def _draw_button(self, dx, dy):
+        """ドロップダウンボタンの描画"""
+        x = dx + self.x
+        y = dy + self.y
+        
+        # 背景色（ホバー状態に応じて変更）
+        bg_color = pyxel.COLOR_LIGHT_BLUE if self.is_hover else pyxel.COLOR_WHITE
+        
+        # ボタン背景
+        pyxel.rect(x, y, self.width, self.height, bg_color)
+        pyxel.rectb(x, y, self.width, self.height, pyxel.COLOR_BLACK)
+        
+        # テキスト表示
+        display_text = self.get_display_text()
+        text_x = x + 2
+        text_y = y + (self.height - pyxel.FONT_HEIGHT) // 2
+        
+        # テキストが長すぎる場合は切り詰め
+        max_chars = (self.width - 20) // pyxel.FONT_WIDTH
+        if len(display_text) > max_chars:
+            display_text = display_text[:max_chars-3] + "..."
+            
+        pyxel.text(text_x, text_y, display_text, pyxel.COLOR_BLACK)
+        
+        # ドロップダウン矢印の描画
+        arrow_x = x + self.width - 12
+        arrow_y = y + self.height // 2
+        
+        if self.is_open:
+            # 上向き矢印（閉じる）
+            pyxel.tri(arrow_x, arrow_y - 2,
+                     arrow_x - 3, arrow_y + 2,
+                     arrow_x + 3, arrow_y + 2,
+                     pyxel.COLOR_BLACK)
+        else:
+            # 下向き矢印（開く）
+            pyxel.tri(arrow_x - 3, arrow_y - 2,
+                     arrow_x + 3, arrow_y - 2,
+                     arrow_x, arrow_y + 2,
+                     pyxel.COLOR_BLACK)
+    
+    def _draw_dropdown_list(self, dx, dy):
+        """ドロップダウンリストの描画"""
+        list_x = dx + self.x
+        list_y = dy + self.y + self.height
+        
+        # リスト背景
+        pyxel.rect(list_x, list_y, self.width, self.dropdown_height, pyxel.COLOR_WHITE)
+        pyxel.rectb(list_x, list_y, self.width, self.dropdown_height, pyxel.COLOR_BLACK)
+        
+        # 各アイテムの描画
+        visible_items = min(len(self.items), self.max_visible_items)
+        for i in range(visible_items):
+            if i >= len(self.items):
+                break
+                
+            item_y = list_y + i * self.item_height
+            
+            # アイテムの背景色（選択状態・ホバー状態に応じて変更）
+            if i == self.selected_index:
+                # 選択中のアイテム
+                pyxel.rect(list_x + 1, item_y, self.width - 2, self.item_height, pyxel.COLOR_CYAN)
+            elif i == self.hover_item_index:
+                # ホバー中のアイテム
+                pyxel.rect(list_x + 1, item_y, self.width - 2, self.item_height, pyxel.COLOR_LIGHT_BLUE)
+            
+            # アイテムテキスト
+            text_x = list_x + 3
+            text_y = item_y + (self.item_height - pyxel.FONT_HEIGHT) // 2
+            
+            item_text = self.items[i]
+            max_chars = (self.width - 6) // pyxel.FONT_WIDTH
+            if len(item_text) > max_chars:
+                item_text = item_text[:max_chars-3] + "..."
+                
+            pyxel.text(text_x, text_y, item_text, pyxel.COLOR_BLACK)
+
+
+class CheckboxWidget(WidgetBase):
+    """チェックボックスウィジェット"""
+    
+    def __init__(self, dialog, definition):
+        super().__init__(dialog, definition)
+        
+        # チェックボックス固有の属性
+        self.is_checked = definition.get("checked", False)
+        self.is_hover = False
+        self.checkbox_size = definition.get("checkbox_size", 12)
+        
+        # デフォルトサイズ設定
+        if self.width == 0:
+            # テキスト幅 + チェックボックス + 余白
+            text_width = len(self.text) * pyxel.FONT_WIDTH
+            self.width = self.checkbox_size + 4 + text_width
+        if self.height == 0:
+            self.height = max(self.checkbox_size, pyxel.FONT_HEIGHT)
+    
+    def get_checked(self) -> bool:
+        """チェック状態を取得"""
+        return self.is_checked
+    
+    def set_checked(self, checked: bool):
+        """チェック状態を設定"""
+        if self.is_checked != checked:
+            self.is_checked = checked
+            # イベント発火（動的属性システム）
+            if hasattr(self, 'on_checked_changed'):
+                print(f"[DEBUG] CheckboxWidget: Firing on_checked_changed event: checked={self.is_checked}")
+                self.on_checked_changed(self.is_checked)
+    
+    def update(self):
+        """マウス操作の処理"""
+        mx, my = pyxel.mouse_x, pyxel.mouse_y
+        dx, dy = self.dialog.x, self.dialog.y
+        
+        # チェックボックス全体の範囲チェック
+        widget_x = dx + self.x
+        widget_y = dy + self.y
+        
+        self.is_hover = (widget_x <= mx < widget_x + self.width and 
+                        widget_y <= my < widget_y + self.height)
+        
+        # クリック処理
+        if self.is_hover and pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            # チェック状態を反転
+            self.set_checked(not self.is_checked)
+    
+    def draw(self):
+        """チェックボックスウィジェットの描画"""
+        dx, dy = self.dialog.x, self.dialog.y
+        x = dx + self.x
+        y = dy + self.y
+        
+        # チェックボックスの描画
+        checkbox_x = x
+        checkbox_y = y + (self.height - self.checkbox_size) // 2
+        
+        # 背景色（ホバー状態に応じて変更）
+        bg_color = pyxel.COLOR_LIGHT_BLUE if self.is_hover else pyxel.COLOR_WHITE
+        
+        # チェックボックス背景
+        pyxel.rect(checkbox_x, checkbox_y, self.checkbox_size, self.checkbox_size, bg_color)
+        pyxel.rectb(checkbox_x, checkbox_y, self.checkbox_size, self.checkbox_size, pyxel.COLOR_BLACK)
+        
+        # チェックマークの描画（チェックされている場合）
+        if self.is_checked:
+            # ✓マークを線で描画
+            check_x = checkbox_x + 2
+            check_y = checkbox_y + self.checkbox_size // 2
+            
+            # チェックマークの線（簡単な✓形状）
+            pyxel.line(check_x, check_y, check_x + 3, check_y + 3, pyxel.COLOR_BLACK)
+            pyxel.line(check_x + 3, check_y + 3, check_x + 8, check_y - 2, pyxel.COLOR_BLACK)
+        
+        # テキストの描画
+        if self.text:
+            text_x = checkbox_x + self.checkbox_size + 4  # チェックボックスの右側に余白
+            text_y = y + (self.height - pyxel.FONT_HEIGHT) // 2
+            pyxel.text(text_x, text_y, self.text, pyxel.COLOR_BLACK)

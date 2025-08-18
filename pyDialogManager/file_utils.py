@@ -40,6 +40,7 @@ class FileManager:
         else:
             self.current_path = os.getcwd()  # カレントディレクトリから開始
         self.file_filters = ["*.*"]  # デフォルトはすべてのファイル
+        self.show_directories = True  # ディレクトリ表示フラグ
     
     def get_current_path(self) -> str:
         """現在のパスを取得"""
@@ -76,11 +77,15 @@ class FileManager:
             # ディレクトリとファイルを分けて取得
             entries = os.listdir(self.current_path)
             
-            # ディレクトリを先に追加
-            for entry in sorted(entries):
-                full_path = os.path.join(self.current_path, entry)
-                if os.path.isdir(full_path):
-                    items.append(FileItem(full_path))
+            # ディレクトリを先に追加（表示フラグがTrueの場合のみ）
+            if self.show_directories:
+                for entry in sorted(entries):
+                    full_path = os.path.join(self.current_path, entry)
+                    if os.path.isdir(full_path):
+                        items.append(FileItem(full_path))
+                        print(f"[DEBUG] Added directory: {entry}")
+            else:
+                print(f"[DEBUG] Directories hidden by user setting")
             
             # ファイルを後に追加
             for entry in sorted(entries):
@@ -99,12 +104,15 @@ class FileManager:
         import fnmatch
         for filter_pattern in self.file_filters:
             if fnmatch.fnmatch(filename.lower(), filter_pattern.lower()):
+                print(f"[DEBUG] File '{filename}' matches filter '{filter_pattern}'")
                 return True
+        print(f"[DEBUG] File '{filename}' does not match any filters: {self.file_filters}")
         return False
     
     def set_file_filter(self, filters: List[str]):
         """ファイルフィルターを設定"""
         self.file_filters = filters if filters else ["*.*"]
+        print(f"[DEBUG] FileManager filters set to: {self.file_filters}")
     
     def get_display_path(self) -> str:
         """表示用のパスを取得（短縮版）"""

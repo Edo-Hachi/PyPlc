@@ -38,7 +38,7 @@
     "x": 10,
     "y": 10,
     "width": 236,
-    "height": 236,
+    "height": 240,
     "widgets": [
       {
         "type": "label",
@@ -95,26 +95,55 @@
         "text": "",
         "x": 40,
         "y": 195,
-        "width": 190,
+        "width": 120,
         "height": 18,
         "max_length": 255
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_FILTER",
+        "text": "Filter:",
+        "x": 5,
+        "y": 218
+      },
+      {
+        "type": "dropdown",
+        "id": "IDC_FILE_FILTER",
+        "x": 40,
+        "y": 218,
+        "width": 120,
+        "height": 16,
+        "items": ["All Files (*.*)", "CSV Files (*.csv)", "Text Files (*.txt)", "Python Files (*.py)"],
+        "selected_index": 1,
+        "max_visible_items": 4,
+        "item_height": 12,
+        "_comment": "selected_index: 0=All Files, 1=CSV Files, 2=Text Files, 3=Python Files"
+      },
+      {
+        "type": "checkbox",
+        "id": "IDC_SHOW_DIRECTORIES",
+        "text": "Show Directories",
+        "x": 165,
+        "y": 218,
+        "checked": true,
+        "checkbox_size": 12
       },
       {
         "type": "button",
         "id": "IDOK",
         "text": "Open",
-        "x": 120,
-        "y": 218,
-        "width": 50,
+        "x": 165,
+        "y": 195,
+        "width": 30,
         "height": 16
       },
       {
         "type": "button",
         "id": "IDCANCEL",
         "text": "Cancel",
-        "x": 175,
-        "y": 218,
-        "width": 55,
+        "x": 200,
+        "y": 195,
+        "width": 30,
         "height": 16
       }
     ]

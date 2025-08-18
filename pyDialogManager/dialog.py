@@ -40,5 +40,14 @@ class Dialog:
         pyxel.text(self.x + 4, self.y + 3, self.title, pyxel.COLOR_WHITE)
 
         # 管理しているウィジェットの描画処理を呼び出す
+        # ドロップダウンウィジェット以外を先に描画
+        dropdown_widgets = []
         for widget in self.widgets:
-            widget.draw()
+            if hasattr(widget, '__class__') and widget.__class__.__name__ == 'DropdownWidget':
+                dropdown_widgets.append(widget)
+            else:
+                widget.draw()
+        
+        # ドロップダウンウィジェットを最後に描画（Z-orderを最前面にするため）
+        for dropdown in dropdown_widgets:
+            dropdown.draw()
