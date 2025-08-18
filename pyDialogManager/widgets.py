@@ -3,6 +3,53 @@ import time
 from typing import List, Optional
 from .system_settings import settings
 
+
+def resolve_color(color_value):
+    """
+    色定義を解決する関数
+    
+    Args:
+        color_value: 数値、"COLOR_xxx"文字列、またはNone
+        
+    Returns:
+        int: pyxel色定数
+    """
+    if color_value is None:
+        return None
+        
+    # すでに数値の場合はそのまま返す
+    if isinstance(color_value, int):
+        return color_value
+    
+    # 文字列の場合、COLOR_xxxからpyxel.COLOR_xxxに変換
+    if isinstance(color_value, str) and color_value.startswith("COLOR_"):
+        color_name = color_value  # "COLOR_RED" など
+        
+        # pyxel色定数マッピング
+        color_map = {
+            "COLOR_BLACK": pyxel.COLOR_BLACK,
+            "COLOR_NAVY": pyxel.COLOR_NAVY, 
+            "COLOR_PURPLE": pyxel.COLOR_PURPLE,
+            "COLOR_GREEN": pyxel.COLOR_GREEN,
+            "COLOR_BROWN": pyxel.COLOR_BROWN,
+            "COLOR_DARK_BLUE": pyxel.COLOR_DARK_BLUE,
+            "COLOR_LIGHT_BLUE": pyxel.COLOR_LIGHT_BLUE,
+            "COLOR_WHITE": pyxel.COLOR_WHITE,
+            "COLOR_RED": pyxel.COLOR_RED,
+            "COLOR_ORANGE": pyxel.COLOR_ORANGE,
+            "COLOR_YELLOW": pyxel.COLOR_YELLOW,
+            "COLOR_LIME": pyxel.COLOR_LIME,
+            "COLOR_CYAN": pyxel.COLOR_CYAN,
+            "COLOR_GRAY": pyxel.COLOR_GRAY,
+            "COLOR_PINK": pyxel.COLOR_PINK,
+            "COLOR_PEACH": pyxel.COLOR_PEACH,
+        }
+        
+        return color_map.get(color_name, pyxel.COLOR_WHITE)  # デフォルトは白
+    
+    # その他の場合は白をデフォルトに
+    return pyxel.COLOR_WHITE
+
 class WidgetBase:
     """すべてのウィジェットの基底クラス"""
     def __init__(self, dialog, definition):
@@ -29,8 +76,8 @@ class LabelWidget(WidgetBase):
             self.width = len(self.text) * pyxel.FONT_WIDTH
         if self.height == 0:
             self.height = pyxel.FONT_HEIGHT
-        # 色の設定（デフォルトは黒）
-        self.color = definition.get("color", pyxel.COLOR_BLACK)
+        # 色の設定（デフォルトは黒、COLOR_xxx文字列対応）
+        self.color = resolve_color(definition.get("color", "COLOR_BLACK"))
 
     def draw(self):
         # ダイアログの座標系に合わせて描画
@@ -43,6 +90,13 @@ class ButtonWidget(WidgetBase):
         super().__init__(dialog, definition)
         self.is_hover = False
         self.is_pressed = False
+        
+        # カラープロパティの追加（COLOR_xxx文字列対応）
+        self.bg_color = resolve_color(definition.get("bg_color", "COLOR_WHITE"))
+        self.text_color = resolve_color(definition.get("text_color", "COLOR_BLACK"))
+        self.hover_color = resolve_color(definition.get("hover_color", "COLOR_GRAY"))
+        self.pressed_color = resolve_color(definition.get("pressed_color", "COLOR_DARK_BLUE"))
+        self.border_color = resolve_color(definition.get("border_color", "COLOR_BLACK"))
 
     def update(self):
         # マウスカーソルがボタンの領域内にあるかチェック
@@ -65,20 +119,22 @@ class ButtonWidget(WidgetBase):
         x, y = dx + self.x, dy + self.y
         
         # 状態に応じて色を変える
-        bg_color = pyxel.COLOR_WHITE
-        if self.is_hover:
-            bg_color = pyxel.COLOR_GRAY
+        bg_color = self.bg_color
+        text_color = self.text_color
+        
         if self.is_pressed:
-            bg_color = pyxel.COLOR_DARK_BLUE
+            bg_color = self.pressed_color
+        elif self.is_hover:
+            bg_color = self.hover_color
 
         # ボタンの描画
         pyxel.rect(x, y, self.width, self.height, bg_color)
-        pyxel.rectb(x, y, self.width, self.height, pyxel.COLOR_BLACK)
+        pyxel.rectb(x, y, self.width, self.height, self.border_color)
 
         # テキストを中央に配置
         text_x = x + (self.width - len(self.text) * pyxel.FONT_WIDTH) / 2
         text_y = y + (self.height - pyxel.FONT_HEIGHT) / 2
-        pyxel.text(text_x, text_y, self.text, pyxel.COLOR_BLACK)
+        pyxel.text(text_x, text_y, self.text, text_color)
 
 class TextBoxWidget(WidgetBase):
     """テキスト入力が可能なテキストボックスウィジェット"""

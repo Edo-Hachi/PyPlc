@@ -1,5 +1,5 @@
 import pyxel
-from .widgets import LabelWidget, ButtonWidget, TextBoxWidget, ListBoxWidget
+from .widgets import LabelWidget, ButtonWidget, TextBoxWidget, ListBoxWidget, resolve_color
 
 class Dialog:
     """
@@ -14,6 +14,12 @@ class Dialog:
         self.title = definition.get("title", "Dialog")
         self.widgets = widgets
         self.is_active = True # モーダルなのでデフォルトでアクティブ
+        
+        # ダイアログレベルのカラープロパティ（COLOR_xxx文字列対応）
+        self.bg_color = resolve_color(definition.get("bg_color", "COLOR_WHITE"))
+        self.title_bg_color = resolve_color(definition.get("title_bg_color", "COLOR_NAVY"))
+        self.title_text_color = resolve_color(definition.get("title_text_color", "COLOR_WHITE"))
+        self.border_color = resolve_color(definition.get("border_color", "COLOR_BLACK"))
 
     def update(self):
         if not self.is_active:
@@ -27,17 +33,17 @@ class Dialog:
         if not self.is_active:
             return
 
-        # ダイアログの背景を描画
-        pyxel.rect(self.x, self.y, self.width, self.height, pyxel.COLOR_WHITE)
+        # ダイアログの背景を描画（カラープロパティ対応）
+        pyxel.rect(self.x, self.y, self.width, self.height, self.bg_color)
         
         # タイトルバー
-        pyxel.rect(self.x, self.y, self.width, 12, pyxel.COLOR_NAVY)
+        pyxel.rect(self.x, self.y, self.width, 12, self.title_bg_color)
         
         # 枠線
-        pyxel.rectb(self.x, self.y, self.width, self.height, pyxel.COLOR_BLACK)
+        pyxel.rectb(self.x, self.y, self.width, self.height, self.border_color)
         
         # タイトルテキスト
-        pyxel.text(self.x + 4, self.y + 3, self.title, pyxel.COLOR_WHITE)
+        pyxel.text(self.x + 4, self.y + 3, self.title, self.title_text_color)
 
         # 管理しているウィジェットの描画処理を呼び出す
         # ドロップダウンウィジェット以外を先に描画

@@ -4,6 +4,9 @@
 import re
 import pyxel
 from .dialog_manager import DialogManager
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import DeviceType, TimerConfig, CounterConfig
 
 class TimerCounterDialogController:

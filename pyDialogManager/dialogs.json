@@ -5,6 +5,10 @@
     "y": 30,
     "width": 200,
     "height": 150,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -20,7 +24,12 @@
         "x": 75,
         "y": 110,
         "width": 50,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       },
       {
         "type": "button",
@@ -29,7 +38,12 @@
         "x": 135,
         "y": 110,
         "width": 50,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_YELLOW",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_ORANGE",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       }
     ]
   },
@@ -39,6 +53,10 @@
     "y": 10,
     "width": 236,
     "height": 240,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -135,7 +153,12 @@
         "x": 165,
         "y": 195,
         "width": 30,
-        "height": 16
+        "height": 16,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       },
       {
         "type": "button",
@@ -144,7 +167,12 @@
         "x": 200,
         "y": 195,
         "width": 30,
-        "height": 16
+        "height": 16,
+        "bg_color": "COLOR_YELLOW",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_ORANGE",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       }
     ]
   },
@@ -154,6 +182,10 @@
     "y": 10,
     "width": 236,
     "height": 236,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -221,7 +253,12 @@
         "x": 120,
         "y": 218,
         "width": 50,
-        "height": 16
+        "height": 16,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       },
       {
         "type": "button",
@@ -230,7 +267,12 @@
         "x": 175,
         "y": 218,
         "width": 55,
-        "height": 16
+        "height": 16,
+        "bg_color": "COLOR_YELLOW",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_ORANGE",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       }
     ]
   },
@@ -240,6 +282,10 @@
     "y": 10,
     "width": 250,
     "height": 160,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -299,7 +345,12 @@
         "x": 120,
         "y": 130,
         "width": 50,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       }
     ]
   },
@@ -309,6 +360,10 @@
     "y": 80,
     "width": 120,
     "height": 80,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -324,7 +379,12 @@
         "x": 35,
         "y": 50,
         "width": 50,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       }
     ]
   },
@@ -334,6 +394,10 @@
     "y": 70,
     "width": 220,
     "height": 140,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -374,7 +438,12 @@
         "x": 20,
         "y": 110,
         "width": 80,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       },
       {
         "type": "button",
@@ -383,7 +452,12 @@
         "x": 120,
         "y": 110,
         "width": 80,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_YELLOW",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_ORANGE",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       }
     ]
   },
@@ -393,6 +467,10 @@
     "y": 60,
     "width": 240,
     "height": 200,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -406,7 +484,7 @@
         "id": "IDC_LABEL_DEVICE_ID",
         "text": "Device ID:",
         "x": 20,
-        "y": 50
+        "y": 60
       },
       {
         "type": "textbox",
@@ -423,7 +501,7 @@
         "id": "IDC_LABEL_PRESET",
         "text": "Preset Value:",
         "x": 20,
-        "y": 100
+        "y": 110
       },
       {
         "type": "textbox",
@@ -450,7 +528,12 @@
         "x": 20,
         "y": 170,
         "width": 80,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       },
       {
         "type": "button",
@@ -459,7 +542,12 @@
         "x": 120,
         "y": 170,
         "width": 80,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_YELLOW",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_ORANGE",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       }
     ]
   },
@@ -469,6 +557,10 @@
     "y": 70,
     "width": 200,
     "height": 100,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -491,7 +583,131 @@
         "x": 75,
         "y": 65,
         "width": 50,
-        "height": 20
+        "height": 20,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
+      }
+    ]
+  },
+  "IDD_COLOR_BUTTON_DEMO": {
+    "title": "Color Button Demo",
+    "x": 50,
+    "y": 50,
+    "width": 300,
+    "height": 200,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
+    "widgets": [
+      {
+        "type": "label",
+        "id": "IDC_LABEL_TITLE",
+        "text": "Button Color Customization Demo",
+        "x": 20,
+        "y": 20
+      },
+      {
+        "type": "button",
+        "id": "IDC_BTN_GREEN",
+        "text": "Success",
+        "x": 20,
+        "y": 50,
+        "width": 70,
+        "height": 25,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN",
+        "_comment": "Green theme for success actions"
+      },
+      {
+        "type": "button",
+        "id": "IDC_BTN_RED",
+        "text": "Danger",
+        "x": 110,
+        "y": 50,
+        "width": 70,
+        "height": 25,
+        "bg_color": "COLOR_RED",
+        "text_color": "COLOR_WHITE",
+        "hover_color": "COLOR_PURPLE",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN",
+        "_comment": "Red theme for dangerous actions"
+      },
+      {
+        "type": "button",
+        "id": "IDC_BTN_BLUE",
+        "text": "Info",
+        "x": 200,
+        "y": 50,
+        "width": 70,
+        "height": 25,
+        "bg_color": "COLOR_CYAN",
+        "text_color": "COLOR_WHITE",
+        "hover_color": "COLOR_NAVY",
+        "pressed_color": "COLOR_BROWN",
+        "border_color": "COLOR_BROWN",
+        "_comment": "Blue theme for informational actions"
+      },
+      {
+        "type": "button",
+        "id": "IDC_BTN_CUSTOM1",
+        "text": "Custom1",
+        "x": 20,
+        "y": 90,
+        "width": 70,
+        "height": 25,
+        "bg_color": "COLOR_PINK",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_YELLOW",
+        "pressed_color": "COLOR_ORANGE",
+        "border_color": "COLOR_DARK_BLUE",
+        "_comment": "Pink/purple theme"
+      },
+      {
+        "type": "button",
+        "id": "IDC_BTN_CUSTOM2",
+        "text": "Custom2",
+        "x": 110,
+        "y": 90,
+        "width": 70,
+        "height": 25,
+        "bg_color": "COLOR_YELLOW",
+        "text_color": "COLOR_WHITE",
+        "hover_color": "COLOR_LIGHT_BLUE",
+        "pressed_color": "COLOR_DARK_BLUE",
+        "border_color": "COLOR_BLACK",
+        "_comment": "Yellow/brown theme"
+      },
+      {
+        "type": "button",
+        "id": "IDC_BTN_DEFAULT",
+        "text": "Default",
+        "x": 200,
+        "y": 90,
+        "width": 70,
+        "height": 25,
+        "_comment": "No color properties = default white button"
+      },
+      {
+        "type": "button",
+        "id": "IDOK",
+        "text": "Close",
+        "x": 125,
+        "y": 150,
+        "width": 50,
+        "height": 25,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
       }
     ]
   }

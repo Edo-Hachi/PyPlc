@@ -92,33 +92,59 @@ self.file_save_controller.show_save_dialog(
 
 ```json
 {
-  "IDD_YOUR_DIALOG": {
-    "title": "Your Dialog Title",
-    "x": 10,
-    "y": 10,
-    "width": 200,
-    "height": 150,
+  "IDD_FILE_OPEN": {
+    "title": "Open File",                    // ダイアログのタイトル文字列
+    "x": 10,                                // ダイアログの左上X座標
+    "y": 10,                                // ダイアログの左上Y座標
+    "width": 236,                           // ダイアログの幅
+    "height": 240,                          // ダイアログの高さ
+    "bg_color": "COLOR_WHITE",              // ダイアログ本体の背景色
+    "border_color": "COLOR_DARK_BLUE",      // ダイアログの境界線色
+    "title_bg_color": "COLOR_NAVY",         // タイトルバーの背景色
+    "title_text_color": "COLOR_YELLOW",     // タイトル文字の色
     "widgets": [
-      {
-        "type": "label",
-        "id": "IDC_LABEL",
-        "text": "Hello World",
-        "x": 10,
-        "y": 20
-      },
-      {
-        "type": "button",
-        "id": "IDOK",
-        "text": "OK",
-        "x": 75,
-        "y": 110,
-        "width": 50,
-        "height": 20
-      }
+      // ウィジェット定義...
     ]
   }
 }
 ```
+
+### ダイアログボディのプロパティ詳細
+
+#### 必須プロパティ
+| プロパティ | 説明 | 例 |
+|------------|------|-----|
+| `title` | ダイアログのタイトル文字列 | `"Open File"` |
+| `x` | ダイアログの左上X座標（画面上の位置） | `10` |
+| `y` | ダイアログの左上Y座標（画面上の位置） | `10` |
+| `width` | ダイアログの幅（ピクセル） | `236` |
+| `height` | ダイアログの高さ（ピクセル） | `240` |
+
+#### カラープロパティ（すべてオプション）
+| プロパティ | 説明 | デフォルト値 | 適用箇所 |
+|------------|------|--------------|----------|
+| `bg_color` | ダイアログ本体の背景色 | `"COLOR_WHITE"` | ダイアログ内側の背景領域 |
+| `border_color` | ダイアログの境界線色 | `"COLOR_BLACK"` | ダイアログの外枠線 |
+| `title_bg_color` | タイトルバーの背景色 | `"COLOR_NAVY"` | タイトルバー（上部12ピクセル）の背景 |
+| `title_text_color` | タイトル文字の色 | `"COLOR_WHITE"` | タイトルバー内のテキスト |
+
+#### COLOR_xxx文字列について
+色は以下の形式で指定できます：
+
+```json
+// ✅ 推奨：COLOR_xxx文字列（可読性が高い）
+"bg_color": "COLOR_WHITE",
+"border_color": "COLOR_DARK_BLUE",
+"title_bg_color": "COLOR_NAVY", 
+"title_text_color": "COLOR_YELLOW"
+
+// ✅ 後方互換：数値での指定も可能
+"bg_color": 7,     // pyxel.COLOR_WHITE
+"border_color": 5  // pyxel.COLOR_DARK_BLUE
+```
+
+**利用可能な色定数：**
+`COLOR_BLACK`, `COLOR_NAVY`, `COLOR_PURPLE`, `COLOR_GREEN`, `COLOR_BROWN`, `COLOR_DARK_BLUE`, `COLOR_LIGHT_BLUE`, `COLOR_WHITE`, `COLOR_RED`, `COLOR_ORANGE`, `COLOR_YELLOW`, `COLOR_LIME`, `COLOR_CYAN`, `COLOR_GRAY`, `COLOR_PINK`, `COLOR_PEACH`
 
 ### サポートされるウィジェットタイプ
 
@@ -197,6 +223,10 @@ self.file_save_controller.show_save_dialog(
     "y": 50,
     "width": 300,
     "height": 200,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
     "widgets": [
       {
         "type": "label",
@@ -350,6 +380,53 @@ pyxel.text(x, y, "text", pyxel.COLOR_WHITE)
 ```
 
 ## 🔧 高度な機能
+
+### カラーマッピングシステム
+
+pyDialogManagerでは、数値色番号の代わりに直感的な`COLOR_xxx`文字列を使用できます。
+
+```json
+// ✅ 直感的で可読性が高い
+{
+  "bg_color": "COLOR_WHITE",
+  "border_color": "COLOR_DARK_BLUE",
+  "title_bg_color": "COLOR_NAVY",
+  "title_text_color": "COLOR_YELLOW"
+}
+
+// ❌ 数値は分かりにくい
+{
+  "bg_color": 7,
+  "border_color": 5,
+  "title_bg_color": 1,
+  "title_text_color": 10
+}
+```
+
+#### 対応カラー一覧
+| COLOR_xxx文字列 | 数値 | 色 |
+|-----------------|------|-----|
+| `COLOR_BLACK` | 0 | 黒 |
+| `COLOR_NAVY` | 1 | 濃い青 |
+| `COLOR_PURPLE` | 2 | 紫 |
+| `COLOR_GREEN` | 3 | 緑 |
+| `COLOR_BROWN` | 5 | 茶色 |
+| `COLOR_DARK_BLUE` | 4 | 濃い青 |
+| `COLOR_LIGHT_BLUE` | 6 | 薄い青 |
+| `COLOR_WHITE` | 7 | 白 |
+| `COLOR_RED` | 8 | 赤 |
+| `COLOR_ORANGE` | 9 | オレンジ |
+| `COLOR_YELLOW` | 10 | 黄色 |
+| `COLOR_LIME` | 11 | 明るい緑 |
+| `COLOR_CYAN` | 12 | シアン |
+| `COLOR_GRAY` | 13 | グレー |
+| `COLOR_PINK` | 14 | ピンク |
+| `COLOR_PEACH` | 15 | 桃色 |
+
+#### 使用できる場所
+- **ダイアログレベル**: `bg_color`, `border_color`, `title_bg_color`, `title_text_color`
+- **ボタンウィジェット**: `bg_color`, `text_color`, `hover_color`, `pressed_color`, `border_color`
+- **ラベルウィジェット**: `color`
 
 ### 動的属性システム（hasattrパターン）
 
