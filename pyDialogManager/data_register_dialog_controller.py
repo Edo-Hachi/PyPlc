@@ -48,3 +48,7 @@ class DataRegisterDialogController:
             if hasattr(widget, 'id') and widget.id == widget_id:
                 return widget
         return None
+
+    def is_active(self) -> bool:
+        """ダイアログがアクティブかどうかを返す"""
+        return self.dialog_manager.active_dialog is not None and self.active_dialog is not None

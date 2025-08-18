@@ -42,6 +42,7 @@ from core.device_palette import DevicePalette
 from core.circuit_csv_manager import CircuitCsvManager  # CSV管理システムをインポート
 # pyDialogManager - 新しい移行先システム
 from pyDialogManager.dialog_manager import DialogManager as PyDialogManager
+from pyDialogManager.dialog_system import DialogSystem
 from pyDialogManager.file_open_dialog import FileOpenDialogController
 from pyDialogManager.file_save_dialog import FileSaveDialogController
 from pyDialogManager.device_id_dialog_controller import DeviceIdDialogController
@@ -87,7 +88,16 @@ class PyPlcVer3:
         self.device_id_controller = DeviceIdDialogController(self.py_dialog_manager)
         self.timer_counter_controller = TimerCounterDialogController(self.py_dialog_manager)
         self.data_register_controller = DataRegisterDialogController(self.py_dialog_manager)
-        print("[PyPlc] ✅ pyDialogManager and controllers initialized successfully")
+        
+        # --- DialogSystem 一元管理システム ---
+        print("[PyPlc] Initializing DialogSystem...")
+        self.dialog_system = DialogSystem()
+        self.dialog_system.register_controller(self.file_open_controller)
+        self.dialog_system.register_controller(self.file_save_controller)
+        self.dialog_system.register_controller(self.device_id_controller)
+        self.dialog_system.register_controller(self.timer_counter_controller)
+        self.dialog_system.register_controller(self.data_register_controller)
+        print("[PyPlc] ✅ pyDialogManager and DialogSystem initialized successfully")
 
         # --- ダイアログ編集中の状態管理 ---
         self.editing_device_pos = None
@@ -112,11 +122,7 @@ class PyPlcVer3:
         """フレーム更新処理"""
         # --- pyDialogManager 移行 ---
         self.py_dialog_manager.update()
-        self.file_open_controller.update()
-        self.file_save_controller.update()
-        self.device_id_controller.update()
-        self.timer_counter_controller.update()
-        self.data_register_controller.update()
+        self.dialog_system.update()  # DialogSystemによる一括更新
 
         # --- pyDialogManager 結果処理 ---
         self._handle_dialog_results()
@@ -128,12 +134,9 @@ class PyPlcVer3:
             self.previous_dialog_active = dialog_active
 
         # ダイアログ表示中はゲーム処理をスキップするが、ダイアログ処理は継続
-        if dialog_active:
-            # ダイアログコントローラーの更新処理
-            self.device_id_controller.update()
-            self.timer_counter_controller.update()
-            self.file_save_controller.update()
-            self.file_open_controller.update()
+        if self.dialog_system.has_active_dialogs:
+            # DialogSystemによる全コントローラーの一括更新処理
+            self.dialog_system.update()
             
             # ダイアログからの結果処理
             self._handle_dialog_results()
@@ -200,10 +203,19 @@ class PyPlcVer3:
         if save_path:
             # self.dialog_just_closed = True  # ダイアログ終了フラグ設定（現在未使用）
             # 目的: ダイアログOK決定時の入力イベント（クリック・Enter等）が次フレームで意図しない動作を引き起こすのを防止
-            if self.csv_manager.save_circuit_to_csv(save_path):
-                self._show_status_message(f"Saved to {os.path.basename(save_path)}", 3.0, "success")
-            else:
-                self._show_status_message("Failed to save file", 3.0, "error")
+            try:
+                if self.csv_manager.save_circuit_to_csv(save_path):
+                    self._show_status_message(f"Saved to {os.path.basename(save_path)}", 3.0, "success")
+                else:
+                    self._show_status_message("Failed to save file", 3.0, "error")
+            except FileNotFoundError:
+                self._show_status_message(f"Directory not found: {os.path.dirname(save_path)}", 3.0, "error")
+            except PermissionError:
+                self._show_status_message(f"Access denied: {os.path.basename(save_path)}", 3.0, "error") 
+            except OSError as e:
+                self._show_status_message(f"File error: {str(e)}", 3.0, "error")
+            except Exception as e:
+                self._show_status_message(f"Save error: {str(e)}", 3.0, "error")
 
         # ファイル読み込みの結果を処理
         load_path = self.file_open_controller.get_result()
@@ -211,11 +223,20 @@ class PyPlcVer3:
             # self.dialog_just_closed = True  # ダイアログ終了フラグ設定（現在未使用）
             # 目的: ダイアログOK決定時の入力イベント（クリック・Enter等）が次フレームで意図しない動作を引き起こすのを防止
             # print(f"[DEBUG] Loading file: {load_path}")  # デバッグログ
-            if self.csv_manager.load_circuit_from_csv(load_path):
-                self._show_status_message(f"Loaded {os.path.basename(load_path)}", 3.0, "success")
-                self.circuit_analyzer.solve_ladder()
-            else:
-                self._show_status_message("Failed to load file", 3.0, "error")
+            try:
+                if self.csv_manager.load_circuit_from_csv(load_path):
+                    self._show_status_message(f"Loaded {os.path.basename(load_path)}", 3.0, "success")
+                    self.circuit_analyzer.solve_ladder()
+                else:
+                    self._show_status_message("Failed to load file", 3.0, "error")
+            except FileNotFoundError:
+                self._show_status_message(f"File not found: {os.path.basename(load_path)}", 3.0, "error")
+            except PermissionError:
+                self._show_status_message(f"Access denied: {os.path.basename(load_path)}", 3.0, "error")
+            except UnicodeDecodeError:
+                self._show_status_message(f"Invalid file format: {os.path.basename(load_path)}", 3.0, "error")
+            except Exception as e:
+                self._show_status_message(f"Load error: {str(e)}", 3.0, "error")
 
         # デバイスID編集の結果を処理
         id_result = self.device_id_controller.get_result()

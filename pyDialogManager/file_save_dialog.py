@@ -334,3 +334,7 @@ class FileSaveDialogController:
                         self.dialog_manager.close()
                 elif widget.id == "IDCANCEL":
                     self.handle_cancel_button()
+
+    def is_active(self) -> bool:
+        """ダイアログがアクティブかどうかを返す"""
+        return self.dialog_manager.active_dialog is not None and self.active_dialog is not None
