@@ -10,23 +10,23 @@
 
 
 #Todo
-#D_DeviceEditDialogの実装（以下のオプションを追加。DialogManagerのData_register_dialogにラジオボタンが必要）
+#D_DeviceEditDialogの実装（以下のオプションを追加。DialogManagerのData_register_dialogにドロップダウンリストで実装）
 # - [MOV] : データ転送
 # - [ADD] : 加算演算
 # - [SUB] : 減算演算
 # - [MUL] : 乗算演算
 # - [DIV] : 除算演算
 
-#以下、ダイアログボックスでの表示案 (*)はラジオボタン動作 [100]
-
+#以下、ダイアログボックスでの表示案
+# 
 #--------------------------------------------------------
 #Operand [100]
 
-# (*) MOV   #デバイスに Operand[100]をデータ転送
-# (_) ADD   #デバイスに Operand[100]を加算
-# (_) SUB   #デバイスから Operand[100]を減算
-# (_) MUL   #デバイスに Operand[100]を乗算
-# (_) DIV   #デバイスを Operand[100]で除算
+#[MOV]   #デバイスに Operand[100]をデータ転送
+#[ADD]   #デバイスに Operand[100]を加算
+#[SUB]   #デバイスから Operand[100]を減算
+#[MUL]   #デバイスに Operand[100]を乗算
+#[DIV]   #デバイスを Operand[100]で除算
 #--------------------------------------------------------
 
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
@@ -47,7 +47,7 @@ from pyDialogManager.file_open_dialog import FileOpenDialogController
 from pyDialogManager.file_save_dialog import FileSaveDialogController
 from pyDialogManager.device_id_dialog_controller import DeviceIdDialogController
 from pyDialogManager.timer_counter_dialog_controller import TimerCounterDialogController
-from pyDialogManager.data_register_dialog_controller import DataRegisterDialogController
+from pyDialogManager.data_register_dialog import DataRegisterDialogController
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 
 
@@ -115,6 +115,9 @@ class PyPlcVer3:
         self.status_message = ""  # 表示中のメッセージ
         self.status_message_timer = 0  # メッセージ表示残り時間（フレーム数）
         self.status_message_type = "info"  # メッセージタイプ（info/success/error）
+        
+        # --- ファイル名管理システム ---
+        self.current_filename = "untitled.csv"  # 現在のファイル名（デフォルト）
 
         pyxel.run(self.update, self.draw)
     
@@ -161,7 +164,9 @@ class PyPlcVer3:
             #hoge
             if self.current_mode == SimulatorMode.EDIT:
                 self._reset_circuit_for_save()
-                self.file_save_controller.show_save_dialog("circuit", ".csv")
+                # 拡張子を除いたファイル名をデフォルトとして渡す
+                filename_without_ext = os.path.splitext(self.current_filename)[0]
+                self.file_save_controller.show_save_dialog(filename_without_ext, ".csv")
             else:
                 self._show_status_message("Save: EDIT mode only. Press TAB to switch.", 4.0)
             
@@ -205,6 +210,8 @@ class PyPlcVer3:
             # 目的: ダイアログOK決定時の入力イベント（クリック・Enter等）が次フレームで意図しない動作を引き起こすのを防止
             try:
                 if self.csv_manager.save_circuit_to_csv(save_path):
+                    # ファイル保存成功時にファイル名を更新
+                    self.current_filename = os.path.basename(save_path)
                     self._show_status_message(f"Saved to {os.path.basename(save_path)}", 3.0, "success")
                 else:
                     self._show_status_message("Failed to save file", 3.0, "error")
@@ -225,6 +232,8 @@ class PyPlcVer3:
             # print(f"[DEBUG] Loading file: {load_path}")  # デバッグログ
             try:
                 if self.csv_manager.load_circuit_from_csv(load_path):
+                    # ファイル読み込み成功時にファイル名を記録
+                    self.current_filename = os.path.basename(load_path)
                     self._show_status_message(f"Loaded {os.path.basename(load_path)}", 3.0, "success")
                     self.circuit_analyzer.solve_ladder()
                 else:
@@ -269,10 +278,26 @@ class PyPlcVer3:
                 self._show_status_message("Timer/Counter edit canceled", 2.0, "info")
             self.editing_device_pos = None # 処理後にリセット
 
-        # データレジスタ編集の結果を処理（現在はモックアップのため何もしない）
+        # データレジスタ編集の結果を処理
         data_register_result = self.data_register_controller.get_result()
         if data_register_result and self.editing_device_pos:
-            # TODO: データレジスタの本格実装時にここのロジックを実装する
+            device_id = data_register_result.get('device_id', '')
+            operation = data_register_result.get('operation', 'MOV')
+            operand = data_register_result.get('operand', '')
+            device = self.grid_system.get_device(*self.editing_device_pos)
+            if device:
+                # デバイスにデバイスID、操作、オペランド値を保存
+                device.address = device_id
+                device.operation = operation
+                # オペランド値をpreset_valueに保存（CSV保存用）
+                try:
+                    device.preset_value = int(operand) if operand.isdigit() else float(operand)
+                except (ValueError, AttributeError):
+                    device.preset_value = 0  # 変換できない場合はデフォルト値
+                # 旧operand属性も保持（互換性用）
+                device.operand = operand
+                self.circuit_analyzer.solve_ladder()
+                self._show_status_message(f"Data register updated: {device_id} {operation} {operand}", 3.0, "success")
             self.editing_device_pos = None # 処理後にリセット
 
     def _handle_device_placement(self) -> None:
@@ -305,6 +330,15 @@ class PyPlcVer3:
                 elif device.device_type in [DeviceType.CONTACT_A, DeviceType.CONTACT_B, DeviceType.COIL_STD, DeviceType.COIL_REV, DeviceType.RST, DeviceType.ZRST]:
                     print(f"[DEBUG] Showing device ID dialog for {device.device_type}")
                     self.device_id_controller.show_dialog(device.device_type, device.address)
+                elif device.device_type == DeviceType.DATA_REGISTER:
+                    print(f"[DEBUG] Showing data register dialog for {device.device_type}")
+                    # デバイスに保存されている情報を取得
+                    current_device_id = getattr(device, 'address', '')
+                    current_operation = getattr(device, 'operation', 'MOV')
+                    # preset_valueからオペランド値を取得（CSV保存との整合性）
+                    current_preset_value = getattr(device, 'preset_value', 0)
+                    current_operand = str(current_preset_value) if current_preset_value != 0 else ''
+                    self.data_register_controller.show_data_register_dialog(current_device_id, current_operation, current_operand)
                 else:
                     print(f"[DEBUG] No dialog for device type: {device.device_type}")
             else:
@@ -362,12 +396,19 @@ class PyPlcVer3:
         
         new_device = self.grid_system.place_device(row, col, device_type, address)
         
-        # タイマー・カウンターのデフォルト値設定
+        # タイマー・カウンター・データレジスタのデフォルト値設定
         if new_device:
             if device_type == DeviceType.TIMER_TON:
                 new_device.preset_value = TimerConfig.DEFAULT_PRESET
             elif device_type == DeviceType.COUNTER_CTU:
                 new_device.preset_value = CounterConfig.DEFAULT_PRESET
+            elif device_type == DeviceType.DATA_REGISTER:
+                # データレジスタのデフォルト設定
+                new_device.preset_value = 0
+                new_device.current_value = 0
+                new_device.operation = 'MOV'
+                # 立ち上がりエッジ検出用状態初期化
+                new_device.last_energized_state = False
 
     def _handle_link_dragging(self) -> None:
         """
@@ -851,6 +892,11 @@ class PyPlcVer3:
                         device.current_value = 0
                         device.last_input_state = False
                         # preset_valueは保持（設定値は維持）
+                    
+                    # データレジスタの立ち上がりエッジ検出状態リセット
+                    if device.device_type == DeviceType.DATA_REGISTER:
+                        device.current_value = 0
+                        device.last_energized_state = False
     
     def _reset_timer_counter_values(self) -> None:
         """

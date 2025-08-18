@@ -510,115 +510,64 @@ class CircuitAnalyzer:
 
     def _process_data_register_operations(self) -> None:
         """
-        データレジスタ演算処理 - Phase 3機能（WindSurf改善版）
+        データレジスタ演算処理（立ち上がりエッジ検出付き）
         
-        機能:
-        - 通電中のデータレジスタデバイスの演算実行
-        - MOV/ADD/SUB/MUL/DIV演算対応
-        - エラーハンドリング（オーバーフロー・ゼロ除算）
-        - ログシステム統合
-        - パフォーマンス最適化
+        立ち上がりエッジ（OFF→ON）の時のみ演算を実行:
+        - MOV: current_value = preset_value
+        - ADD: current_value += preset_value
+        - SUB: current_value -= preset_value
+        - MUL: current_value *= preset_value
+        - DIV: current_value /= preset_value (ゼロ除算チェック付き)
+        
+        継続通電中は演算を行わない（フレーム毎実行を防止）
         """
-        # データレジスタシステムへの参照
-        data_registers = self._get_data_register_system()
-        
         for row in range(self.grid.rows):
             for col in range(self.grid.cols):
                 device = self.grid.get_device(row, col)
-                if (device and 
-                    device.device_type == DeviceType.DATA_REGISTER and 
-                    device.is_energized and 
-                    getattr(device, 'execution_enabled', False)):
-                    try:
-                        # 演算実行（WindSurf提案の包括的エラーハンドリング）
-                        self._execute_data_operation(device, data_registers)
-                    except Exception as e:
-                        # エラー時はデバイスのエラー状態を更新
-                        device.error_state = "EXECUTION_ERROR"
-                        print(f"[DataOperation] Error executing {device.address}: {e}")
-    
-    def _get_data_register_system(self) -> dict:
-        """データレジスタシステム取得（値の格納・取得システム）"""
-        # 全データレジスタの値を辞書として収集
-        registers = {}
-        
-        for row in range(self.grid.rows):
-            for col in range(self.grid.cols):
-                device = self.grid.get_device(row, col)
-                if (device and 
-                    device.device_type == DeviceType.DATA_REGISTER and 
-                    hasattr(device, 'address') and device.address):
-                    # operand_valueを現在の格納値として使用
-                    current_value = getattr(device, 'operand_value', 0)
-                    registers[device.address.upper()] = current_value
-        
-        return registers
-    
-    def _execute_data_operation(self, device, data_registers: dict) -> None:
-        """
-        個別データレジスタ演算実行（WindSurf改善版）
-        
-        Args:
-            device: データレジスタデバイス
-            data_registers: データレジスタシステム辞書
-        """
-        try:
-            # 演算パラメータ取得
-            operation = getattr(device, 'operation_type', 'MOV')
-            operand = getattr(device, 'operand_value', 0)
-            current_value = data_registers.get(device.address.upper(), 0)
-            
-            # 演算実行
-            new_value = self._compute_operation(operation, current_value, operand)
-            
-            # 範囲チェック（WindSurf提案）
-            if not (-32768 <= new_value <= 32767):
-                if new_value > 32767:
-                    device.error_state = "OVERFLOW"
-                    new_value = 32767
-                else:
-                    device.error_state = "UNDERFLOW" 
-                    new_value = -32768
-            else:
-                device.error_state = ""  # エラー状態クリア
-            
-            # 結果をデバイスに反映
-            device.operand_value = new_value
-            data_registers[device.address.upper()] = new_value
-            
-            # ログ出力（デバッグ用）
-            print(f"[DataOperation] {device.address}: {operation} {operand} -> {new_value}")
-            
-        except Exception as e:
-            device.error_state = "EXECUTION_ERROR"
-            print(f"[DataOperation] Execution error for {device.address}: {e}")
-    
-    def _compute_operation(self, operation: str, current_value: int, operand: int) -> int:
-        """
-        演算実行（WindSurf改善版エラーハンドリング）
-        
-        Args:
-            operation: 演算種別（MOV/ADD/SUB/MUL/DIV）
-            current_value: 現在値
-            operand: オペランド値
-            
-        Returns:
-            int: 演算結果
-            
-        Raises:
-            ValueError: ゼロ除算・不明な演算種別
-        """
-        if operation == 'MOV':
-            return operand  # データ転送
-        elif operation == 'ADD':
-            return current_value + operand
-        elif operation == 'SUB':
-            return current_value - operand
-        elif operation == 'MUL':
-            return current_value * operand
-        elif operation == 'DIV':
-            if operand == 0:
-                raise ValueError("Division by zero")
-            return current_value // operand  # 整数除算（PLC標準）
-        else:
-            raise ValueError(f"Unknown operation: {operation}")
+                if (device and device.device_type == DeviceType.DATA_REGISTER):
+                    
+                    # 前フレームの励磁状態を取得（初回はFalse）
+                    last_energized = getattr(device, 'last_energized_state', False)
+                    current_energized = device.is_energized
+                    
+                    # 立ち上がりエッジ検出（OFF→ON）
+                    rising_edge = not last_energized and current_energized
+                    
+                    # 前フレーム状態を更新（次フレーム用）
+                    device.last_energized_state = current_energized
+                    
+                    # 立ち上がりエッジの時のみ演算実行
+                    if rising_edge:
+                        # デバイスの演算情報を取得
+                        operation = getattr(device, 'operation', 'MOV')
+                        preset_value = getattr(device, 'preset_value', 0)
+                        current_value = getattr(device, 'current_value', 0)
+                        
+                        try:
+                            # 演算実行
+                            if operation == 'MOV':
+                                device.current_value = preset_value
+                            elif operation == 'ADD':
+                                device.current_value = current_value + preset_value
+                            elif operation == 'SUB':
+                                device.current_value = current_value - preset_value
+                            elif operation == 'MUL':
+                                device.current_value = current_value * preset_value
+                            elif operation == 'DIV':
+                                if preset_value != 0:
+                                    device.current_value = current_value / preset_value
+                                else:
+                                    # ゼロ除算エラーの場合は値を変更しない
+                                    print(f"[WARNING] Division by zero in DATA_REGISTER {device.address}")
+                            
+                            # デバイスの状態をONに設定（演算実行済み）
+                            device.state = True
+                            
+                            # デバッグ用ログ（立ち上がりエッジ検出成功）
+                            print(f"[DATA_REGISTER] {device.address}: {operation} {preset_value} -> {device.current_value}")
+                            
+                        except Exception as e:
+                            print(f"[ERROR] DATA_REGISTER {device.address} operation failed: {e}")
+                    
+                    # 通電中はstate=True、非通電中はstate=False
+                    device.state = current_energized

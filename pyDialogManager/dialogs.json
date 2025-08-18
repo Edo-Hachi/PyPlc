@@ -551,12 +551,12 @@
       }
     ]
   },
-  "IDD_DATA_REGISTER_MOCKUP": {
-    "title": "Data Register (WIP)",
-    "x": 70,
-    "y": 70,
-    "width": 200,
-    "height": 100,
+  "IDD_DATA_REGISTER_EDIT": {
+    "title": "Edit Data Register",
+    "x": 60,
+    "y": 60,
+    "width": 280,
+    "height": 220,
     "bg_color": "COLOR_WHITE",
     "border_color": "COLOR_DARK_BLUE",
     "title_bg_color": "COLOR_NAVY",
@@ -564,29 +564,91 @@
     "widgets": [
       {
         "type": "label",
-        "id": "IDC_LABEL_INFO1",
-        "text": "Feature not implemented.",
-        "x": 10,
-        "y": 20
+        "id": "IDC_LABEL_DEVICE_ID",
+        "text": "Device ID: D0 - D12000",
+        "x": 20,
+        "y": 25
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_DEVICE_ID_INPUT",
+        "text": "",
+        "x": 20,
+        "y": 40,
+        "width": 240,
+        "height": 20,
+        "max_length": 20
       },
       {
         "type": "label",
-        "id": "IDC_LABEL_INFO2",
-        "text": "(Dropdown for MOV/ADD/etc.)",
-        "x": 10,
-        "y": 35
+        "id": "IDC_LABEL_OPERATION",
+        "text": "Operation:",
+        "x": 20,
+        "y": 70
+      },
+      {
+        "type": "dropdown",
+        "id": "IDC_OPERATION_DROPDOWN",
+        "x": 20,
+        "y": 85,
+        "width": 120,
+        "height": 20,
+        "items": ["MOV", "ADD", "SUB", "MUL", "DIV"],
+        "selected_index": 0,
+        "max_visible_items": 5,
+        "item_height": 12
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_OPERAND",
+        "text": "Operand Value:",
+        "x": 20,
+        "y": 115
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_OPERAND_INPUT",
+        "text": "",
+        "x": 20,
+        "y": 130,
+        "width": 240,
+        "height": 20,
+        "max_length": 20
+      },
+      {
+        "type": "label",
+        "id": "IDC_ERROR_MESSAGE",
+        "text": "",
+        "x": 20,
+        "y": 155,
+        "width": 240,
+        "color": "COLOR_RED"
       },
       {
         "type": "button",
         "id": "IDOK",
         "text": "OK",
-        "x": 75,
-        "y": 65,
-        "width": 50,
+        "x": 60,
+        "y": 180,
+        "width": 80,
         "height": 20,
         "bg_color": "COLOR_LIME",
         "text_color": "COLOR_BLACK",
         "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
+      },
+      {
+        "type": "button",
+        "id": "IDCANCEL",
+        "text": "Cancel",
+        "x": 160,
+        "y": 180,
+        "width": 80,
+        "height": 20,
+        "bg_color": "COLOR_YELLOW",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_ORANGE",
         "pressed_color": "COLOR_NAVY",
         "border_color": "COLOR_BROWN"
       }

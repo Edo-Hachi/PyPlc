@@ -121,6 +121,7 @@ class GridSystem:
         self._draw_grid_lines() # 背景グリッド線を先に描画
         self._draw_devices()
         self._draw_timer_counter_values() # タイマー・カウンター数字を最前面に描画
+        self._draw_data_register_values() # データレジスタ数字を最前面に描画
 
     def _draw_grid_lines(self) -> None:
         """グリッド線を描画する"""
@@ -237,12 +238,6 @@ class GridSystem:
             value_text = f"{current_val}/{preset_val}"
             text_color = pyxel.COLOR_PURPLE  # 常時パープルで見やすく
             
-        elif device.device_type == DeviceType.DATA_REGISTER:
-            # データレジスタ: アドレス=値形式で表示
-            address = getattr(device, 'address', 'D?')
-            data_val = getattr(device, 'data_value', 0)
-            value_text = f"{address}={data_val}"
-            text_color = pyxel.COLOR_CYAN  # シアンで見やすく
         else:
             return
         
@@ -262,11 +257,11 @@ class GridSystem:
         # ヘッダー情報（コメント形式）
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         output.write(f"# PyPlc Ver3 Circuit Data (Extended Format)\n")
-        output.write(f"# Format: row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state\n")
+        output.write(f"# Format: row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state,operation\n")
         output.write(f"# Created: {current_time}\n")
         
         # CSVヘッダー（拡張フォーマット）
-        writer.writerow(['row', 'col', 'device_type', 'address', 'state', 'preset_value', 'current_value', 'timer_active', 'last_input_state'])
+        writer.writerow(['row', 'col', 'device_type', 'address', 'state', 'preset_value', 'current_value', 'timer_active', 'last_input_state', 'operation'])
         
         # デバイスデータ出力（バスバー除外）
         saved_count = 0  # 保存デバイス数カウント
@@ -274,11 +269,13 @@ class GridSystem:
             for col in range(self.cols):
                 device = self.get_device(row, col)
                 if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
-                    # タイマー・カウンター特有の値を取得（存在しない場合はデフォルト値）
+                    # タイマー・カウンター・データレジスタ特有の値を取得（存在しない場合はデフォルト値）
                     preset_value = getattr(device, 'preset_value', 0)
                     current_value = getattr(device, 'current_value', 0)
                     timer_active = getattr(device, 'timer_active', False)
                     last_input_state = getattr(device, 'last_input_state', False)
+                    # operationはDATA_REGISTERのみ意味を持つ、他は空文字列
+                    operation = getattr(device, 'operation', '') if device.device_type == DeviceType.DATA_REGISTER else ''
                     
                     writer.writerow([
                         row,
@@ -289,7 +286,8 @@ class GridSystem:
                         preset_value,
                         current_value,
                         timer_active,
-                        last_input_state
+                        last_input_state,
+                        operation
                     ])
                     saved_count += 1
         
@@ -353,6 +351,7 @@ class GridSystem:
                     current_value = 0
                     timer_active = False
                     last_input_state = False
+                    operation = 'MOV'  # デフォルト操作
                     
                     # 拡張フィールドが存在する場合は取得
                     if 'preset_value' in row_data:
@@ -363,18 +362,27 @@ class GridSystem:
                         timer_active = row_data['timer_active'].lower() == 'true' if row_data['timer_active'] else False
                     if 'last_input_state' in row_data:
                         last_input_state = row_data['last_input_state'].lower() == 'true' if row_data['last_input_state'] else False
+                    if 'operation' in row_data:
+                        operation = row_data['operation'] if row_data['operation'] else 'MOV'
                     
                     # デバイス配置
                     new_device = self.place_device(row, col, device_type, address)
                     if new_device:
                         new_device.state = state
                         
-                        # タイマー・カウンター特有の値を設定
+                        # タイマー・カウンター・データレジスタ特有の値を設定
                         if device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
                             new_device.preset_value = preset_value
                             new_device.current_value = current_value
                             new_device.timer_active = timer_active
                             new_device.last_input_state = last_input_state
+                        elif device_type == DeviceType.DATA_REGISTER:
+                            # データレジスタのpreset_value/current_value/operation設定
+                            new_device.preset_value = preset_value
+                            new_device.current_value = current_value
+                            new_device.operation = operation
+                            # 立ち上がりエッジ検出用状態初期化
+                            new_device.last_energized_state = False
                         
                         loaded_count += 1
                     
@@ -448,3 +456,45 @@ class GridSystem:
                     matching_positions.append((row, col))
         
         return matching_positions
+
+    def _draw_data_register_values(self) -> None:
+        """
+        全データレジスタのpreset/current値を最前面に描画
+        格式: preset/current 形式で表示
+        """
+        sprite_size = sprite_manager.sprite_size
+        
+        for r in range(self.rows):
+            for c in range(self.cols):
+                device = self.get_device(r, c)
+                if device and device.device_type == DeviceType.DATA_REGISTER:
+                    draw_x = self.origin_x + c * self.cell_size - sprite_size // 2
+                    draw_y = self.origin_y + r * self.cell_size - sprite_size // 2
+                    self._draw_data_register_value(device, draw_x, draw_y, sprite_size)
+
+    def _draw_data_register_value(self, device: PLCDevice, draw_x: int, draw_y: int, sprite_size: int) -> None:
+        """
+        データレジスタのpreset/current値表示
+        デバイススプライトの下部にpreset/current形式で表示
+        
+        Args:
+            device: データレジスタデバイス
+            draw_x: スプライト描画X座標
+            draw_y: スプライト描画Y座標
+            sprite_size: スプライトサイズ
+        """
+        # preset_value (オペランド値) とcurrent_value (計算結果) を取得
+        preset_val = getattr(device, 'preset_value', 0)
+        current_val = getattr(device, 'current_value', 0)
+        
+        # "preset/current" 形式で表示文字列作成
+        value_text = f"{preset_val}/{current_val}"
+        
+        # 表示位置をスプライトの下部に設定
+        value_x = draw_x + 1
+        value_y = draw_y + sprite_size + 1
+        
+        # 背景付きで数値表示（見やすくするため）
+        text_width = len(value_text) * 4
+        pyxel.rect(value_x - 1, value_y - 1, text_width + 2, 7, pyxel.COLOR_BLACK)
+        pyxel.text(value_x, value_y, value_text, pyxel.COLOR_CYAN)  # シアンで表示
