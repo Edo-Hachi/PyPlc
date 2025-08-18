@@ -26,7 +26,7 @@ class PaletteDevice:
 class PaletteState:
     """パレット状態管理"""
     current_row: int = 0           # 現在の行（0=上段, 1=下段）
-    selected_index: int = 0        # 選択されたデバイスインデックス（0-9）
+    selected_index: Optional[int] = None     # 選択されたデバイスインデックス（0-9、None=何も選択されていない）
     is_shift_pressed: bool = False # Shiftキー押下状態
 
 
@@ -71,12 +71,31 @@ class DevicePalette:
     
     def get_selected_device_type(self) -> DeviceType:
         """現在選択中のデバイスタイプを取得"""
+        # 何も選択されていない場合は空を返す
+        if self.state.selected_index is None:
+            return DeviceType.EMPTY
+            
         current_devices = self.devices[self.state.current_row]
         selected_device = current_devices[self.state.selected_index]
         return selected_device.device_type
     
-    def get_selected_device(self) -> PaletteDevice:
+    def set_dialog_mode(self, enabled: bool) -> None:
+        """ダイアログモードの設定"""
+        if enabled:
+            # ダイアログモード有効時は選択状態をクリア
+            if self.state.selected_index is not None:  # 既にNoneなら保存不要
+                self.previous_selection = self.state.selected_index  # 復元用に保存
+                self.state.selected_index = None
+        else:
+            # ダイアログモード無効時は前の選択状態を復元
+            if hasattr(self, 'previous_selection'):
+                self.state.selected_index = self.previous_selection
+                delattr(self, 'previous_selection')  # メモリクリーンアップ
+    
+    def get_selected_device(self) -> Optional[PaletteDevice]:
         """現在選択中のPaletteDeviceを取得"""
+        if self.state.selected_index is None:
+            return None
         current_devices = self.devices[self.state.current_row]
         return current_devices[self.state.selected_index]
     
@@ -101,7 +120,8 @@ class DevicePalette:
     def get_palette_info(self) -> str:
         """現在のパレット状態情報を文字列で取得（デバッグ用）"""
         selected_device = self.get_selected_device()
-        return f"Row:{self.state.current_row} Index:{self.state.selected_index} Device:{selected_device.display_name}"
+        device_name = selected_device.display_name if selected_device else "NONE"
+        return f"Row:{self.state.current_row} Index:{self.state.selected_index} Device:{device_name}"
     
     def _get_device_position_from_mouse(self) -> Optional[Tuple[int, int]]:
         """マウス座標からパレット内の(row, index)を取得（シンプル設計）"""
@@ -278,18 +298,19 @@ class DevicePalette:
         row_y = self.palette_layout_config["palette_y"] + self.state.current_row * (self.palette_layout_config["device_height"] + self.palette_layout_config["row_spacing"]) + 4
         pyxel.text(self.palette_layout_config["palette_x"] - 10, row_y, ">", pyxel.COLOR_YELLOW)
         
-        # 選択されたデバイスのハイライト
-        selected_x = self.palette_layout_config["palette_x"] + self.state.selected_index * self.palette_layout_config["device_width"]
-        selected_y = self.palette_layout_config["palette_y"] + self.state.current_row * (self.palette_layout_config["device_height"] + self.palette_layout_config["row_spacing"])
-        
-        # 黄色い枠でハイライト
-        pyxel.rectb(
-            selected_x - 1, 
-            selected_y - 1, 
-            self.palette_layout_config["device_width"], 
-            self.palette_layout_config["device_height"] + 2, 
-            pyxel.COLOR_YELLOW
-        )
+        # 選択されたデバイスのハイライト（何かが選択されている場合のみ）
+        if self.state.selected_index is not None:
+            selected_x = self.palette_layout_config["palette_x"] + self.state.selected_index * self.palette_layout_config["device_width"]
+            selected_y = self.palette_layout_config["palette_y"] + self.state.current_row * (self.palette_layout_config["device_height"] + self.palette_layout_config["row_spacing"])
+            
+            # 黄色い枠でハイライト
+            pyxel.rectb(
+                selected_x - 1, 
+                selected_y - 1, 
+                self.palette_layout_config["device_width"], 
+                self.palette_layout_config["device_height"] + 2, 
+                pyxel.COLOR_YELLOW
+            )
         
         # マウスホバーエフェクト（シンプル設計）
         self._draw_mouse_hover_effect()
@@ -311,7 +332,9 @@ class DevicePalette:
             return
         
         # 現在選択中と同じ位置の場合は何もしない（重複を避ける）
-        if hover_row == self.state.current_row and hover_index == self.state.selected_index:
+        if (self.state.selected_index is not None and 
+            hover_row == self.state.current_row and 
+            hover_index == self.state.selected_index):
             return
         
         # ホバー位置の座標計算
@@ -347,7 +370,8 @@ class DevicePalette:
         pyxel.text(self.palette_layout_config["palette_x"] + 120, help_y, f"SHIFT:{shift_status}", pyxel.COLOR_YELLOW)
         
         selected_device = self.get_selected_device()
-        pyxel.text(self.palette_layout_config["palette_x"] + 120, help_y + 8, f"Selected:{selected_device.display_name}", pyxel.COLOR_YELLOW)
+        device_name = selected_device.display_name if selected_device else "NONE"
+        pyxel.text(self.palette_layout_config["palette_x"] + 120, help_y + 8, f"Selected:{device_name}", pyxel.COLOR_YELLOW)
 
 
 # For AI Support - このコメントは消さないでください

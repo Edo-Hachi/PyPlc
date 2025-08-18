@@ -45,6 +45,7 @@ class CircuitCsvManager:
             
             # grid_system.to_csv()を使用して拡張フォーマットで保存
             csv_data = self.grid_system.to_csv()
+            # print(f"[DEBUG] Saving {len(csv_data)} characters to {filename}")  # デバッグログ
             
             with open(filename, 'w', encoding='utf-8') as csvfile:
                 csvfile.write(csv_data)
@@ -82,8 +83,11 @@ class CircuitCsvManager:
             with open(filename, 'r', encoding='utf-8') as csvfile:
                 csv_data = csvfile.read()
             
+            # print(f"[DEBUG] CSV data length: {len(csv_data)} characters")  # デバッグログ
             # grid_system.from_csv()を使用して読み込み
-            return self.grid_system.from_csv(csv_data)
+            result = self.grid_system.from_csv(csv_data)
+            # print(f"[DEBUG] from_csv result: {result}")  # デバッグログ
+            return result
             
         except Exception as e:
             print(f"Load error: {e}")

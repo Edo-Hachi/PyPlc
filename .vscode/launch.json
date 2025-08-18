@@ -1,34 +1,35 @@
-
-//For Windows
-// {
-//     "version": "0.2.0",
-//     "configurations": [
-
-//         {
-//             "name": "Python デバッガー: main.py",
-//             "type": "debugpy",
-//             "request": "launch",
-// //            "program": "${workspaceFolder}/homing.py",
-//             "program": "${workspaceFolder}/main.py",
-// //            "program": "${workspaceFolder}/SpriteDefiner.py",
-//             "console": "integratedTerminal"
-//         }
-//     ]
-// }
-
-// For Ubuntu 
 {
+    // IntelliSense を使用して利用可能な属性を学べます。
+    // 既存の属性の説明をホバーして表示します。
+    // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         
         {
-            "name": "Python デバッガー: 現在のファイル",
+            "name": "Pyxel Run Main",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/main.py",
-//            "program": "${workspaceFolder}/SpriteDefiner.py",
+            "module": "pyxel",
+            "args": ["run", "main.py"],
             "console": "integratedTerminal",
-            "python": "${workspaceFolder}/./venv/bin/python",            
+            "python": "${workspaceFolder}/venv/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Direct Python Main",
+            "type": "debugpy", 
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
         }
     ]
 }
+

@@ -91,6 +91,8 @@ class PyPlcVer3:
 
         # --- ダイアログ編集中の状態管理 ---
         self.editing_device_pos = None
+        self.previous_dialog_active = False  # 前フレームのダイアログ状態
+        self.dialog_just_closed = False  # ダイアログが直前に閉じられたフラグ
 
         # --- LINK_HORZ ドラッグ配置用フラグ (Phase D) ---
         self.is_dragging_link = False
@@ -118,8 +120,16 @@ class PyPlcVer3:
         # --- pyDialogManager 結果処理 ---
         self._handle_dialog_results()
 
+        # ダイアログ表示状態に応じてデバイスパレットのモードを設定（状態変化時のみ）
+        dialog_active = self.py_dialog_manager.active_dialog is not None
+        if dialog_active != self.previous_dialog_active:
+            if dialog_active:  # ダイアログが開かれる直前に選択をクリア
+                self.device_palette.set_selection(-1, -1)  # 無効な行とインデックスで選択をクリア
+            self.device_palette.set_dialog_mode(dialog_active)
+            self.previous_dialog_active = dialog_active
+
         # ダイアログ表示中は他の処理をスキップ
-        if self.py_dialog_manager.active_dialog is not None:
+        if dialog_active:
             return
         
         # 1. 入力処理
@@ -138,6 +148,7 @@ class PyPlcVer3:
         
         # Ctrl+S: ファイル保存ダイアログ表示（EDITモードのみ）
         if pyxel.btn(pyxel.KEY_CTRL) and pyxel.btnp(pyxel.KEY_S):
+            #hoge
             if self.current_mode == SimulatorMode.EDIT:
                 self._reset_circuit_for_save()
                 self.file_save_controller.show_save_dialog("circuit", ".csv")
@@ -176,10 +187,11 @@ class PyPlcVer3:
         self._update_status_message()
 
     def _handle_dialog_results(self):
-        """全てのpyDialogManagerコントローラーからの結果を処理する"""
+        """全てのpyDialogManagerコントローラーからの結果を処理する"""        
         # ファイル保存の結果を処理
         save_path = self.file_save_controller.get_result()
         if save_path:
+            self.dialog_just_closed = True  # ダイアログ終了フラグ設定
             if self.csv_manager.save_circuit_to_csv(save_path):
                 self._show_status_message(f"Saved to {os.path.basename(save_path)}", 3.0, "success")
             else:
@@ -188,6 +200,8 @@ class PyPlcVer3:
         # ファイル読み込みの結果を処理
         load_path = self.file_open_controller.get_result()
         if load_path:
+            self.dialog_just_closed = True  # ダイアログ終了フラグ設定
+            # print(f"[DEBUG] Loading file: {load_path}")  # デバッグログ
             if self.csv_manager.load_circuit_from_csv(load_path):
                 self._show_status_message(f"Loaded {os.path.basename(load_path)}", 3.0, "success")
                 self.circuit_analyzer.solve_ladder()
@@ -241,6 +255,11 @@ class PyPlcVer3:
         if not self.mouse_state.snap_mode:
             return
         if self.mouse_state.hovered_pos is None or not self.mouse_state.is_snapped or not self.mouse_state.on_editable_area:
+            return
+            
+        # ダイアログが直前に閉じられた場合は1フレーム待つ
+        if self.dialog_just_closed:
+            self.dialog_just_closed = False
             return
 
         row, col = self.mouse_state.hovered_pos

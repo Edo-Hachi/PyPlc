@@ -144,11 +144,13 @@ class GridSystem:
         
         # デバッグ用: 描画されるデバイス数をカウント（開発用、本来は不要）
         device_count = 0
+        drawn_count = 0
         
         for r in range(self.rows):
             for c in range(self.cols):
                 device = self.get_device(r, c)
                 if device:
+                    device_count += 1  # デバイス存在カウント
                     draw_x = self.origin_x + c * self.cell_size - sprite_size // 2
                     draw_y = self.origin_y + r * self.cell_size - sprite_size // 2
 
@@ -169,16 +171,23 @@ class GridSystem:
                     coords = sprite_manager.get_sprite_coords(device.device_type, display_energized)
                     if coords:
                         pyxel.blt(draw_x, draw_y, 0, coords[0], coords[1], sprite_size, sprite_size, 0)
-                        device_count += 1  # 描画カウント
+                        drawn_count += 1  # 描画カウント
                         
                     else:
                         # スプライトが見つからない場合のフォールバック
+                        if not hasattr(self, '_sprite_error_logged'):
+                            # print(f"[DEBUG] No sprite found for {device.device_type.value}")
+                            self._sprite_error_logged = True
                         pyxel.rect(draw_x, draw_y, sprite_size, sprite_size, pyxel.COLOR_PINK)
-                        device_count += 1  # 描画カウント（フォールバックも含む）
+                        drawn_count += 1  # 描画カウント（フォールバックも含む）
         
         # デバッグ用描画情報（画面下部に表示）
         if device_count > 2:  # バスバー以外のデバイスがある場合のみ表示
-            pyxel.text(10, 360, f"Drawing {device_count} devices", pyxel.COLOR_WHITE)
+            pyxel.text(10, 360, f"Devices: {device_count}, Drawn: {drawn_count}", pyxel.COLOR_WHITE)
+            # コンソールログも出力（初回のみ）
+            if not hasattr(self, '_debug_logged'):
+                # print(f"[DEBUG] Grid has {device_count} devices, {drawn_count} drawn")
+                self._debug_logged = True
 
     def _draw_timer_counter_values(self) -> None:
         """
@@ -260,6 +269,7 @@ class GridSystem:
         writer.writerow(['row', 'col', 'device_type', 'address', 'state', 'preset_value', 'current_value', 'timer_active', 'last_input_state'])
         
         # デバイスデータ出力（バスバー除外）
+        saved_count = 0  # 保存デバイス数カウント
         for row in range(self.rows):
             for col in range(self.cols):
                 device = self.get_device(row, col)
@@ -281,7 +291,9 @@ class GridSystem:
                         timer_active,
                         last_input_state
                     ])
+                    saved_count += 1
         
+        # print(f"[DEBUG] to_csv: Saved {saved_count} devices to CSV")  # デバッグログ
         return output.getvalue()
 
     def from_csv(self, csv_data: str) -> bool:
@@ -369,6 +381,7 @@ class GridSystem:
                 except (ValueError, KeyError) as e:
                     continue
             
+            # print(f"[DEBUG] Successfully loaded {loaded_count} devices from CSV")  # デバッグログ
             return True
             
         except Exception as e:
@@ -378,11 +391,15 @@ class GridSystem:
         """
         ユーザー配置デバイスをクリア（バスバーは保持）
         """
+        # print("[DEBUG] _clear_user_devices() called")  # デバッグログ
+        cleared_count = 0
         for row in range(self.rows):
             for col in range(self.cols):
                 device = self.get_device(row, col)
                 if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
                     self.grid_data[row][col] = None
+                    cleared_count += 1
+        # print(f"[DEBUG] Cleared {cleared_count} user devices")  # デバッグログ
 
     def update_device_address(self, row: int, col: int, new_address: str) -> bool:
         """
