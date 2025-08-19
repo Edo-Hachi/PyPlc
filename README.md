@@ -1,11 +1,11 @@
-# PyPlc Ver3 - PLC標準準拠ラダー図シミュレーター
+<h1 id="ja">PyPlc Ver3 - PLC標準準拠ラダー図シミュレーター</h1>
 
 [![Version](https://img.shields.io/badge/Version-3.0-green)]() 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue)]() 
 [![Pyxel](https://img.shields.io/badge/Pyxel-1.9.0+-red)]()
 [![Quality](https://img.shields.io/badge/Code_Quality-A+-gold)]()
 
-**🌐 [English Version](#english-version) | 日本語版**
+**🌐 [English](#en) | [日本語](#ja)**
 
 <img src="./GitResource/ScrnShot001.png">
 
@@ -229,17 +229,16 @@ https://github.com/Edo-Hachi/pyDialogManager
 
 ---
 
-# PyPlc Ver3 - PLC Standard-Compliant Ladder Diagram Simulator
+<h1 id="en">English Version</h1>
 
-# English Version
+# PyPlc Ver3 - PLC Standard-Compliant Ladder Diagram Simulator
 
 [![Version](https://img.shields.io/badge/Version-3.0-green)]() 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue)]() 
 [![Pyxel](https://img.shields.io/badge/Pyxel-1.9.0+-red)]()
 [![Quality](https://img.shields.io/badge/Code_Quality-A+-gold)]()
 
-**🌐 [日本語版](#pyplc-ver3---plc標準準拠ラダー図シミュレーター) | English Version**
-
+**🌐 [English](#en) | [日本語](#ja)**
 
 <img src="./GitResource/ScrnShot001.png">
 
