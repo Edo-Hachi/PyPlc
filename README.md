@@ -5,7 +5,7 @@
 [![Pyxel](https://img.shields.io/badge/Pyxel-1.9.0+-red)]()
 [![Quality](https://img.shields.io/badge/Code_Quality-A+-gold)]()
 
-**🌐 [English](#en) | [日本語](#ja)**
+**[English](#en) | [日本語](#ja)**
 
 <img src="./GitResource/ScrnShot001.png">
 
@@ -14,11 +14,11 @@
 PyPlc Ver3は、工場検証用途と教育目的を兼ねたPLC標準準拠のラダー図シミュレーターです。
 実際のPLCプログラミングと同等の操作感を提供し、接点・コイル・タイマー・カウンター・データレジスタ等の基本機能を完全実装しています。
 
-**🏆 高品質コード**: WindSurf AI AssistantによるA+評価（商用製品レベル）を獲得済み
+**高品質コード**: WindSurf AI AssistantによるA+評価（商用製品レベル）を獲得済み
 
 ## 主要機能
 
-### ✅ 完全実装済み機能
+### 完全実装済み機能
 - **基本デバイス**: A/B接点、通常/反転コイル、配線系（水平・垂直・分岐）
 - **高度機能**: タイマー（TON）、カウンター（CTU）、RST/ZRST命令
 - **データ処理**: データレジスタ（MOV/ADD/SUB/MUL/DIV操作）
@@ -26,7 +26,7 @@ PyPlc Ver3は、工場検証用途と教育目的を兼ねたPLC標準準拠の�
 - **回路解析**: リアルタイム電力フロー解析、30FPS高速動作
 - **教育支援**: PLC標準アドレス体系、同一アドレスハイライト表示
 
-### 🎯 特徴
+### 特徴
 - **PLC標準完全準拠**: 三菱PLC準拠のアドレス体系・動作仕様
 - **教育的価値**: 実PLC移行時の違和感なし
 - **商用品質**: WindSurf A+評価の高品質アーキテクチャ
@@ -171,23 +171,23 @@ PyPlc/
 ├── sprites.json                 # スプライト定義
 ├── my_resource.pyxres           # Pyxelリソースファイル
 
-#pyDialogManagerは本プロジェクトからの派生プロジェクトとして、現在は独立リポジトリとなっている
+#pyDialogManagerは本プロジェクトからの派生プロジェクトとして、現在は独立リポジトリとなっています
 https://github.com/Edo-Hachi/pyDialogManager
 
 ## 開発履歴と成果
 
-### Ver3の主要成果（2025年）
+### Ver3の主要成果（2025年8月ー）
 - **Phase 1-5**: 基本システム～ダイアログリファクタリング完了
 - **アーキテクチャ**: 責任分離設計・モジュール化・高品質コード実現
-- **PLC準拠**: 三菱GxWorksを基準として教育につかえるようにする
-- **教育価値**: 実用PLCとの完全互換動作をめざす
-- **技術革新**: LINK_BRANCH垂直接続システム（125行→15行に削減）
+- **PLC準拠**: 三菱GxWorksを基準として教育につかえるようにする(努力)
+- **教育価値**: 実用PLCとの完全互換動作をめざす(完全はなどない)
+- **技術革新**: LINK_BRANCH垂直接続システム（125行→15行に削減 最適化がんばった）
 
 ### 品質保証
 - **コードレビュー**: WindSurf,Cursor,ClaudeCode,GeminiCLI評価
-- **設計品質**: 「商用製品レベルの完成度」評価
-- **パフォーマンス**: 0.11ms平均実行時間（30FPS要件の300倍高速）
-- **教育効果**: 「実PLC準拠の純粋実装」評価
+- **設計品質**: 「商用製品レベルの完成度」評価  (AIのハードル低くて助かる)
+- **パフォーマンス**: 0.11ms平均実行時間（30FPS要件の300倍高速）Pyxelは最大60fpsなので、まぁ、そんなに最適化がんばらんでも
+- **教育効果**: 「実PLC準拠の純粋実装」評価 初学者にPLCとは何ぞやと伝えるためには十分かと
 
 ### Ver1/Ver2からの進化
 - **Ver1**: プロトタイプ（内部データと表示の不整合問題）
@@ -197,22 +197,23 @@ https://github.com/Edo-Hachi/pyDialogManager
 ## 動作確認済み機能
 
 ### 基本回路
-- ✅ 単純接点・コイル回路
-- ✅ 自己保持回路（シーケンス制御）
-- ✅ 並列・直列接続回路
-- ✅ 複雑分岐回路（LINK_BRANCH使用）
+- 単純接点・コイル回路
+- 自己保持回路（シーケンス制御）
+- 並列・直列接続回路
+- 複雑分岐回路（LINK_BRANCH使用）
 
 ### 高度機能
-- ✅ タイマー制御（1秒精度）
-- ✅ カウンター制御（立ち上がりエッジ検出）
-- ✅ RST/ZRST命令（単体・範囲指定）
-- ✅ データレジスタ操作（5種類の演算）
+- タイマー制御（1秒精度）
+- カウンター制御（立ち上がりエッジ検出）
+- RST/ZRST命令（単体・範囲指定）
+- データレジスタ操作（5種類の演算）
+- Compareを追加
 
 ### システム機能
-- ✅ CSV保存/読み込み（ファイル名自動管理）
-- ✅ リアルタイム回路解析
-- ✅ デバイスID編集・バリデーション
-- ✅ 同一アドレスハイライト表示
+- CSV保存/読み込み（ファイル名自動管理）
+- リアルタイム回路解析
+- デバイスID編集・バリデーション
+- 同一アドレスハイライト表示
 
 ## ライセンス
 
@@ -224,7 +225,7 @@ https://github.com/Edo-Hachi/pyDialogManager
 **最終更新**: 2025-08-19  
 **対象ユーザー**: PLCエンジニア、自動化技術学習者、工業教育関係者
 
-**🎯 次期開発計画**: 応用PLC機能（SET/RST拡張、データレジスタ高度操作、複雑回路パターン対応）
+**次期開発計画**: 応用PLC機能（SET/RST拡張、データレジスタ高度操作、複雑回路パターン対応）
 **Raspberry PiのGPIO制御による、実デバイス制御
 
 ---
@@ -238,7 +239,7 @@ https://github.com/Edo-Hachi/pyDialogManager
 [![Pyxel](https://img.shields.io/badge/Pyxel-1.9.0+-red)]()
 [![Quality](https://img.shields.io/badge/Code_Quality-A+-gold)]()
 
-**🌐 [English](#en) | [日本語](#ja)**
+**[English](#en) | [日本語](#ja)**
 
 <img src="./GitResource/ScrnShot001.png">
 
@@ -247,11 +248,11 @@ https://github.com/Edo-Hachi/pyDialogManager
 PyPlc Ver3 is a PLC standard-compliant ladder diagram simulator designed for both factory verification and educational purposes.
 It provides an operational experience equivalent to actual PLC programming and fully implements basic functions including contacts, coils, timers, counters, and data registers.
 
-**🏆 High-Quality Code**: Achieved A+ rating (commercial product level) from WindSurf AI Assistant
+**High-Quality Code**: Achieved A+ rating (commercial product level) from WindSurf AI Assistant
 
 ## Key Features
 
-### ✅ Fully Implemented Functions
+### Fully Implemented Functions
 - **Basic Devices**: A/B contacts, normal/reverse coils, wiring systems (horizontal/vertical/branch)
 - **Advanced Functions**: Timer (TON), Counter (CTU), RST/ZRST commands
 - **Data Processing**: Data registers (MOV/ADD/SUB/MUL/DIV operations)
@@ -259,7 +260,7 @@ It provides an operational experience equivalent to actual PLC programming and f
 - **Circuit Analysis**: Real-time power flow analysis, 30FPS high-speed operation
 - **Educational Support**: PLC standard address system, same address highlighting
 
-### 🎯 Features
+### Features
 - **Full PLC Standard Compliance**: Address system and operation specifications based on Mitsubishi PLC
 - **Educational Value**: Seamless transition to real PLCs
 - **Commercial Quality**: High-quality architecture with WindSurf A+ rating
@@ -431,22 +432,22 @@ https://github.com/Edo-Hachi/pyDialogManager
 ## Verified Functions
 
 ### Basic Circuits
-- ✅ Simple contact/coil circuits
-- ✅ Self-holding circuits (sequence control)
-- ✅ Parallel/series connection circuits
-- ✅ Complex branch circuits (using LINK_BRANCH)
+- Simple contact/coil circuits
+- Self-holding circuits (sequence control)
+- Parallel/series connection circuits
+- Complex branch circuits (using LINK_BRANCH)
 
 ### Advanced Functions
-- ✅ Timer control (1-second precision)
-- ✅ Counter control (rising edge detection)
-- ✅ RST/ZRST commands (single/range specification)
-- ✅ Data register operations (5 types of arithmetic)
+- Timer control (1-second precision)
+- Counter control (rising edge detection)
+- RST/ZRST commands (single/range specification)
+- Data register operations (5 types of arithmetic)
 
 ### System Functions
-- ✅ CSV save/load (automatic filename management)
-- ✅ Real-time circuit analysis
-- ✅ Device ID editing & validation
-- ✅ Same address highlighting display
+- CSV save/load (automatic filename management)
+- Real-time circuit analysis
+- Device ID editing & validation
+- Same address highlighting display
 
 ## License
 
@@ -458,5 +459,5 @@ This project is under continuous development. Educational and research purposes 
 **Last Updated**: August 19, 2025  
 **Target Users**: PLC engineers, automation technology learners, industrial education professionals
 
-**🎯 Future Development Plans**: Advanced PLC functions (SET/RST extensions, advanced data register operations, complex circuit pattern support)
+**Future Development Plans**: Advanced PLC functions (SET/RST extensions, advanced data register operations, complex circuit pattern support)
 **Real device control via Raspberry Pi GPIO control

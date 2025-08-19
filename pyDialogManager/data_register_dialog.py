@@ -196,17 +196,22 @@ class DataRegisterDialogController:
             print("Error: Operand value is required")
             return None
             
-        # バリデーション: オペランド値の数値チェック
+        # バリデーション: オペランド値の数値チェック（整数型のみ対応）
         try:
-            # 整数または小数点数として解析を試みる
-            if '.' in operand_value:
-                float(operand_value)  # 小数点数チェック
-            else:
-                int(operand_value)    # 整数チェック
+            # 整数として解析を試みる（データレジスタは整数型前提）
+            operand_int = int(operand_value)
+            
+            # DIV演算の場合、ゼロ値チェックを実行
+            if selected_operation == 'DIV' and operand_int == 0:
+                if error_widget:
+                    error_widget.text = "Error: Division by zero not allowed"
+                print(f"Error: DIV operation with zero operand not allowed: {operand_value}")
+                return None
+                
         except ValueError:
             if error_widget:
-                error_widget.text = "Error: Invalid number format"
-            print(f"Error: Invalid number format: {operand_value}")
+                error_widget.text = "Error: Enter integer value only"
+            print(f"Error: Invalid integer format: {operand_value}")
             return None
         
         # バリデーション成功

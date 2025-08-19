@@ -544,6 +544,10 @@ class CircuitAnalyzer:
                         current_value = getattr(device, 'current_value', 0)
                         
                         try:
+                            # 整数型保証: データレジスタの値は整数として扱う
+                            current_value = int(getattr(device, 'current_value', 0))
+                            preset_value = int(getattr(device, 'preset_value', 0))
+                            
                             # 演算実行
                             if operation == 'MOV':
                                 device.current_value = preset_value
@@ -552,13 +556,22 @@ class CircuitAnalyzer:
                             elif operation == 'SUB':
                                 device.current_value = current_value - preset_value
                             elif operation == 'MUL':
-                                device.current_value = current_value * preset_value
-                            elif operation == 'DIV':
-                                if preset_value != 0:
-                                    device.current_value = current_value / preset_value
+                                # MUL演算の条件改善: preset_valueが0の場合は結果が0となることを明示
+                                if preset_value == 0:
+                                    device.current_value = 0
+                                    print(f"[INFO] MUL operation with zero operand: {device.address} = {current_value} * 0 = 0")
                                 else:
-                                    # ゼロ除算エラーの場合は値を変更しない
-                                    print(f"[WARNING] Division by zero in DATA_REGISTER {device.address}")
+                                    device.current_value = current_value * preset_value
+                            elif operation == 'DIV':
+                                # DIV by zeroエラー処理改善: オペランド値が0の場合は除算を実行しない
+                                if preset_value == 0:
+                                    # ゼロ除算エラーの場合は値を変更せず、詳細なエラーログを出力
+                                    print(f"[ERROR] Division by zero prevented in DATA_REGISTER {device.address}: {current_value} ÷ 0")
+                                    print(f"[ERROR] Current value {current_value} remains unchanged due to zero operand")
+                                else:
+                                    # 整数除算を実行（PLC標準に準拠）
+                                    device.current_value = current_value // preset_value  # 整数除算
+                                    print(f"[INFO] DIV operation: {device.address} = {current_value} ÷ {preset_value} = {device.current_value}")
                             
                             # デバイスの状態をONに設定（演算実行済み）
                             device.state = True
