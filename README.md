@@ -7,6 +7,8 @@
 
 **🌐 [English Version](#english-version) | 日本語版**
 
+[English Version](#en)
+
 <img src="./GitResource/ScrnShot001.png">
 
 ## 概要
@@ -229,9 +231,10 @@ https://github.com/Edo-Hachi/pyDialogManager
 
 ---
 
+<h2 id="en">PyPlc Ver3 - PLC Standard-Compliant Ladder Diagram Simulator</h2>
 # English Version
 
-# PyPlc Ver3 - PLC Standard-Compliant Ladder Diagram Simulator
+# 
 
 [![Version](https://img.shields.io/badge/Version-3.0-green)]() 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue)]() 
