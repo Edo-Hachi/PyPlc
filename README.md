@@ -7,8 +7,6 @@
 
 **🌐 [English Version](#english-version) | 日本語版**
 
-[English Version](#en)
-
 <img src="./GitResource/ScrnShot001.png">
 
 ## 概要
