@@ -229,14 +229,16 @@ class GridSystem:
             current_val = getattr(device, 'current_value', 0)
             preset_val = getattr(device, 'preset_value', 0)
             value_text = f"{current_val}/{preset_val}"
-            text_color = pyxel.COLOR_PURPLE  # 常時パープルで見やすく
+            #text_color = pyxel.COLOR_PURPLE  # 常時パープルで見やすく
+            text_color = pyxel.COLOR_LIME  # 常時パープルで見やすく
             
         elif device.device_type == DeviceType.COUNTER_CTU:
             # カウンター: 現在値/プリセット値形式で表示
             current_val = getattr(device, 'current_value', 0)
             preset_val = getattr(device, 'preset_value', 0)
             value_text = f"{current_val}/{preset_val}"
-            text_color = pyxel.COLOR_PURPLE  # 常時パープルで見やすく
+            text_color = pyxel.COLOR_LIME  # 常時パープルで見やすく
+            #text_color = pyxel.COLOR_PURPLE  # 常時パープルで見やすく
             
         else:
             return
@@ -244,7 +246,8 @@ class GridSystem:
         # 現在値表示（背景付き）
         text_width = len(value_text) * 4
         pyxel.rect(value_x - 1, value_y - 1, text_width + 2, 7, pyxel.COLOR_BLACK)
-        pyxel.text(value_x, value_y, value_text, text_color)
+        #pyxel.text(value_x, value_y, value_text, text_color)
+        pyxel.text(value_x, value_y, value_text, pyxel.COLOR_LIME)
 
     def to_csv(self) -> str:
         """
@@ -497,4 +500,4 @@ class GridSystem:
         # 背景付きで数値表示（見やすくするため）
         text_width = len(value_text) * 4
         pyxel.rect(value_x - 1, value_y - 1, text_width + 2, 7, pyxel.COLOR_BLACK)
-        pyxel.text(value_x, value_y, value_text, pyxel.COLOR_CYAN)  # シアンで表示
+        pyxel.text(value_x, value_y, value_text, pyxel.COLOR_LIME)  # 黄緑で表示
