@@ -15,7 +15,12 @@
 PyPlc Ver3は、工場検証用途と教育目的を兼ねたPLC標準準拠のラダー図シミュレーターです。
 実際のPLCプログラミングと同等の操作感を提供し、接点・コイル・タイマー・カウンター・データレジスタ等の基本機能を完全実装しています。
 
-**高品質コード**: WindSurf AI AssistantによるA+評価（商用製品レベル）を獲得済み
+50代若手などと言われる工業用シーケンサプログラム界隈。
+何しろ若者が入ってこない。
+PLC、ラダーを勉強したいと言う人もたまに現れるが、メーカー製（三菱・KEYENCE）のPLCラダーツールは勉強目的で買うには高価すぎる。
+
+# ならば、作ろう。ニーズがあるかは知らないが。
+
 
 ## 主要機能
 
@@ -246,10 +251,16 @@ https://github.com/Edo-Hachi/pyDialogManager
 
 ## Overview
 
-PyPlc Ver3 is a PLC standard-compliant ladder diagram simulator designed for both factory verification and educational purposes.
-It provides an operational experience equivalent to actual PLC programming and fully implements basic functions including contacts, coils, timers, counters, and data registers.
+PyPlc Ver.3 is a ladder diagram simulator compliant with PLC standards, designed for both factory testing and educational purposes.
+It provides an operation feel equivalent to actual PLC programming, with full implementation of basic functions such as contacts, coils, timers, counters, and data registers.
 
-**High-Quality Code**: Achieved A+ rating (commercial product level) from WindSurf AI Assistant
+In the world of industrial PLC programming, people sometimes jokingly refer to "youngsters in their 50s."
+After all, hardly any younger generation is entering the field.
+Occasionally, someone shows interest in learning PLCs and ladder programming, but commercial PLC ladder tools (from Mitsubishi, KEYENCE, etc.) are far too expensive to purchase just for study purposes.
+
+So, I decided to build one.
+
+# Whether there’s demand for it or not—I have no idea.
 
 ## Key Features
 
