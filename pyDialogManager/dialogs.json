@@ -772,5 +772,123 @@
         "border_color": "COLOR_BROWN"
       }
     ]
+  },
+  "IDD_COMPARE_DEVICE_EDIT": {
+    "title": "Edit Compare Device",
+    "x": 60,
+    "y": 60,
+    "width": 280,
+    "height": 220,
+    "bg_color": "COLOR_WHITE",
+    "border_color": "COLOR_DARK_BLUE",
+    "title_bg_color": "COLOR_NAVY",
+    "title_text_color": "COLOR_YELLOW",
+    "widgets": [
+      {
+        "type": "label",
+        "id": "IDC_LABEL_LEFT_VALUE",
+        "text": "Left Value (Device):",
+        "x": 20,
+        "y": 25
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_LEFT_VALUE_INPUT",
+        "text": "",
+        "x": 20,
+        "y": 40,
+        "width": 240,
+        "height": 20,
+        "max_length": 20
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_OPERATOR",
+        "text": "Operator:",
+        "x": 20,
+        "y": 70
+      },
+      {
+        "type": "dropdown",
+        "id": "IDC_OPERATOR_DROPDOWN",
+        "x": 20,
+        "y": 85,
+        "width": 120,
+        "height": 20,
+        "items": ["=", "<", ">"],
+        "selected_index": 0,
+        "max_visible_items": 3,
+        "item_height": 12
+      },
+      {
+        "type": "label",
+        "id": "IDC_LABEL_RIGHT_VALUE",
+        "text": "Right Value (Number):",
+        "x": 20,
+        "y": 115
+      },
+      {
+        "type": "textbox",
+        "id": "IDC_RIGHT_VALUE_INPUT",
+        "text": "",
+        "x": 20,
+        "y": 130,
+        "width": 240,
+        "height": 20,
+        "max_length": 20
+      },
+      {
+        "type": "label",
+        "id": "IDC_PREVIEW_LABEL",
+        "text": "Preview:",
+        "x": 20,
+        "y": 155
+      },
+      {
+        "type": "label",
+        "id": "IDC_PREVIEW_TEXT",
+        "text": "D0 = 10",
+        "x": 80,
+        "y": 155,
+        "color": "COLOR_DARK_BLUE"
+      },
+      {
+        "type": "label",
+        "id": "IDC_ERROR_MESSAGE",
+        "text": "",
+        "x": 20,
+        "y": 170,
+        "width": 240,
+        "color": "COLOR_RED"
+      },
+      {
+        "type": "button",
+        "id": "IDOK",
+        "text": "OK",
+        "x": 60,
+        "y": 190,
+        "width": 80,
+        "height": 20,
+        "bg_color": "COLOR_LIME",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_GREEN",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
+      },
+      {
+        "type": "button",
+        "id": "IDCANCEL",
+        "text": "Cancel",
+        "x": 160,
+        "y": 190,
+        "width": 80,
+        "height": 20,
+        "bg_color": "COLOR_YELLOW",
+        "text_color": "COLOR_BLACK",
+        "hover_color": "COLOR_ORANGE",
+        "pressed_color": "COLOR_NAVY",
+        "border_color": "COLOR_BROWN"
+      }
+    ]
   }
 }

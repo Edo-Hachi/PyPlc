@@ -122,6 +122,7 @@ class GridSystem:
         self._draw_devices()
         self._draw_timer_counter_values() # タイマー・カウンター数字を最前面に描画
         self._draw_data_register_values() # データレジスタ数字を最前面に描画
+        self._draw_compare_values() # 比較デバイス条件を最前面に描画
 
     def _draw_grid_lines(self) -> None:
         """グリッド線を描画する"""
@@ -260,11 +261,11 @@ class GridSystem:
         # ヘッダー情報（コメント形式）
         current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         output.write(f"# PyPlc Ver3 Circuit Data (Extended Format)\n")
-        output.write(f"# Format: row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state,operation\n")
+        output.write(f"# Format: row,col,device_type,address,state,preset_value,current_value,timer_active,last_input_state,operation,compare_left,compare_operator,compare_right\n")
         output.write(f"# Created: {current_time}\n")
         
         # CSVヘッダー（拡張フォーマット）
-        writer.writerow(['row', 'col', 'device_type', 'address', 'state', 'preset_value', 'current_value', 'timer_active', 'last_input_state', 'operation'])
+        writer.writerow(['row', 'col', 'device_type', 'address', 'state', 'preset_value', 'current_value', 'timer_active', 'last_input_state', 'operation', 'compare_left', 'compare_operator', 'compare_right'])
         
         # デバイスデータ出力（バスバー除外）
         saved_count = 0  # 保存デバイス数カウント
@@ -279,6 +280,10 @@ class GridSystem:
                     last_input_state = getattr(device, 'last_input_state', False)
                     # operationはDATA_REGISTERのみ意味を持つ、他は空文字列
                     operation = getattr(device, 'operation', '') if device.device_type == DeviceType.DATA_REGISTER else ''
+                    # 比較デバイス特有の値を取得（存在しない場合は空文字列）
+                    compare_left = getattr(device, 'compare_left', '')
+                    compare_operator = getattr(device, 'compare_operator', '')
+                    compare_right = getattr(device, 'compare_right', '')
                     
                     writer.writerow([
                         row,
@@ -290,7 +295,10 @@ class GridSystem:
                         current_value,
                         timer_active,
                         last_input_state,
-                        operation
+                        operation,
+                        compare_left,
+                        compare_operator,
+                        compare_right
                     ])
                     saved_count += 1
         
@@ -355,6 +363,9 @@ class GridSystem:
                     timer_active = False
                     last_input_state = False
                     operation = 'MOV'  # デフォルト操作
+                    compare_left = ''
+                    compare_operator = ''
+                    compare_right = ''
                     
                     # 拡張フィールドが存在する場合は取得
                     if 'preset_value' in row_data:
@@ -367,6 +378,13 @@ class GridSystem:
                         last_input_state = row_data['last_input_state'].lower() == 'true' if row_data['last_input_state'] else False
                     if 'operation' in row_data:
                         operation = row_data['operation'] if row_data['operation'] else 'MOV'
+                    # 比較フィールドが存在する場合は取得
+                    if 'compare_left' in row_data:
+                        compare_left = row_data['compare_left'] if row_data['compare_left'] else ''
+                    if 'compare_operator' in row_data:
+                        compare_operator = row_data['compare_operator'] if row_data['compare_operator'] else ''
+                    if 'compare_right' in row_data:
+                        compare_right = row_data['compare_right'] if row_data['compare_right'] else ''
                     
                     # デバイス配置
                     new_device = self.place_device(row, col, device_type, address)
@@ -386,6 +404,11 @@ class GridSystem:
                             new_device.operation = operation
                             # 立ち上がりエッジ検出用状態初期化
                             new_device.last_energized_state = False
+                        elif device_type == DeviceType.COMPARE_DEVICE:
+                            # 比較デバイスの比較設定を復元
+                            new_device.compare_left = compare_left
+                            new_device.compare_operator = compare_operator
+                            new_device.compare_right = compare_right
                         
                         loaded_count += 1
                     
@@ -501,3 +524,99 @@ class GridSystem:
         text_width = len(value_text) * 4
         pyxel.rect(value_x - 1, value_y - 1, text_width + 2, 7, pyxel.COLOR_BLACK)
         pyxel.text(value_x, value_y, value_text, pyxel.COLOR_LIME)  # 黄緑で表示
+
+    def _draw_compare_values(self) -> None:
+        """
+        全比較デバイスの条件式を最前面に描画
+        [D001(値) < 10] 形式で表示
+        """
+        sprite_size = sprite_manager.sprite_size
+        
+        for r in range(self.rows):
+            for c in range(self.cols):
+                device = self.get_device(r, c)
+                if device and device.device_type == DeviceType.COMPARE_DEVICE:
+                    draw_x = self.origin_x + c * self.cell_size - sprite_size // 2
+                    draw_y = self.origin_y + r * self.cell_size - sprite_size // 2
+                    self._draw_compare_value(device, draw_x, draw_y, sprite_size)
+
+    def _draw_compare_value(self, device: PLCDevice, draw_x: int, draw_y: int, sprite_size: int) -> None:
+        """
+        比較デバイスの条件式表示
+        [D001(値) < 10] 形式で比較式と結果をデバイス下部に表示
+        
+        Args:
+            device: 比較デバイス
+            draw_x: スプライト描画X座標
+            draw_y: スプライト描画Y座標
+            sprite_size: スプライトサイズ
+        """
+        if device.device_type != DeviceType.COMPARE_DEVICE:
+            return
+        
+        # 比較式の構成要素を取得
+        left = getattr(device, 'compare_left', '').strip()
+        operator = getattr(device, 'compare_operator', '').strip()
+        right = getattr(device, 'compare_right', '').strip()
+        
+        # 設定されていない場合は表示しない
+        if not (left and operator and right):
+            return
+        
+        # 左辺値の現在値を取得
+        left_value = self._get_device_current_value(left)
+        
+        # 条件式テキスト生成 [D001(15) < 10] 形式
+        condition_text = f"[{left}({left_value}){operator}{right}]"
+        
+        # 表示位置計算（スプライト下部中央）
+        value_x = draw_x - 2  # 少し左寄り（条件式が長いため）
+        value_y = draw_y + sprite_size + 1   # スプライト下部に間隔
+        
+        # 比較結果による色分け
+        result = getattr(device, 'state', False)
+        if result:
+            text_color = pyxel.COLOR_LIME   # TRUE: 緑
+            bg_color = pyxel.COLOR_DARK_BLUE
+        else:
+            text_color = pyxel.COLOR_RED    # FALSE: 赤
+            bg_color = pyxel.COLOR_BLACK
+        
+        # 背景付きで条件式表示
+        text_width = len(condition_text) * 4
+        pyxel.rect(value_x - 1, value_y - 1, text_width + 2, 7, bg_color)
+        pyxel.text(value_x, value_y, condition_text, text_color)
+
+    def _get_device_current_value(self, device_name: str) -> int:
+        """
+        デバイス名から現在値を取得する
+        データレジスタ・タイマー・カウンターに対応
+        
+        Args:
+            device_name: デバイス名（例: "D0", "T001", "C005"）
+            
+        Returns:
+            int: デバイスの現在値、見つからない場合は0
+        """
+        if not device_name:
+            return 0
+        
+        device_name = device_name.upper().strip()
+        
+        # グリッド上のすべてのデバイスから該当するものを検索
+        for row in range(self.rows):
+            for col in range(self.cols):
+                device = self.get_device(row, col)
+                if (device and 
+                    hasattr(device, 'address') and 
+                    device.address and 
+                    device.address.upper() == device_name):
+                    
+                    # デバイスタイプに応じて現在値を取得
+                    if device.device_type == DeviceType.DATA_REGISTER:
+                        return getattr(device, 'current_value', 0)
+                    elif device.device_type in [DeviceType.TIMER_TON, DeviceType.COUNTER_CTU]:
+                        return getattr(device, 'current_value', 0)
+        
+        # 見つからない場合は0を返す
+        return 0

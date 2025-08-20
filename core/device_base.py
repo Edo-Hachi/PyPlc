@@ -115,6 +115,28 @@ class PLCDevice:
     - "DIV_BY_ZERO": ゼロ除算
     - "INVALID_OPERAND": 無効なオペランド
     """
+    
+    # --- 比較デバイス専用フィールド（Compare Device Phase）---
+    compare_left: str = ""
+    """
+    比較式の左辺値（例: "D0", "T001", "C005"）
+    - COMPARE_DEVICE: 比較対象のデバイス名
+    - その他のデバイス: 未使用
+    """
+    
+    compare_operator: str = ""
+    """
+    比較演算子（例: "=", "<", ">", "<=", ">=", "<>"）
+    - COMPARE_DEVICE: 比較演算子
+    - その他のデバイス: 未使用
+    """
+    
+    compare_right: str = ""
+    """
+    比較式の右辺値（例: "10", "D1", "T002"）
+    - COMPARE_DEVICE: 比較対象の値またはデバイス名
+    - その他のデバイス: 未使用
+    """
 
     # --- 接続情報 ---
     # key: "up", "down", "left", "right"

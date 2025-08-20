@@ -349,23 +349,42 @@ class CircuitAnalyzer:
 
     def _execute_compare_operation(self, compare_device) -> None:
         """
-        個別のCompare命令を実行する
+        個別のCompare命令を実行する（MVP版: 新フィールド対応）
         
         Args:
             compare_device: Compare命令デバイス
         """
-        # アドレスの解析（例: "D1>10", "D2=D3", "D0<100"）
-        if not hasattr(compare_device, 'address') or not compare_device.address:
-            compare_device.state = False
+        # 新しい比較フィールドから比較式を構築
+        left = getattr(compare_device, 'compare_left', '').strip()
+        operator = getattr(compare_device, 'compare_operator', '').strip()
+        right = getattr(compare_device, 'compare_right', '').strip()
+        
+        # 新フィールドが設定されている場合は、それを使用
+        if left and operator and right:
+            # MVP版: 基本3演算子のみ対応
+            mvp_operators = ["=", "<", ">"]
+            if operator not in mvp_operators:
+                print(f"[COMPARE ERROR] Unsupported operator in MVP: {operator}")
+                compare_device.state = False
+                return
+                
+            comparison_text = f"{left}{operator}{right}"
+            result = self._evaluate_comparison(comparison_text)
+            compare_device.state = result
+            print(f"[COMPARE DEBUG] {comparison_text} -> {result}")
             return
         
-        comparison_text = compare_device.address.strip()
-        result = self._evaluate_comparison(comparison_text)
+        # 後方互換性: 従来のaddressフィールドから解析
+        if hasattr(compare_device, 'address') and compare_device.address:
+            comparison_text = compare_device.address.strip()
+            result = self._evaluate_comparison(comparison_text)
+            compare_device.state = result
+            print(f"[COMPARE DEBUG LEGACY] {comparison_text} -> {result}")
+            return
         
-        # 比較結果をデバイスのstateに反映
-        compare_device.state = result
-        
-        print(f"[COMPARE DEBUG] {comparison_text} -> {result}")
+        # 設定なしの場合はFalse
+        compare_device.state = False
+        print(f"[COMPARE DEBUG] No comparison configured -> False")
 
     def _evaluate_comparison(self, comparison_text: str) -> bool:
         """

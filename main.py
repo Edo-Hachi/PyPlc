@@ -93,6 +93,7 @@ from pyDialogManager.file_save_dialog import FileSaveDialogController
 from pyDialogManager.device_id_dialog_controller import DeviceIdDialogController
 from pyDialogManager.timer_counter_dialog_controller import TimerCounterDialogController
 from pyDialogManager.data_register_dialog import DataRegisterDialogController
+from pyDialogManager.compare_dialog_controller import CompareDialogController
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
 
 
@@ -133,6 +134,7 @@ class PyPlcVer3:
         self.device_id_controller = DeviceIdDialogController(self.py_dialog_manager)
         self.timer_counter_controller = TimerCounterDialogController(self.py_dialog_manager)
         self.data_register_controller = DataRegisterDialogController(self.py_dialog_manager)
+        self.compare_controller = CompareDialogController(self.py_dialog_manager)
         
         # --- DialogSystem 一元管理システム ---
         print("[PyPlc] Initializing DialogSystem...")
@@ -142,6 +144,7 @@ class PyPlcVer3:
         self.dialog_system.register_controller(self.device_id_controller)
         self.dialog_system.register_controller(self.timer_counter_controller)
         self.dialog_system.register_controller(self.data_register_controller)
+        self.dialog_system.register_controller(self.compare_controller)
         print("[PyPlc] ✅ pyDialogManager and DialogSystem initialized successfully")
 
         # --- ダイアログ編集中の状態管理 ---
@@ -323,6 +326,23 @@ class PyPlcVer3:
                 self._show_status_message("Timer/Counter edit canceled", 2.0, "info")
             self.editing_device_pos = None # 処理後にリセット
 
+        # 比較デバイス編集の結果を処理
+        compare_result = self.compare_controller.get_result()
+        if compare_result and self.editing_device_pos:
+            left = compare_result.get('compare_left', '')
+            operator = compare_result.get('compare_operator', '=')
+            right = compare_result.get('compare_right', '')
+            device = self.grid_system.get_device(*self.editing_device_pos)
+            if device:
+                # 比較デバイスに設定を保存
+                device.compare_left = left
+                device.compare_operator = operator
+                device.compare_right = right
+                self.circuit_analyzer.solve_ladder()
+                self._show_status_message(f"Compare device set: {left} {operator} {right}", 2.0, "success")
+                print(f"[DEBUG] Compare device updated: {left} {operator} {right}")
+            self.editing_device_pos = None # 処理後にリセット
+            
         # データレジスタ編集の結果を処理
         data_register_result = self.data_register_controller.get_result()
         if data_register_result and self.editing_device_pos:
@@ -350,14 +370,17 @@ class PyPlcVer3:
         マウス入力に基づき、デバイスの配置・削除・状態変更を行う
         LINK_HORZのドラッグ配置に対応 (Phase D)
         """
-        if self.current_mode != SimulatorMode.EDIT:
-            print(f"[DEBUG] Skipping mouse input: not in EDIT mode (current: {self.current_mode})")
-            return
-        if not self.mouse_state.snap_mode:
-            print(f"[DEBUG] Skipping mouse input: snap_mode is False")
-            return
-        # 右クリック処理の場合は is_snapped 条件を緩和（デバイス上であれば OK）
-        if pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT):
+        # 右クリック処理を最初にチェック（全ての条件より優先）
+        right_click_detected = pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT)
+        mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
+        print(f"[DEBUG] Frame check - Right click: {right_click_detected}, Mouse pos: ({mouse_x}, {mouse_y}), Mode: {self.current_mode}")
+        print(f"[DEBUG] Mouse state: hovered_pos={self.mouse_state.hovered_pos}, snap_mode={self.mouse_state.snap_mode}, on_editable_area={self.mouse_state.on_editable_area}")
+        
+        if right_click_detected:
+            print(f"[DEBUG] RIGHT CLICK DETECTED! Processing immediately...")
+            if self.current_mode != SimulatorMode.EDIT:
+                print(f"[DEBUG] Skipping right click: not in EDIT mode")
+                return
             if self.mouse_state.hovered_pos is None or not self.mouse_state.on_editable_area:
                 print(f"[DEBUG] Skipping RIGHT CLICK: hovered_pos={self.mouse_state.hovered_pos}, on_editable_area={self.mouse_state.on_editable_area}")
                 return
@@ -384,17 +407,28 @@ class PyPlcVer3:
                     current_preset_value = getattr(device, 'preset_value', 0)
                     current_operand = str(current_preset_value) if current_preset_value != 0 else ''
                     self.data_register_controller.show_data_register_dialog(current_device_id, current_operation, current_operand)
+                elif device.device_type == DeviceType.COMPARE_DEVICE:
+                    print(f"[DEBUG] Showing compare dialog")
+                    # 比較デバイスの現在設定を取得
+                    current_left = getattr(device, 'compare_left', '')
+                    current_operator = getattr(device, 'compare_operator', '=')
+                    current_right = getattr(device, 'compare_right', '')
+                    self.compare_controller.show_compare_dialog(current_left, current_operator, current_right)
                 else:
                     print(f"[DEBUG] No dialog for device type: {device.device_type}")
             else:
                 print(f"[DEBUG] No device at ({row}, {col})")
-            return  # 右クリック処理後は他の処理をスキップ
+            return  # 右クリック処理が完了したら、他の処理はスキップ
         
+        # 通常のマウス処理のチェック
+        if self.current_mode != SimulatorMode.EDIT:
+            return
+        if not self.mouse_state.snap_mode:
+            return
         # 左クリック等の他の処理では、従来通り is_snapped 条件を適用
         if self.mouse_state.hovered_pos is None or not self.mouse_state.is_snapped or not self.mouse_state.on_editable_area:
-            print(f"[DEBUG] Skipping mouse input: hovered_pos={self.mouse_state.hovered_pos}, is_snapped={self.mouse_state.is_snapped}, on_editable_area={self.mouse_state.on_editable_area}")
             return
-            
+        
         # ダイアログが直前に閉じられた場合は1フレーム待つ（現在未使用）
         # 目的: ダイアログ終了直後の全入力イベント残存（マウス・キーボード・Enter/ESC等）による誤動作防止
         # if self.dialog_just_closed:
