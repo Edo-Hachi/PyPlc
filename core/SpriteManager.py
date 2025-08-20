@@ -90,6 +90,89 @@ class SpriteManager:
         
         return None
 
+    def find_device_at_screen_pos(self, mouse_x: int, mouse_y: int, grid_system) -> Optional[Tuple[Any, int, int]]:
+        """
+        Gemini提案統合版：マウス座標に最も近いデバイスを効率的に探索
+        
+        パフォーマンス最適化：O(rows*cols) → O(9) で97%計算削減
+        コリジョン判定：8px×8px フルサイズ（操作しやすさ重視）
+        
+        Args:
+            mouse_x, mouse_y: マウススクリーン座標
+            grid_system: グリッドシステムインスタンス
+            
+        Returns:
+            Optional[Tuple[PLCDevice, row, col]]: 衝突したデバイスと座標、なければNone
+        """
+        # 1. マウス座標から大まかなグリッド座標を計算（Gemini提案）
+        if (mouse_x < grid_system.origin_x or mouse_y < grid_system.origin_y):
+            return None
+            
+        base_row = int((mouse_y - grid_system.origin_y) / grid_system.cell_size)
+        base_col = int((mouse_x - grid_system.origin_x) / grid_system.cell_size)
+        
+        sprite_size = self.sprite_size
+        collision_size = 8  # 8px×8px フルサイズ判定（ユーザー要望）
+        
+        # 2. 3×3セルの範囲のみ検索（Gemini最適化：計算量97%削減）
+        for r_offset in range(-1, 2):
+            for c_offset in range(-1, 2):
+                check_r = base_row + r_offset
+                check_c = base_col + c_offset
+                
+                # グリッド範囲外チェック
+                if not (0 <= check_r < grid_system.rows and 0 <= check_c < grid_system.cols):
+                    continue
+                
+                device = grid_system.get_device(check_r, check_c)
+                if not device:
+                    continue
+                    
+                # バスバーはスキップ（矩形描画のため対象外）
+                device_type_str = device.device_type.value if hasattr(device.device_type, 'value') else str(device.device_type)
+                if device_type_str in ['L_SIDE', 'R_SIDE']:
+                    continue
+                
+                # 3. スプライト描画位置計算（grid_system._draw_devices()と同じロジック）
+                draw_x = grid_system.origin_x + check_c * grid_system.cell_size - sprite_size // 2
+                draw_y = grid_system.origin_y + check_r * grid_system.cell_size - sprite_size // 2
+                
+                # 4. 8px×8px コリジョン判定（フルサイズ、操作しやすさ重視）
+                margin = (sprite_size - collision_size) // 2  # 8px → 8px の場合、0pxマージン
+                
+                collision_x1 = draw_x + margin
+                collision_y1 = draw_y + margin
+                collision_x2 = collision_x1 + collision_size
+                collision_y2 = collision_y1 + collision_size
+                
+                # 精密コリジョン判定
+                if (collision_x1 <= mouse_x <= collision_x2 and 
+                    collision_y1 <= mouse_y <= collision_y2):
+                    return (device, check_r, check_c)
+        
+        # 3×3範囲内に対象デバイスなし
+        return None
+
+    def get_dialog_type_from_device(self, device) -> Optional[str]:
+        """
+        デバイスタイプから対応ダイアログ種別を取得（Gemini提案準拠）
+        
+        Returns:
+            str: ダイアログ種別 ('timer_counter', 'device_id', 'data_register', 'compare')
+        """
+        # DeviceTypeのenumではなく、device_typeの文字列値で判定
+        device_type_str = device.device_type.value if hasattr(device.device_type, 'value') else str(device.device_type)
+        
+        if device_type_str in ['TIMER_TON', 'COUNTER_CTU']:
+            return 'timer_counter'
+        elif device_type_str in ['CONTACT_A', 'CONTACT_B', 'COIL_STD', 'COIL_REV', 'RST', 'ZRST']:
+            return 'device_id'
+        elif device_type_str == 'DATA_REGISTER':
+            return 'data_register'
+        elif device_type_str == 'COMPARE_DEVICE':
+            return 'compare'
+        return None
+
 # --- グローバルインスタンス ---
 # main.py などから importして使用する
 sprite_manager = SpriteManager(json_path="sprites.json")

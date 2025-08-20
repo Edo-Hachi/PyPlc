@@ -21,17 +21,12 @@ class CompareDialogController:
         """比較デバイスダイアログを表示"""
         self.result = None  # 表示時に結果をリセット
         
-        print(f"[DEBUG] Compare Dialog Called: {current_left} {current_operator} {current_right}")
-        
         # 実際のダイアログを表示（正しいAPIを使用）
         try:
             self.dialog_manager.show("IDD_COMPARE_DEVICE_EDIT")
             self.active_dialog = self.dialog_manager.active_dialog
-            print(f"[DEBUG] Dialog manager active_dialog: {self.active_dialog}")
             
             if self.active_dialog:
-                print(f"[DEBUG] Compare dialog successfully created and assigned")
-                
                 # 現在の値をダイアログに設定
                 left_widget = self._find_widget("IDC_LEFT_VALUE_INPUT")
                 if left_widget:
@@ -51,43 +46,28 @@ class CompareDialogController:
                 # プレビューを更新
                 self._update_preview()
                 
-                print(f"[DEBUG] Compare dialog created successfully")
                 return True
             else:
-                print(f"[ERROR] Failed to create compare dialog 'IDD_COMPARE_DEVICE_EDIT'")
                 return False
-        except Exception as e:
-            print(f"[ERROR] Exception in show_compare_dialog: {e}")
+        except Exception:
             return False
 
     def _validate_compare_inputs(self, left: str, operator: str, right: str) -> bool:
         """比較入力値のバリデーション（MVP版）"""
         
-        print(f"[DEBUG] Validating inputs: left='{left}', operator='{operator}', right='{right}'")
-        
         # 左辺値バリデーション
-        left_valid = self._validate_device_name(left)
-        print(f"[DEBUG] Left value '{left}' valid: {left_valid}")
-        if not left_valid:
-            print(f"[ERROR] Invalid left value: {left}")
+        if not self._validate_device_name(left):
             return False
             
         # 演算子バリデーション（MVP: =, <, > のみ）
         mvp_operators = ["=", "<", ">"]
-        operator_valid = operator in mvp_operators
-        print(f"[DEBUG] Operator '{operator}' valid: {operator_valid}")
-        if not operator_valid:
-            print(f"[ERROR] Invalid operator (MVP only supports =, <, >): {operator}")
+        if operator not in mvp_operators:
             return False
             
         # 右辺値バリデーション
-        right_valid = self._validate_right_value(right)
-        print(f"[DEBUG] Right value '{right}' valid: {right_valid}")
-        if not right_valid:
-            print(f"[ERROR] Invalid right value: {right}")
+        if not self._validate_right_value(right):
             return False
         
-        print(f"[DEBUG] All validation passed!")
         return True
     
     def _validate_device_name(self, device_name: str) -> bool:
@@ -186,20 +166,16 @@ class CompareDialogController:
                     'compare_operator': operator,
                     'compare_right': right_value
                 }
-                print(f"[DEBUG] Compare dialog result: {self.result}")
                 # ダイアログを閉じる
                 self.dialog_manager.close()
                 self.active_dialog = None
-            else:
-                print(f"[ERROR] Validation failed for compare inputs")
-                # バリデーションエラーの場合はダイアログを閉じない
-        except Exception as e:
-            print(f"[ERROR] Exception in _handle_ok: {e}")
+            # バリデーションエラーの場合はダイアログを閉じない
+        except Exception:
+            pass
 
     def _handle_cancel(self):
         """キャンセルボタンが押された時の処理"""
         self.result = None
-        print(f"[DEBUG] Compare dialog cancelled")
         self.dialog_manager.close()
         self.active_dialog = None
     
@@ -245,5 +221,5 @@ class CompareDialogController:
             if error_widget:
                 error_widget.text = ""
             
-        except Exception as e:
-            print(f"[ERROR] Failed to update preview: {e}")
+        except Exception:
+            pass

@@ -51,11 +51,7 @@ class InputHandler:
         else:
             snap_mode = pyxel.btn(pyxel.KEY_CTRL)  # CTRL切り替えモード
         
-        # デバッグ: 設定値確認
-        if not hasattr(self, '_debug_logged'):
-            print(f"[DEBUG] UIBehaviorConfig.ALWAYS_SNAP_MODE = {UIBehaviorConfig.ALWAYS_SNAP_MODE}")
-            print(f"[DEBUG] snap_mode = {snap_mode}")
-            self._debug_logged = True
+        # スナップモード設定が完了
         
         if not snap_mode:
             # スナップモード無効時は座標変換を行わない（パフォーマンス向上）

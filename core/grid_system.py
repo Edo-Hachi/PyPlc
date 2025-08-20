@@ -178,18 +178,13 @@ class GridSystem:
                     else:
                         # スプライトが見つからない場合のフォールバック
                         if not hasattr(self, '_sprite_error_logged'):
-                            # print(f"[DEBUG] No sprite found for {device.device_type.value}")
                             self._sprite_error_logged = True
                         pyxel.rect(draw_x, draw_y, sprite_size, sprite_size, pyxel.COLOR_PINK)
                         drawn_count += 1  # 描画カウント（フォールバックも含む）
         
-        # デバッグ用描画情報（画面下部に表示）
+        # 描画情報（開発用）
         if device_count > 2:  # バスバー以外のデバイスがある場合のみ表示
             pyxel.text(10, 360, f"Devices: {device_count}, Drawn: {drawn_count}", pyxel.COLOR_WHITE)
-            # コンソールログも出力（初回のみ）
-            if not hasattr(self, '_debug_logged'):
-                # print(f"[DEBUG] Grid has {device_count} devices, {drawn_count} drawn")
-                self._debug_logged = True
 
     def _draw_timer_counter_values(self) -> None:
         """
@@ -302,7 +297,7 @@ class GridSystem:
                     ])
                     saved_count += 1
         
-        # print(f"[DEBUG] to_csv: Saved {saved_count} devices to CSV")  # デバッグログ
+        # CSV保存完了
         return output.getvalue()
 
     def from_csv(self, csv_data: str) -> bool:
@@ -415,7 +410,7 @@ class GridSystem:
                 except (ValueError, KeyError) as e:
                     continue
             
-            # print(f"[DEBUG] Successfully loaded {loaded_count} devices from CSV")  # デバッグログ
+            # CSV読み込み完了
             return True
             
         except Exception as e:
@@ -425,7 +420,7 @@ class GridSystem:
         """
         ユーザー配置デバイスをクリア（バスバーは保持）
         """
-        # print("[DEBUG] _clear_user_devices() called")  # デバッグログ
+        # ユーザー配置デバイスをクリア開始
         cleared_count = 0
         for row in range(self.rows):
             for col in range(self.cols):
@@ -433,7 +428,7 @@ class GridSystem:
                 if device and device.device_type not in [DeviceType.L_SIDE, DeviceType.R_SIDE]:
                     self.grid_data[row][col] = None
                     cleared_count += 1
-        # print(f"[DEBUG] Cleared {cleared_count} user devices")  # デバッグログ
+        # ユーザーデバイスクリア完了
 
     def update_device_address(self, row: int, col: int, new_address: str) -> bool:
         """
