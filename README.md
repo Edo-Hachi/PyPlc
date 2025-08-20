@@ -8,6 +8,7 @@
 **[English](#en) | [日本語](#ja)**
 
 <img src="./GitResource/ScrnShot001.png">
+<img src="./GitResource/PyPlc_Running.gif">
 
 ## 概要
 
