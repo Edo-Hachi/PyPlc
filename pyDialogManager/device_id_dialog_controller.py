@@ -213,20 +213,25 @@ class DeviceIdDialogController:
             if not part:
                 continue
 
-            # 範囲指定チェック (例: T0-10)
+            # 範囲指定チェック (例: T0-10, C001-C005)
             if '-' in part:
-                match = re.match(r'^([TC])(\d+)-(\d+)$', part)
+                match = re.match(r'^([TC])(\d{1,3})-([TC])(\d{1,3})$', part)
                 if not match:
                     return False, f"Invalid range format: {part}"
-                prefix, start_str, end_str = match.groups()
+                start_prefix, start_str, end_prefix, end_str = match.groups()
+                
+                # 同一プレフィックス確認
+                if start_prefix != end_prefix:
+                    return False, f"Range {part}: must use same prefix (T or C)"
+                
                 start, end = int(start_str), int(end_str)
-                if start >= end:
-                    return False, f"Invalid range {part}: start >= end"
+                if start > end:
+                    start, end = end, start  # 自動入れ替え
                 if not (0 <= start <= 255 and 0 <= end <= 255):
                     return False, f"Range {part}: numbers must be 0-255"
-            # 単一指定チェック (例: C20)
+            # 単一指定チェック (例: C20, T001)
             else:
-                match = re.match(r'^([TC])(\d+)$', part)
+                match = re.match(r'^([TC])(\d{1,3})$', part)
                 if not match:
                     return False, f"Invalid address format: {part}"
                 prefix, num_str = match.groups()

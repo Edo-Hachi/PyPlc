@@ -154,25 +154,25 @@ class CircuitAnalyzer:
                 # タイマー開始（初回通電時）
                 timer_device.timer_active = True
                 timer_device.current_value = 0
-                print(f"[TIMER DEBUG] {timer_device.address} STARTED - preset={timer_device.preset_value}ms")
+                # print(f"[TIMER DEBUG] {timer_device.address} STARTED - preset={timer_device.preset_value}ms")
                 
             else:
                 # フレームベースタイマー実行中（1フレーム = 約33.3ms）
                 timer_device.current_value += 33  # 30FPSで約33ms/フレーム
                 
-                print(f"[TIMER DEBUG] {timer_device.address} RUNNING - current={timer_device.current_value}ms, preset={timer_device.preset_value}ms")
+                # print(f"[TIMER DEBUG] {timer_device.address} RUNNING - current={timer_device.current_value}ms, preset={timer_device.preset_value}ms")
                 
                 # プリセット値または閾値到達チェック（990ms超過で完了）
                 if timer_device.current_value >= timer_device.preset_value or timer_device.current_value >= TimerConfig.FRAME_THRESHOLD:
                     timer_device.current_value = timer_device.preset_value
                     timer_device.state = True  # タイマー出力ON
-                    print(f"[TIMER DEBUG] {timer_device.address} OUTPUT ON - reached {timer_device.preset_value}ms")
+                    # print(f"[TIMER DEBUG] {timer_device.address} OUTPUT ON - reached {timer_device.preset_value}ms")
                 else:
                     timer_device.state = False
         else:
             # 非通電時 - タイマーリセット
             if timer_device.timer_active:  # 動作中だった場合のみデバッグ出力
-                print(f"[TIMER DEBUG] {timer_device.address} RESET - was active")
+                # print(f"[TIMER DEBUG] {timer_device.address} RESET - was active")
             timer_device.timer_active = False
             timer_device.current_value = 0
             timer_device.state = False
@@ -364,14 +364,14 @@ class CircuitAnalyzer:
             # MVP版: 基本3演算子のみ対応
             mvp_operators = ["=", "<", ">"]
             if operator not in mvp_operators:
-                print(f"[COMPARE ERROR] Unsupported operator in MVP: {operator}")
+                # print(f"[COMPARE ERROR] Unsupported operator in MVP: {operator}")
                 compare_device.state = False
                 return
                 
             comparison_text = f"{left}{operator}{right}"
             result = self._evaluate_comparison(comparison_text)
             compare_device.state = result
-            print(f"[COMPARE DEBUG] {comparison_text} -> {result}")
+            # print(f"[COMPARE DEBUG] {comparison_text} -> {result}")
             return
         
         # 後方互換性: 従来のaddressフィールドから解析
@@ -379,12 +379,12 @@ class CircuitAnalyzer:
             comparison_text = compare_device.address.strip()
             result = self._evaluate_comparison(comparison_text)
             compare_device.state = result
-            print(f"[COMPARE DEBUG LEGACY] {comparison_text} -> {result}")
+            # print(f"[COMPARE DEBUG LEGACY] {comparison_text} -> {result}")
             return
         
         # 設定なしの場合はFalse
         compare_device.state = False
-        print(f"[COMPARE DEBUG] No comparison configured -> False")
+        # print(f"[COMPARE DEBUG] No comparison configured -> False")
 
     def _evaluate_comparison(self, comparison_text: str) -> bool:
         """
@@ -578,28 +578,28 @@ class CircuitAnalyzer:
                                 # MUL演算の条件改善: preset_valueが0の場合は結果が0となることを明示
                                 if preset_value == 0:
                                     device.current_value = 0
-                                    print(f"[INFO] MUL operation with zero operand: {device.address} = {current_value} * 0 = 0")
+                                    # print(f"[INFO] MUL operation with zero operand: {device.address} = {current_value} * 0 = 0")
                                 else:
                                     device.current_value = current_value * preset_value
                             elif operation == 'DIV':
                                 # DIV by zeroエラー処理改善: オペランド値が0の場合は除算を実行しない
                                 if preset_value == 0:
                                     # ゼロ除算エラーの場合は値を変更せず、詳細なエラーログを出力
-                                    print(f"[ERROR] Division by zero prevented in DATA_REGISTER {device.address}: {current_value} ÷ 0")
-                                    print(f"[ERROR] Current value {current_value} remains unchanged due to zero operand")
+                                    # print(f"[ERROR] Division by zero prevented in DATA_REGISTER {device.address}: {current_value} ÷ 0")
+                                    # print(f"[ERROR] Current value {current_value} remains unchanged due to zero operand")
                                 else:
                                     # 整数除算を実行（PLC標準に準拠）
                                     device.current_value = current_value // preset_value  # 整数除算
-                                    print(f"[INFO] DIV operation: {device.address} = {current_value} ÷ {preset_value} = {device.current_value}")
+                                    # print(f"[INFO] DIV operation: {device.address} = {current_value} ÷ {preset_value} = {device.current_value}")
                             
                             # デバイスの状態をONに設定（演算実行済み）
                             device.state = True
                             
                             # デバッグ用ログ（立ち上がりエッジ検出成功）
-                            print(f"[DATA_REGISTER] {device.address}: {operation} {preset_value} -> {device.current_value}")
+                            # print(f"[DATA_REGISTER] {device.address}: {operation} {preset_value} -> {device.current_value}")
                             
                         except Exception as e:
-                            print(f"[ERROR] DATA_REGISTER {device.address} operation failed: {e}")
+                            # print(f"[ERROR] DATA_REGISTER {device.address} operation failed: {e}")
                     
                     # 通電中はstate=True、非通電中はstate=False
                     device.state = current_energized

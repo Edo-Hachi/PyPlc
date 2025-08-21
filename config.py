@@ -38,7 +38,7 @@ class GridConfig:
 class UIConfig:
     """UI Configuration Constants"""
     # Palette settings
-    PALETTE_Y: int = 12
+    PALETTE_Y: int = 28
     
     # Status display area
     STATUS_AREA_Y: int = 280

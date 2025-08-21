@@ -10,6 +10,9 @@
 
 
 #Todo
+
+#マウスで選択したデバイス情報のデバイIDを見やすく赤系の色で表示しよう
+
 #D_DeviceEditDialogの実装（以下のオプションを追加。DialogManagerのData_register_dialogにドロップダウンリストで実装）
 # - [MOV] : データ転送
 # - [ADD] : 加算演算
@@ -69,10 +72,7 @@
 
 
 #ZRSTのリセット条件の書き方を定義
-# T001,T003,[T005-T010] こういう書き方ができるように
-
-
-
+# T001,T003,[T005-T010] こういう書き方ができるように修正
 
 #SpraiteDefinerわりとバグ多いので、どっかで見直す
 
@@ -745,21 +745,29 @@ class PyPlcVer3:
                     else:
                         device_debug_text = f"COUNTER {device_id}: {current_val}/{preset_val} Out:{hovered_device.state}"
                 
+                    # タイマー・カウンター表示（デバイスID強調）
+                    self._draw_status_text_with_id_highlight(10, status_y + 35, device_debug_text, device_id)
+                
                 # データレジスタ詳細表示
                 elif hovered_device.device_type == DeviceType.DATA_REGISTER:
                     data_value = getattr(hovered_device, 'data_value', 0)
                     device_debug_text = f"DATA_REG {device_id}: Value={data_value} [Double-click to edit]"
+                    # データレジスタ表示（デバイスID強調）
+                    self._draw_status_text_with_id_highlight(10, status_y + 35, device_debug_text, device_id)
                 
                 # Compare命令詳細表示
                 elif hovered_device.device_type == DeviceType.COMPARE_DEVICE:
                     condition = hovered_device.address if hovered_device.address else "N/A"
                     device_debug_text = f"COMPARE {condition}: Result={hovered_device.state} Energized={hovered_device.is_energized}"
+                    # Compare表示（conditionを赤色強調）
+                    self._draw_status_text_with_id_highlight(10, status_y + 35, device_debug_text, condition)
                 
                 else:
                     # 通常デバイス表示
                     device_debug_text = f"Device: {hovered_device.device_type.value} ID:{device_id} State:{hovered_device.state} Energized:{hovered_device.is_energized}"
                 
-                pyxel.text(10, status_y + 35, device_debug_text, pyxel.COLOR_WHITE)
+                # ステータスバーでのデバイスID強調表示
+                self._draw_status_text_with_id_highlight(10, status_y + 35, device_debug_text, device_id)
         else:
             # スナップ範囲外時の詳細メッセージ（Ver2準拠）
             mouse_x, mouse_y = pyxel.mouse_x, pyxel.mouse_y
@@ -843,11 +851,13 @@ class PyPlcVer3:
             plc_text = f"PLC: {self.plc_run_state.value}"
             plc_color = pyxel.COLOR_LIME if self.plc_run_state == PLCRunState.RUNNING else pyxel.COLOR_RED
             plc_x = DisplayConfig.WINDOW_WIDTH // 2 - len(plc_text) * 2  # 中央配置
-            pyxel.text(plc_x, status_bar_y + 2, plc_text, plc_color)
+            #pyxel.text(plc_x, status_bar_y + 2, plc_text, plc_color)
+            pyxel.text(plc_x, status_bar_y + 10, plc_text, plc_color)
             
             # F5キーヒント表示（PLC状態の隣）
-            hint_text = " F5:Start" if self.plc_run_state == PLCRunState.STOPPED else " F5:Stop"
-            pyxel.text(plc_x + len(plc_text) * 4, status_bar_y + 2, hint_text, pyxel.COLOR_CYAN)
+            hint_text = " F5:Start " if self.plc_run_state == PLCRunState.STOPPED else " F5:Stop"
+            #pyxel.text(plc_x + len(plc_text) * 4, status_bar_y + 2, hint_text, pyxel.COLOR_CYAN)
+            pyxel.text(plc_x + len(plc_text) * 4, status_bar_y + 10, hint_text, pyxel.COLOR_CYAN)
         
         # TABキーヒント表示（左端） - モード別表示
         if self.current_mode == SimulatorMode.EDIT:
@@ -1089,9 +1099,13 @@ class PyPlcVer3:
                 pyxel.rect(info_x - 2, info_y - 2, max_width, info_height, pyxel.COLOR_DARK_BLUE)
                 pyxel.rectb(info_x - 2, info_y - 2, max_width, info_height, pyxel.COLOR_WHITE)
                 
-                # デバイス情報テキスト描画
+                # デバイス情報テキスト描画（デバイスID行のみ赤色強調）
                 for i, line in enumerate(device_info):
-                    pyxel.text(info_x, info_y + i * 8, line, pyxel.COLOR_WHITE)
+                    # デバイスID行（"ID: xxx"）を赤色で強調表示
+                    if line.startswith("ID: "):
+                        pyxel.text(info_x, info_y + i * 8, line, pyxel.COLOR_RED)
+                    else:
+                        pyxel.text(info_x, info_y + i * 8, line, pyxel.COLOR_WHITE)
 
     def _draw_palette_disabled_message(self) -> None:
         """
@@ -1117,6 +1131,44 @@ class PyPlcVer3:
         hint_x = 16 + (palette_width - len(hint) * 4) // 2  # 中央揃え
         hint_y = palette_y + 16
         pyxel.text(hint_x, hint_y, hint, pyxel.COLOR_GRAY)
+
+    def _draw_status_text_with_id_highlight(self, x: int, y: int, text: str, device_id: str) -> None:
+        """
+        ステータステキストを描画し、デバイスID部分を赤色で強調表示
+        
+        Args:
+            x: 描画開始X座標
+            y: 描画開始Y座標  
+            text: 全体テキスト
+            device_id: 赤色強調したいデバイスID
+        """
+        if not device_id or device_id == "N/A":
+            # デバイスIDがない場合は通常表示
+            pyxel.text(x, y, text, pyxel.COLOR_WHITE)
+            return
+        
+        # デバイスIDの位置を検索
+        id_pos = text.find(device_id)
+        if id_pos == -1:
+            # デバイスIDが見つからない場合は通常表示
+            pyxel.text(x, y, text, pyxel.COLOR_WHITE)
+            return
+        
+        # デバイスID前の部分を白色で描画
+        if id_pos > 0:
+            before_text = text[:id_pos]
+            pyxel.text(x, y, before_text, pyxel.COLOR_WHITE)
+            x += len(before_text) * 4  # 4は文字幅
+        
+        # デバイスID部分を赤色で描画
+        pyxel.text(x, y, device_id, pyxel.COLOR_RED)
+        x += len(device_id) * 4
+        
+        # デバイスID後の部分を白色で描画
+        after_pos = id_pos + len(device_id)
+        if after_pos < len(text):
+            after_text = text[after_pos:]
+            pyxel.text(x, y, after_text, pyxel.COLOR_WHITE)
 
     def _draw_background_for_dialog(self) -> None:
         """

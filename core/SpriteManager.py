@@ -95,7 +95,7 @@ class SpriteManager:
         Gemini提案統合版：マウス座標に最も近いデバイスを効率的に探索
         
         パフォーマンス最適化：O(rows*cols) → O(9) で97%計算削減
-        コリジョン判定：8px×8px フルサイズ（操作しやすさ重視）
+        コリジョン判定：8x8px フルサイズ（操作しやすさ重視）＞ 10x10px
         
         Args:
             mouse_x, mouse_y: マウススクリーン座標
@@ -112,7 +112,7 @@ class SpriteManager:
         base_col = int((mouse_x - grid_system.origin_x) / grid_system.cell_size)
         
         sprite_size = self.sprite_size
-        collision_size = 8  # 8px×8px フルサイズ判定（ユーザー要望）
+        collision_size = 10  # 8px×8px で最初実装してたけど、操作しやすさ重視で10px×10pxに変更
         
         # 2. 3×3セルの範囲のみ検索（Gemini最適化：計算量97%削減）
         for r_offset in range(-1, 2):
@@ -137,7 +137,7 @@ class SpriteManager:
                 draw_x = grid_system.origin_x + check_c * grid_system.cell_size - sprite_size // 2
                 draw_y = grid_system.origin_y + check_r * grid_system.cell_size - sprite_size // 2
                 
-                # 4. 8px×8px コリジョン判定（フルサイズ、操作しやすさ重視）
+                # 4. デバイススプライトとの コリジョン判定（フルサイズ、操作しやすさ重視）
                 margin = (sprite_size - collision_size) // 2  # 8px → 8px の場合、0pxマージン
                 
                 collision_x1 = draw_x + margin
