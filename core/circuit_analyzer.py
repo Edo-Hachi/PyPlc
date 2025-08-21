@@ -173,6 +173,7 @@ class CircuitAnalyzer:
             # 非通電時 - タイマーリセット
             if timer_device.timer_active:  # 動作中だった場合のみデバッグ出力
                 # print(f"[TIMER DEBUG] {timer_device.address} RESET - was active")
+                pass
             timer_device.timer_active = False
             timer_device.current_value = 0
             timer_device.state = False
@@ -587,6 +588,7 @@ class CircuitAnalyzer:
                                     # ゼロ除算エラーの場合は値を変更せず、詳細なエラーログを出力
                                     # print(f"[ERROR] Division by zero prevented in DATA_REGISTER {device.address}: {current_value} ÷ 0")
                                     # print(f"[ERROR] Current value {current_value} remains unchanged due to zero operand")
+                                    pass
                                 else:
                                     # 整数除算を実行（PLC標準に準拠）
                                     device.current_value = current_value // preset_value  # 整数除算
@@ -600,6 +602,7 @@ class CircuitAnalyzer:
                             
                         except Exception as e:
                             # print(f"[ERROR] DATA_REGISTER {device.address} operation failed: {e}")
+                            pass
                     
                     # 通電中はstate=True、非通電中はstate=False
                     device.state = current_energized
