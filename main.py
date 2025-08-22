@@ -152,7 +152,7 @@ class PyPlcVer3:
         self.device_dialog_manager = DeviceDialogManager(device_controllers)
         
         # --- DialogSystem 一元管理システム ---
-        print("[PyPlc] Initializing DialogSystem...")
+        #print("[PyPlc] Initializing DialogSystem...")
         self.dialog_system = DialogSystem()
         self.dialog_system.register_controller(self.file_open_controller)
         self.dialog_system.register_controller(self.file_save_controller)
@@ -160,7 +160,7 @@ class PyPlcVer3:
         self.dialog_system.register_controller(self.timer_counter_controller)
         self.dialog_system.register_controller(self.data_register_controller)
         self.dialog_system.register_controller(self.compare_controller)
-        print("[PyPlc] ✅ pyDialogManager and DialogSystem initialized successfully")
+        #print("[PyPlc] ✅ pyDialogManager and DialogSystem initialized successfully")
 
         # --- ダイアログ編集中の状態管理 ---
         self.editing_device_pos = None
@@ -199,7 +199,7 @@ class PyPlcVer3:
             self.device_palette.set_dialog_mode(dialog_active)
             self.previous_dialog_active = dialog_active
 
-        # ダイアログ表示中はゲーム処理をスキップするが、ダイアログ処理は継続
+        # ダイアログ表示中は面ウィンドウの処理をスキップするが、ダイアログ処理は継続
         if self.dialog_system.has_active_dialogs:
             # DialogSystemによる全コントローラーの一括更新処理
             self.dialog_system.update()
