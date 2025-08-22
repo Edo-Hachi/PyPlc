@@ -8,6 +8,11 @@
 
 # .vscode/以下に実行環境の記載があるので、参照してください
 
+# VSCodeデバッグ用パス設定（UV環境対応）
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 
 #Todo
 

@@ -362,9 +362,9 @@ class CircuitAnalyzer:
         
         # 新フィールドが設定されている場合は、それを使用
         if left and operator and right:
-            # MVP版: 基本3演算子のみ対応
-            mvp_operators = ["=", "<", ">"]
-            if operator not in mvp_operators:
+            # 全演算子対応（MVP制限解除）
+            supported_operators = ["=", "<>", "<", "<=", ">", ">="]
+            if operator not in supported_operators:
                 # print(f"[COMPARE ERROR] Unsupported operator in MVP: {operator}")
                 compare_device.state = False
                 return

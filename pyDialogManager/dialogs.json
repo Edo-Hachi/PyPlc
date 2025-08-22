@@ -393,7 +393,7 @@
     "x": 70,
     "y": 70,
     "width": 220,
-    "height": 140,
+    "height": 200,
     "bg_color": "COLOR_WHITE",
     "border_color": "COLOR_DARK_BLUE",
     "title_bg_color": "COLOR_NAVY",
@@ -432,11 +432,38 @@
         "width": 180
       },
       {
+        "type": "label",
+        "id": "IDC_HELP_TEXT1",
+        "text": "",
+        "x": 20,
+        "y": 110,
+        "width": 180,
+        "text_color": "COLOR_DARK_BLUE"
+      },
+      {
+        "type": "label",
+        "id": "IDC_HELP_TEXT2",
+        "text": "",
+        "x": 20,
+        "y": 125,
+        "width": 180,
+        "text_color": "COLOR_DARK_BLUE"
+      },
+      {
+        "type": "label",
+        "id": "IDC_HELP_TEXT3",
+        "text": "",
+        "x": 20,
+        "y": 140,
+        "width": 180,
+        "text_color": "COLOR_DARK_BLUE"
+      },
+      {
         "type": "button",
         "id": "IDOK",
         "text": "OK",
         "x": 20,
-        "y": 110,
+        "y": 170,
         "width": 80,
         "height": 20,
         "bg_color": "COLOR_LIME",
@@ -450,7 +477,7 @@
         "id": "IDCANCEL",
         "text": "Cancel",
         "x": 120,
-        "y": 110,
+        "y": 170,
         "width": 80,
         "height": 20,
         "bg_color": "COLOR_YELLOW",
@@ -762,7 +789,7 @@
         "id": "IDOK",
         "text": "Close",
         "x": 125,
-        "y": 150,
+        "y": 170,
         "width": 50,
         "height": 25,
         "bg_color": "COLOR_LIME",
@@ -815,9 +842,9 @@
         "y": 85,
         "width": 120,
         "height": 20,
-        "items": ["=", "<", ">"],
+        "items": ["=", "<>", "<", "<=", ">", ">="],
         "selected_index": 0,
-        "max_visible_items": 3,
+        "max_visible_items": 6,
         "item_height": 12
       },
       {
