@@ -180,8 +180,13 @@ class CompareDialogController:
         self.active_dialog = None
     
     def is_active(self) -> bool:
-        """ダイアログがアクティブかどうかを返す"""
-        return self.active_dialog is not None
+        """
+        ダイアログがアクティブかどうかを返す
+        Stale参照を検出して確実な状態判定を行う
+        """
+        return (self.dialog_manager.active_dialog is not None and 
+                self.active_dialog is not None and
+                self.active_dialog is self.dialog_manager.active_dialog)
     
     def _find_widget(self, widget_id: str):
         """ウィジェットIDでウィジェットを検索"""
