@@ -1,9 +1,13 @@
 """
 データレジスタ設定ダイアログのコントローラー（モックアップ）
 """
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.base_dialog_controller import PyPlcDialogController
 from .dialog_manager import DialogManager
 
-class DataRegisterDialogController:
+class DataRegisterDialogController(PyPlcDialogController):
     """データレジスタ設定ダイアログのロジックを管理する（現在モックアップ）"""
 
     # TODO: このダイアログは現在モックアップです。
@@ -14,13 +18,11 @@ class DataRegisterDialogController:
     #   - 結果をmain.pyに返すための完全な結果処理
 
     def __init__(self, dialog_manager: DialogManager):
-        self.dialog_manager = dialog_manager
-        self.active_dialog = None
+        super().__init__(dialog_manager)
 
     def show_dialog(self):
         """ダイアログを表示する"""
-        self.dialog_manager.show("IDD_DATA_REGISTER_MOCKUP")
-        self.active_dialog = self.dialog_manager.active_dialog
+        self._safe_show_dialog("IDD_DATA_REGISTER_MOCKUP")
 
     def update(self):
         """フレームごとの更新処理"""
@@ -36,19 +38,8 @@ class DataRegisterDialogController:
         if ok_button and ok_button.is_pressed:
             self.dialog_manager.close()
 
-    def get_result(self):
-        """結果取得（モックアップのため常にNone）""" 
-        return None
+    # get_result()は基底クラスから継承
 
-    def _find_widget(self, widget_id: str):
-        """ウィジェットIDでウィジェットを検索"""
-        if not self.active_dialog:
-            return None
-        for widget in self.active_dialog.widgets:
-            if hasattr(widget, 'id') and widget.id == widget_id:
-                return widget
-        return None
+    # _find_widget()は基底クラスから継承
 
-    def is_active(self) -> bool:
-        """ダイアログがアクティブかどうかを返す"""
-        return self.dialog_manager.active_dialog is not None and self.active_dialog is not None
+    # is_active()は基底クラスから継承（Stale参照検出機能付き）

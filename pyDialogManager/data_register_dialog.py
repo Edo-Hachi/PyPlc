@@ -5,34 +5,27 @@ PLC式のデータレジスタ設定ダイアログを提供し、
 操作種類（MOV, ADD, SUB, MUL, DIV）とオペランド値の編集機能を実装
 """
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.base_dialog_controller import PyPlcDialogController
 from .dialog_manager import DialogManager
 
 
-class DataRegisterDialogController:
+class DataRegisterDialogController(PyPlcDialogController):
     """データレジスタダイアログのコントローラークラス"""
     
     def __init__(self, dialog_manager: DialogManager):
-        self.dialog_manager = dialog_manager
-        self.active_dialog = None
-        self.result = None
+        super().__init__(dialog_manager)
         
     def show_data_register_dialog(self, current_device_id="", current_operation="MOV", current_operand=""):
         """データレジスタダイアログを表示"""
-        self.result = None  # 表示時に結果をリセット
-        # ダイアログを表示
-        self.dialog_manager.show("IDD_DATA_REGISTER_EDIT")
-        self.active_dialog = self.dialog_manager.active_dialog
-        
-        if self.active_dialog:
+        if self._safe_show_dialog("IDD_DATA_REGISTER_EDIT"):
             # 初期化処理
             self._initialize_dialog(current_device_id, current_operation, current_operand)
             self._setup_event_handlers()
 
-    def get_result(self):
-        """結果を取得し、クリア"""
-        result = self.result
-        self.result = None
-        return result
+    # get_result()は基底クラスから継承
     
     def _initialize_dialog(self, current_device_id, current_operation, current_operand):
         """ダイアログの初期化"""
@@ -263,11 +256,4 @@ class DataRegisterDialogController:
                 elif widget.id == "IDCANCEL":
                     self.handle_cancel_button()
 
-    def is_active(self) -> bool:
-        """
-        ダイアログがアクティブかどうかを返す
-        Stale参照を検出して確実な状態判定を行う
-        """
-        return (self.dialog_manager.active_dialog is not None and 
-                self.active_dialog is not None and
-                self.active_dialog is self.dialog_manager.active_dialog)
+    # is_active()は基底クラスから継承（Stale参照検出機能付き）

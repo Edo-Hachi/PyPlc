@@ -4,18 +4,19 @@
 ファイルシステムとダイアログウィジェットを連携させる機能を提供
 """
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.base_dialog_controller import PyPlcDialogController
 from .file_utils import FileManager
 from .dialog_manager import DialogManager
 from .system_settings import settings
 
-class FileSaveDialogController:
+class FileSaveDialogController(PyPlcDialogController):
     """ファイル保存ダイアログのコントローラークラス"""
     
     def __init__(self, dialog_manager: DialogManager, initial_directory: str = None):
-        self.dialog_manager = dialog_manager
+        super().__init__(dialog_manager)
         self.file_manager = FileManager(initial_directory)
-        self.active_dialog = None
-        self.result = None
         
         # デフォルト拡張子（空文字列なら拡張子なし）
         self.default_extension = ".txt"
@@ -29,20 +30,13 @@ class FileSaveDialogController:
             self.default_extension = default_extension
             
         # ダイアログを表示
-        self.dialog_manager.show("IDD_SAVE_AS")
-        self.active_dialog = self.dialog_manager.active_dialog
-        
-        if self.active_dialog:
+        if self._safe_show_dialog("IDD_SAVE_AS"):
             # 初期化処理
             self._initialize_dialog(default_filename)
             self._refresh_file_list()
             self._setup_event_handlers()
     
-    def get_result(self):
-        """Get the result and clear it."""
-        result = self.result
-        self.result = None
-        return result
+    # get_result()は基底クラスから継承
 
     def _initialize_dialog(self, default_filename: str):
         """ダイアログの初期化"""
@@ -70,15 +64,7 @@ class FileSaveDialogController:
                 filename_widget.text = display_filename
                 self.last_filename = display_filename
     
-    def _find_widget(self, widget_id: str):
-        """ウィジェットIDでウィジェットを検索"""
-        if not self.active_dialog:
-            return None
-            
-        for widget in self.active_dialog.widgets:
-            if hasattr(widget, 'id') and widget.id == widget_id:
-                return widget
-        return None
+    # _find_widget()は基底クラスから継承
     
     def _refresh_file_list(self):
         """ファイルリストを更新"""
@@ -335,11 +321,4 @@ class FileSaveDialogController:
                 elif widget.id == "IDCANCEL":
                     self.handle_cancel_button()
 
-    def is_active(self) -> bool:
-        """
-        ダイアログがアクティブかどうかを返す
-        Stale参照を検出して確実な状態判定を行う
-        """
-        return (self.dialog_manager.active_dialog is not None and 
-                self.active_dialog is not None and
-                self.active_dialog is self.dialog_manager.active_dialog)
+    # is_active()は基底クラスから継承（Stale参照検出機能付き）

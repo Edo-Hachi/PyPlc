@@ -6,51 +6,40 @@ PLC式の比較接点設定ダイアログを提供し、
 左辺値、演算子、右辺値の編集機能を実装（MVP版）
 """
 
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.base_dialog_controller import PyPlcDialogController
 from .dialog_manager import DialogManager
 
 
-class CompareDialogController:
+class CompareDialogController(PyPlcDialogController):
     """比較デバイスダイアログのコントローラークラス"""
     
     def __init__(self, dialog_manager: DialogManager):
-        self.dialog_manager = dialog_manager
-        self.active_dialog = None
-        self.result = None
+        super().__init__(dialog_manager)
         
     def show_compare_dialog(self, current_left="", current_operator="=", current_right=""):
         """比較デバイスダイアログを表示"""
-        self.result = None  # 表示時に結果をリセット
-        
-        # 実際のダイアログを表示（正しいAPIを使用）
-        try:
-            self.dialog_manager.show("IDD_COMPARE_DEVICE_EDIT")
-            self.active_dialog = self.dialog_manager.active_dialog
+        if self._safe_show_dialog("IDD_COMPARE_DEVICE_EDIT"):
+            # 現在の値をダイアログに設定
+            left_widget = self._find_widget("IDC_LEFT_VALUE_INPUT")
+            if left_widget:
+                left_widget.text = current_left
             
-            if self.active_dialog:
-                # 現在の値をダイアログに設定
-                left_widget = self._find_widget("IDC_LEFT_VALUE_INPUT")
-                if left_widget:
-                    left_widget.text = current_left
-                
-                right_widget = self._find_widget("IDC_RIGHT_VALUE_INPUT")
-                if right_widget:
-                    right_widget.text = current_right
-                
-                # 演算子の選択インデックスを設定
-                operator_widget = self._find_widget("IDC_OPERATOR_DROPDOWN")
-                if operator_widget:
-                    operator_map = {"=": 0, "<": 1, ">": 2}
-                    selected_index = operator_map.get(current_operator, 0)
-                    operator_widget.selected_index = selected_index
-                
-                # プレビューを更新
-                self._update_preview()
-                
-                return True
-            else:
-                return False
-        except Exception:
-            return False
+            right_widget = self._find_widget("IDC_RIGHT_VALUE_INPUT")
+            if right_widget:
+                right_widget.text = current_right
+            
+            # 演算子の選択インデックスを設定
+            operator_widget = self._find_widget("IDC_OPERATOR_DROPDOWN")
+            if operator_widget:
+                operator_map = {"=": 0, "<": 1, ">": 2}
+                selected_index = operator_map.get(current_operator, 0)
+                operator_widget.selected_index = selected_index
+            
+            # プレビューを更新
+            self._update_preview()
 
     def _validate_compare_inputs(self, left: str, operator: str, right: str) -> bool:
         """比較入力値のバリデーション（MVP版）"""
@@ -118,11 +107,7 @@ class CompareDialogController:
             # デバイス名として再チェック
             return self._validate_device_name(right_value)
     
-    def get_result(self):
-        """結果を取得し、クリア"""
-        result = self.result
-        self.result = None
-        return result
+    # get_result()は基底クラスから継承
     
     def update(self):
         """フレームごとの更新処理"""
@@ -179,23 +164,9 @@ class CompareDialogController:
         self.dialog_manager.close()
         self.active_dialog = None
     
-    def is_active(self) -> bool:
-        """
-        ダイアログがアクティブかどうかを返す
-        Stale参照を検出して確実な状態判定を行う
-        """
-        return (self.dialog_manager.active_dialog is not None and 
-                self.active_dialog is not None and
-                self.active_dialog is self.dialog_manager.active_dialog)
+    # is_active()は基底クラスから継承（Stale参照検出機能付き）
     
-    def _find_widget(self, widget_id: str):
-        """ウィジェットIDでウィジェットを検索"""
-        if not self.active_dialog:
-            return None
-        for widget in self.active_dialog.widgets:
-            if hasattr(widget, 'id') and widget.id == widget_id:
-                return widget
-        return None
+    # _find_widget()は基底クラスから継承
 
     def _update_preview(self):
         """プレビューテキストを更新"""

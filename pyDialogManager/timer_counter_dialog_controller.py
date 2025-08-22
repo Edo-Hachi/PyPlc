@@ -7,15 +7,14 @@ from .dialog_manager import DialogManager
 import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.base_dialog_controller import PyPlcDialogController
 from config import DeviceType, TimerConfig, CounterConfig
 
-class TimerCounterDialogController:
+class TimerCounterDialogController(PyPlcDialogController):
     """タイマー・カウンターの設定編集ダイアログのロジックを管理する"""
 
     def __init__(self, dialog_manager: DialogManager):
-        self.dialog_manager = dialog_manager
-        self.active_dialog = None
-        self.result = None
+        super().__init__(dialog_manager)
         self.device_type = None
         self.last_device_id_text = ""
         self.last_preset_text = ""
@@ -27,10 +26,7 @@ class TimerCounterDialogController:
         self.last_device_id_text = initial_device_id
         self.last_preset_text = str(initial_preset_value)
         
-        self.dialog_manager.show("IDD_TIMER_COUNTER_EDIT")
-        self.active_dialog = self.dialog_manager.active_dialog
-
-        if self.active_dialog:
+        if self._safe_show_dialog("IDD_TIMER_COUNTER_EDIT"):
             self.active_dialog.title = f"Edit {device_type.name} Settings"
             
             # デバイスタイプ表示を更新
@@ -51,11 +47,7 @@ class TimerCounterDialogController:
             # エラーメッセージをクリア
             self._clear_error_message()
 
-    def get_result(self):
-        """結果を取得し、クリアする"""
-        result = self.result
-        self.result = None
-        return result
+    # get_result()は基底クラスから継承
 
     def update(self):
         """フレームごとの更新処理"""
@@ -216,20 +208,6 @@ class TimerCounterDialogController:
             return CounterConfig.MIN_PRESET <= value <= CounterConfig.MAX_PRESET
         return False
 
-    def _find_widget(self, widget_id: str):
-        """ウィジェットIDでウィジェットを検索"""
-        if not self.active_dialog:
-            return None
-        for widget in self.active_dialog.widgets:
-            if hasattr(widget, 'id') and widget.id == widget_id:
-                return widget
-        return None
+    # _find_widget()は基底クラスから継承
 
-    def is_active(self) -> bool:
-        """
-        ダイアログがアクティブかどうかを返す
-        Stale参照を検出して確実な状態判定を行う
-        """
-        return (self.dialog_manager.active_dialog is not None and 
-                self.active_dialog is not None and
-                self.active_dialog is self.dialog_manager.active_dialog)
+    # is_active()は基底クラスから継承（Stale参照検出機能付き）
