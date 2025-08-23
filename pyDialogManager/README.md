@@ -6,15 +6,630 @@ Pyxelベースのアプリケーションにプロフェッショナルなダイ
 
 ![pyDialogManager](https://img.shields.io/badge/Python-3.8+-blue)  ![Pyxel](https://img.shields.io/badge/Pyxel-1.9.0+-green)  ![License](https://img.shields.io/badge/License-MIT-yellow)
 
+**最終更新**: 2025-08-22 (Phase 2リファクタリング完了版)
+
 ---
 
-## 📋 **概要**
+## ⚠️ **重要: 複数ダイアログ対応とStale参照問題**
+
+pyDialogManagerは一度に1つのダイアログのみ表示されます。  
+複数のダイアログコントローラーを使用する場合は、**Stale参照問題**を避けるため、以下の推奨パターンを必ず使用してください。
+
+### 🚨 **避けるべきパターン（危険）**
+```python
+class BadController:
+    def is_active(self):
+        # 危険: Stale参照を検出できない
+        return self.active_dialog is not None
+```
+
+### ✅ **推奨パターン1: 基底クラス継承（推奨）**
+```python
+# PyPlc環境での推奨パターン
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.base_dialog_controller import PyPlcDialogController
+
+class MyDialogController(PyPlcDialogController):
+    def __init__(self, dialog_manager):
+        super().__init__(dialog_manager)
+    
+    def show_my_dialog(self):
+        if self._safe_show_dialog("IDD_MY_DIALOG"):
+            # 初期化処理
+            self._initialize_dialog()
+    
+    # is_active()は自動的に安全な実装になります
+```
+
+### ✅ **推奨パターン2: 手動でStale参照対応**
+```python
+class SafeController:
+    def __init__(self, dialog_manager):
+        self.dialog_manager = dialog_manager
+        self.active_dialog = None
+        self.result = None
+    
+    def is_active(self) -> bool:
+        """Stale参照を検出する安全な実装"""
+        return (self.dialog_manager.active_dialog is not None and 
+                self.active_dialog is not None and
+                self.active_dialog is self.dialog_manager.active_dialog)
+    
+    def show_dialog(self, dialog_id):
+        self.result = None
+        self.dialog_manager.show(dialog_id)
+        self.active_dialog = self.dialog_manager.active_dialog
+```
+
+---
+
+## 🚀 **クイックスタート**
+
+### 基本統合（基底クラス継承パターン）
+
+```python
+import pyxel
+from pyDialogManager.dialog_manager import DialogManager
+from pyDialogManager.file_open_dialog import FileOpenDialogController
+
+class MyApp:
+    def __init__(self):
+        pyxel.init(256, 256, title="My Application")
+        
+        # DialogManager初期化
+        self.dialog_manager = DialogManager("dialogs.json")
+        
+        # コントローラー作成（基底クラス継承済み）
+        self.file_controller = FileOpenDialogController(self.dialog_manager, "/home")
+        
+        pyxel.run(self.update, self.draw)
+    
+    def update(self):
+        # ダイアログ更新
+        self.dialog_manager.update()
+        self.file_controller.update()
+        
+        # Ctrl+O でファイルダイアログ表示
+        if pyxel.btnp(pyxel.KEY_O) and pyxel.btn(pyxel.KEY_CTRL):
+            self.file_controller.show_file_open_dialog()
+        
+        # 結果取得
+        if not self.file_controller.is_active():
+            result = self.file_controller.get_result()
+            if result:
+                print(f"Selected file: {result}")
+    
+    def draw(self):
+        pyxel.cls(0)
+        
+        # ダイアログ描画
+        self.dialog_manager.draw()
+        
+        # UI情報表示
+        pyxel.text(10, 10, "Press Ctrl+O to open file dialog", 7)
+
+# 実行
+MyApp()
+```
+
+---
+
+## 📋 **主要コンポーネント**
+
+### 1. DialogManager（コア）
+ダイアログの表示・管理を行う中核クラス
+
+```python
+from pyDialogManager.dialog_manager import DialogManager
+
+# 初期化
+manager = DialogManager("path/to/dialogs.json")
+
+# ダイアログ表示
+manager.show("IDD_MY_DIALOG")
+
+# 更新・描画
+manager.update()
+manager.draw()
+
+# ダイアログ終了
+manager.close()
+```
+
+### 2. 基底クラス（PyPlcDialogController）
+安全なダイアログ制御を提供する基底クラス
+
+```python
+from core.base_dialog_controller import PyPlcDialogController
+
+class MyController(PyPlcDialogController):
+    def __init__(self, dialog_manager):
+        super().__init__(dialog_manager)
+    
+    def show_custom_dialog(self):
+        if self._safe_show_dialog("IDD_CUSTOM"):
+            # 安全にダイアログが表示された
+            widget = self._find_widget("IDC_INPUT")
+            if widget:
+                widget.text = "Initial value"
+    
+    def update(self):
+        # Stale参照チェック付きアップデート
+        if self.active_dialog and self.active_dialog != self.dialog_manager.active_dialog:
+            self.active_dialog = None
+        
+        if not self.active_dialog:
+            return
+        
+        # ボタン処理
+        ok_button = self._find_widget("IDOK")
+        if ok_button and ok_button.is_pressed:
+            self.result = {"status": "ok"}
+            self.dialog_manager.close()
+```
+
+### 3. 既存コントローラー
+すぐに使用できる実装済みコントローラー
+
+```python
+# ファイル開くダイアログ
+from pyDialogManager.file_open_dialog import FileOpenDialogController
+
+controller = FileOpenDialogController(manager, initial_directory="/home")
+controller.show_file_open_dialog()
+
+# ファイル保存ダイアログ
+from pyDialogManager.file_save_dialog import FileSaveDialogController
+
+save_controller = FileSaveDialogController(manager, initial_directory="/home")
+save_controller.show_save_dialog(default_filename="document", default_extension=".txt")
+
+# デバイスID編集ダイアログ
+from pyDialogManager.device_id_dialog_controller import DeviceIdDialogController
+from config import DeviceType
+
+device_controller = DeviceIdDialogController(manager)
+device_controller.show_dialog(DeviceType.CONTACT_A, initial_value="X001")
+```
+
+---
+
+## 🛠️ **カスタムダイアログ実装手順**
+
+### Step 1: JSON定義ファイル作成
+
+```json
+{
+  "dialogs": {
+    "IDD_CUSTOM_DIALOG": {
+      "title": "Custom Dialog",
+      "width": 300,
+      "height": 200,
+      "widgets": [
+        {
+          "id": "IDC_NAME_INPUT",
+          "type": "textbox",
+          "x": 50,
+          "y": 50,
+          "width": 200,
+          "height": 25,
+          "text": ""
+        },
+        {
+          "id": "IDC_TYPE_DROPDOWN",
+          "type": "dropdown",
+          "x": 50,
+          "y": 90,
+          "width": 150,
+          "height": 25,
+          "items": ["Type A", "Type B", "Type C"],
+          "selected_index": 0
+        },
+        {
+          "id": "IDOK",
+          "type": "button",
+          "x": 150,
+          "y": 150,
+          "width": 60,
+          "height": 25,
+          "text": "OK"
+        },
+        {
+          "id": "IDCANCEL",
+          "type": "button",
+          "x": 220,
+          "y": 150,
+          "width": 60,
+          "height": 25,
+          "text": "Cancel"
+        }
+      ]
+    }
+  }
+}
+```
+
+### Step 2: コントローラー実装
+
+```python
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.base_dialog_controller import PyPlcDialogController
+from pyDialogManager.dialog_manager import DialogManager
+
+class CustomDialogController(PyPlcDialogController):
+    """カスタムダイアログのコントローラー"""
+    
+    def __init__(self, dialog_manager: DialogManager):
+        super().__init__(dialog_manager)
+    
+    def show_custom_dialog(self, initial_name="", initial_type=0):
+        """カスタムダイアログを表示"""
+        if self._safe_show_dialog("IDD_CUSTOM_DIALOG"):
+            # 初期値設定
+            name_widget = self._find_widget("IDC_NAME_INPUT")
+            if name_widget:
+                name_widget.text = initial_name
+            
+            type_widget = self._find_widget("IDC_TYPE_DROPDOWN")
+            if type_widget:
+                type_widget.selected_index = initial_type
+    
+    def update(self):
+        """フレームごとの更新処理"""
+        # Stale参照チェック（基底クラスパターン）
+        if self.active_dialog and self.active_dialog != self.dialog_manager.active_dialog:
+            self.active_dialog = None
+
+        if not self.active_dialog:
+            return
+        
+        # ボタンイベント処理
+        ok_button = self._find_widget("IDOK")
+        if ok_button and ok_button.is_pressed:
+            self._handle_ok()
+
+        cancel_button = self._find_widget("IDCANCEL")
+        if cancel_button and cancel_button.is_pressed:
+            self._handle_cancel()
+    
+    def _handle_ok(self):
+        """OKボタンが押された時の処理"""
+        name_widget = self._find_widget("IDC_NAME_INPUT")
+        type_widget = self._find_widget("IDC_TYPE_DROPDOWN")
+        
+        if name_widget and type_widget:
+            # バリデーション
+            name = name_widget.text.strip()
+            if not name:
+                # エラー処理
+                return
+            
+            # 結果設定
+            self.result = {
+                "name": name,
+                "type": type_widget.get_selected_value(),
+                "type_index": type_widget.selected_index
+            }
+            self.dialog_manager.close()
+    
+    def _handle_cancel(self):
+        """Cancelボタンが押された時の処理"""
+        self.result = None
+        self.dialog_manager.close()
+```
+
+### Step 3: メインアプリケーションでの使用
+
+```python
+class MainApp:
+    def __init__(self):
+        # DialogManager初期化
+        self.dialog_manager = DialogManager("custom_dialogs.json")
+        self.custom_controller = CustomDialogController(self.dialog_manager)
+    
+    def update(self):
+        # ダイアログ更新
+        self.dialog_manager.update()
+        self.custom_controller.update()
+        
+        # F1キーでカスタムダイアログ表示
+        if pyxel.btnp(pyxel.KEY_F1):
+            self.custom_controller.show_custom_dialog("Sample Name", 1)
+        
+        # 結果取得
+        if not self.custom_controller.is_active():
+            result = self.custom_controller.get_result()
+            if result:
+                print(f"Dialog result: {result}")
+```
+
+---
+
+## 🎨 **利用可能なウィジェット**
+
+### Button
+```json
+{
+  "id": "IDC_MY_BUTTON",
+  "type": "button",
+  "x": 100,
+  "y": 50,
+  "width": 80,
+  "height": 25,
+  "text": "Click Me"
+}
+```
+
+### TextBox
+```json
+{
+  "id": "IDC_TEXT_INPUT",
+  "type": "textbox",
+  "x": 50,
+  "y": 30,
+  "width": 200,
+  "height": 25,
+  "text": "Initial text",
+  "readonly": false
+}
+```
+
+### ListBox
+```json
+{
+  "id": "IDC_FILE_LIST",
+  "type": "listbox",
+  "x": 10,
+  "y": 40,
+  "width": 280,
+  "height": 180,
+  "max_visible_items": 8
+}
+```
+
+### Dropdown
+```json
+{
+  "id": "IDC_TYPE_SELECT",
+  "type": "dropdown",
+  "x": 50,
+  "y": 80,
+  "width": 150,
+  "height": 25,
+  "items": ["Option 1", "Option 2", "Option 3"],
+  "selected_index": 0,
+  "max_visible_items": 5
+}
+```
+
+### Label
+```json
+{
+  "id": "IDC_INFO_LABEL",
+  "type": "label",
+  "x": 20,
+  "y": 20,
+  "text": "Information:",
+  "color": 7
+}
+```
+
+---
+
+## 📚 **実装パターン集**
+
+### パターン1: バリデーション付きフォーム
+```python
+def _handle_ok(self):
+    name_widget = self._find_widget("IDC_NAME")
+    email_widget = self._find_widget("IDC_EMAIL")
+    error_widget = self._find_widget("IDC_ERROR_MESSAGE")
+    
+    name = name_widget.text.strip() if name_widget else ""
+    email = email_widget.text.strip() if email_widget else ""
+    
+    # バリデーション
+    if not name:
+        if error_widget:
+            error_widget.text = "Name is required"
+        return
+    
+    if "@" not in email:
+        if error_widget:
+            error_widget.text = "Invalid email format"
+        return
+    
+    # 成功時
+    if error_widget:
+        error_widget.text = ""
+    
+    self.result = {"name": name, "email": email}
+    self.dialog_manager.close()
+```
+
+### パターン2: ドロップダウン連動処理
+```python
+def setup_event_handlers(self):
+    """イベントハンドラーを設定"""
+    category_widget = self._find_widget("IDC_CATEGORY")
+    if category_widget:
+        category_widget.on_selection_changed = self.handle_category_changed
+
+def handle_category_changed(self, selected_index: int, selected_value: str):
+    """カテゴリ選択時の処理"""
+    subcategory_widget = self._find_widget("IDC_SUBCATEGORY")
+    if subcategory_widget:
+        # カテゴリに応じてサブカテゴリを更新
+        subcategories = {
+            "Electronics": ["Computers", "Phones", "Cameras"],
+            "Books": ["Fiction", "Non-fiction", "Technical"],
+            "Clothing": ["Men", "Women", "Kids"]
+        }
+        items = subcategories.get(selected_value, [])
+        subcategory_widget.set_items(items)
+        subcategory_widget.selected_index = 0
+```
+
+### パターン3: 動的ウィジェット制御
+```python
+def update_ui_state(self):
+    """UIの状態を動的に更新"""
+    enable_advanced = self._find_widget("IDC_ENABLE_ADVANCED")
+    advanced_panel = [
+        "IDC_ADVANCED_OPTION1",
+        "IDC_ADVANCED_OPTION2",
+        "IDC_ADVANCED_SETTINGS"
+    ]
+    
+    if enable_advanced and hasattr(enable_advanced, 'is_checked'):
+        enabled = enable_advanced.is_checked
+        
+        # 詳細設定の有効/無効切り替え
+        for widget_id in advanced_panel:
+            widget = self._find_widget(widget_id)
+            if widget:
+                widget.enabled = enabled
+                if hasattr(widget, 'color'):
+                    widget.color = 7 if enabled else 5
+```
+
+---
+
+## ⚡ **パフォーマンス最適化**
+
+### 重い処理の分散実行
+```python
+def update(self):
+    if not self.active_dialog:
+        return
+    
+    # 重い処理を数フレームに分散
+    if hasattr(self, '_processing_frame'):
+        self._processing_frame += 1
+        
+        if self._processing_frame % 5 == 0:  # 5フレームに1回実行
+            self._update_file_list()
+        
+        if self._processing_frame % 10 == 0:  # 10フレームに1回実行
+            self._update_preview()
+    else:
+        self._processing_frame = 0
+    
+    # 軽い処理は毎フレーム実行
+    self._check_button_clicks()
+```
+
+### メモリ効率的なリスト管理
+```python
+def _refresh_large_list(self):
+    """大量データのリスト表示最適化"""
+    list_widget = self._find_widget("IDC_DATA_LIST")
+    if not list_widget:
+        return
+    
+    # 仮想化: 表示領域のアイテムのみ生成
+    start_index = list_widget.scroll_position
+    end_index = min(start_index + list_widget.max_visible_items + 2, len(self.all_data))
+    
+    visible_items = [self.all_data[i].display_name for i in range(start_index, end_index)]
+    list_widget.set_items(visible_items)
+    list_widget._data_offset = start_index  # オフセット保存
+```
+
+---
+
+## 🔧 **デバッグとトラブルシューティング**
+
+### デバッグ情報表示
+```python
+def debug_dialog_state(self):
+    """ダイアログ状態のデバッグ情報を表示"""
+    if self.active_dialog:
+        print(f"Dialog ID: {self.active_dialog.dialog_id}")
+        print(f"Dialog Title: {self.active_dialog.definition.get('title', 'Untitled')}")
+        print(f"Widgets count: {len(self.active_dialog.widgets)}")
+        print(f"Is Active: {self.is_active()}")
+        print(f"Manager Active: {self.dialog_manager.active_dialog is not None}")
+```
+
+### 一般的な問題と解決策
+
+1. **ダイアログが表示されない**
+   - JSON定義ファイルのパスが正しいか確認
+   - dialog_idが正確に指定されているか確認
+   - `manager.update()`と`manager.draw()`が呼ばれているか確認
+
+2. **ボタンクリックが反応しない**
+   - ボタンのIDが正確か確認
+   - `update()`メソッドが正しく実装されているか確認
+   - `is_pressed`プロパティのチェック方法を確認
+
+3. **Stale参照エラー**
+   - 基底クラスを継承しているか確認
+   - `is_active()`の実装が安全なパターンを使用しているか確認
+
+---
+
+## 🤝 **コントリビューション**
+
+### 開発環境セットアップ
+```bash
+# リポジトリクローン
+git clone <repository-url>
+cd PyPlc/pyDialogManager
+
+# 依存関係インストール
+pip install pyxel>=1.9.0
+
+# テスト実行
+python -m pytest tests/
+```
+
+### コーディング規約
+- 日本語コメント推奨
+- 型ヒントの使用必須
+- docstring（日本語）の記載
+- pyxel.COLOR_xxx定数の使用
+
+---
+
+## 📜 **ライセンス**
+
+MIT License - 詳細は`LICENSE`ファイルを参照してください。
+
+---
+
+## 📞 **サポート**
+
+- **Issues**: GitHub Issues でバグ報告・機能要求
+- **Documentation**: 本READMEおよび`/docs`ディレクトリ
+- **Examples**: `examples/`ディレクトリの実装例
+
+---
+
+**pyDialogManager v2.0** - 2025-08-22リリース  
+*Phase 2リファクタリング完了版 - 安全性・保守性大幅向上*
+
+---
+
+# これ以降は古いバージョンの情報です
+
+**以下の情報は古いバージョン（Phase 2リファクタリング前）のものです。**  
+**最新の実装では上記の推奨パターンを使用してください。**
+
+---
+
+## 📋 **概要（旧版）**
 
 pyDialogManagerは、Pyxelを使用したJSON駆動の汎用ダイアログシステムです。  
 PyPlcプロジェクトのような大規模アプリケーションに統合して、ファイル操作ダイアログやカスタムダイアログを簡単に実装できます。
 テキストボックス、リストボックス、ボタン、カスタムボタン、ドロップダウンリスト等のWidgetを組み合わせて独自のダイアログボックスを構築できます。
 
-### 🎯 **主要な特徴**
+### 🎯 **主要な特徴（旧版）**
 
 - **JSON駆動設計**: ダイアログレイアウトをJSONで定義
 - **ウィジェットベースUI**: 豊富なコントロール（Button, TextBox, ListBox, Dropdown, Checkbox）
@@ -26,7 +641,7 @@ PyPlcプロジェクトのような大規模アプリケーションに統合し
 
 ---
 
-## 🚀 **クイックスタート**
+## 🚀 **クイックスタート（旧版）**
 
 ### インストールと基本統合
 
@@ -49,978 +664,39 @@ class MyApp:
         self.file_open_controller = FileOpenDialogController(self.py_dialog_manager)
         self.file_save_controller = FileSaveDialogController(self.py_dialog_manager)
         
-        self.dialog_system.register_controller(self.file_open_controller)
-        self.dialog_system.register_controller(self.file_save_controller)
+        # システムに登録
+        self.dialog_system.register_controller("file_open", self.file_open_controller)
+        self.dialog_system.register_controller("file_save", self.file_save_controller)
         
-        pyxel.mouse(True)
         pyxel.run(self.update, self.draw)
-
+    
     def update(self):
-        # DialogSystemによる一括更新
+        # ダイアログシステム更新
         self.py_dialog_manager.update()
         self.dialog_system.update()
         
-        # キーボードショートカット
-        if pyxel.btnp(pyxel.KEY_S) and pyxel.btn(pyxel.KEY_CTRL):
-            self.file_save_controller.show_save_dialog("myfile", ".txt")
-
-    def draw(self):
-        pyxel.cls(pyxel.COLOR_BLACK)
-        self.py_dialog_manager.draw()
-```
-
----
-
-## 📁 **プロジェクト構成**
-
-```
-pyDialogManager/
-├── README.md                         # このファイル
-├── main.py                          # デモアプリケーション
-├── dialog_manager.py                # ダイアログマネージャー（中核システム）
-├── dialog_system.py                 # コントローラー一元管理システム
-├── dialogs.json                     # ダイアログレイアウト定義
-├── widgets.py                       # UIウィジェット実装
-├── dialog.py                        # ダイアログ基底クラス
-│
-├── file_open_dialog.py              # ファイルオープンダイアログ制御
-├── file_save_dialog.py              # ファイル保存ダイアログ制御  
-├── device_id_dialog_controller.py   # デバイスID編集ダイアログ
-├── timer_counter_dialog_controller.py # タイマー・カウンター設定ダイアログ
-├── data_register_dialog_controller.py # データレジスタ設定ダイアログ
-│
-├── file_utils.py                    # ファイルシステムユーティリティ
-├── system_settings.py               # グローバル設定管理
-└── DESIGN.md                        # 設計制約事項
-```
-
----
-
-## 🔧 **詳細機能解説**
-
-### DialogSystem（一元管理システム）
-
-新しいダイアログ追加時にmain.pyを修正する必要をなくす統合管理システム：
-
-```python
-class DialogSystem:
-    def __init__(self):
-        self.controllers = []
+        # Ctrl+O でファイルダイアログ
+        if pyxel.btnp(pyxel.KEY_O, True, True) and pyxel.btn(pyxel.KEY_CTRL):
+            self.file_open_controller.show_file_open_dialog()
         
-    def register_controller(self, controller):
-        """コントローラーを登録"""
-        self.controllers.append(controller)
-        return controller
-        
-    def update(self):
-        """全コントローラーの一括更新"""
-        for controller in self.controllers:
-            if hasattr(controller, 'update'):
-                controller.update()
-                
-    @property
-    def has_active_dialogs(self):
-        """アクティブなダイアログの存在チェック"""
-        return any(controller.is_active() for controller in self.controllers 
-                  if hasattr(controller, 'is_active'))
-```
-
-**使用効果**:
-- 4行の個別呼び出し → 1行の統合呼び出し（75%コード削減）
-- 新規ダイアログ追加時のmain.py修正不要
-- 保守性の大幅向上
-
-### エラーハンドリング強化
-
-ファイル操作時の堅牢なエラー処理：
-
-```python
-try:
-    if self.csv_manager.save_circuit_to_csv(save_path):
-        self._show_status_message(f"Saved to {os.path.basename(save_path)}", 3.0, "success")
-    else:
-        self._show_status_message("Failed to save file", 3.0, "error")
-except FileNotFoundError:
-    self._show_status_message(f"Directory not found: {os.path.dirname(save_path)}", 3.0, "error")
-except PermissionError:
-    self._show_status_message(f"Access denied: {os.path.basename(save_path)}", 3.0, "error") 
-except OSError as e:
-    self._show_status_message(f"File error: {str(e)}", 3.0, "error")
-except Exception as e:
-    self._show_status_message(f"Save error: {str(e)}", 3.0, "error")
-```
-
----
-
-## 📄 **dialogs.json構造詳細**
-
-### 基本ダイアログ定義
-
-```json
-{
-  "IDD_SAMPLE_DIALOG": {
-    "title": "Sample Dialog",
-    "x": 50,
-    "y": 50,
-    "width": 300,
-    "height": 200,
-    "widgets": [
-      {
-        "type": "label",
-        "id": "IDC_LABEL_MESSAGE",
-        "text": "Enter your information:",
-        "x": 10,
-        "y": 20
-      },
-      {
-        "type": "textbox",
-        "id": "IDC_INPUT_TEXT",
-        "text": "",
-        "x": 10,
-        "y": 40,
-        "width": 280,
-        "height": 20,
-        "max_length": 100,
-        "readonly": false
-      },
-      {
-        "type": "dropdown",
-        "id": "IDC_DROPDOWN_CHOICE",
-        "x": 10,
-        "y": 70,
-        "width": 150,
-        "height": 20,
-        "items": ["Option 1", "Option 2", "Option 3"],
-        "selected_index": 0
-      },
-      {
-        "type": "checkbox", 
-        "id": "IDC_CHECKBOX_ENABLE",
-        "text": "Enable feature",
-        "x": 10,
-        "y": 100,
-        "width": 120,
-        "height": 15,
-        "checked": false
-      },
-      {
-        "type": "listbox",
-        "id": "IDC_LIST_FILES",
-        "x": 170,
-        "y": 70,
-        "width": 120,
-        "height": 80,
-        "item_height": 10
-      },
-      {
-        "type": "button",
-        "id": "IDOK",
-        "text": "OK",
-        "x": 180,
-        "y": 160,
-        "width": 50,
-        "height": 20
-      },
-      {
-        "type": "button",
-        "id": "IDCANCEL",
-        "text": "Cancel",
-        "x": 240,
-        "y": 160,
-        "width": 50,
-        "height": 20
-      }
-    ]
-  }
-}
-```
-
-### ファイルオープンダイアログ実装例
-
-```json
-{
-  "IDD_FILE_OPEN": {
-    "title": "Open File",
-    "x": 10,
-    "y": 10,
-    "width": 236,
-    "height": 240,
-    "widgets": [
-      {
-        "type": "label",
-        "id": "IDC_LABEL_PATH",
-        "text": "Current Path:",
-        "x": 10,
-        "y": 20
-      },
-      {
-        "type": "label",
-        "id": "IDC_CURRENT_PATH",
-        "text": "/",
-        "x": 10,
-        "y": 35
-      },
-      {
-        "type": "listbox",
-        "id": "IDC_FILE_LIST",
-        "x": 5,
-        "y": 70,
-        "width": 225,
-        "height": 120,
-        "item_height": 10
-      },
-      {
-        "type": "textbox",
-        "id": "IDC_FILENAME_INPUT",
-        "text": "",
-        "x": 10,
-        "y": 195,
-        "width": 150,
-        "height": 15,
-        "max_length": 100
-      },
-      {
-        "type": "button",
-        "id": "IDC_UP_BUTTON",
-        "text": "Up",
-        "x": 170,
-        "y": 195,
-        "width": 25,
-        "height": 15
-      },
-      {
-        "type": "button",
-        "id": "IDOK",
-        "text": "Open",
-        "x": 120,
-        "y": 215,
-        "width": 35,
-        "height": 15
-      },
-      {
-        "type": "button",
-        "id": "IDCANCEL",
-        "text": "Cancel",
-        "x": 160,
-        "y": 215,
-        "width": 35,
-        "height": 15
-      }
-    ]
-  }
-}
-```
-
----
-
-## 🎛️ **widgets.py詳細解説**
-
-### サポートされるウィジェット一覧
-
-#### 1. **LabelWidget** - 静的テキスト表示
-
-```python
-class LabelWidget(WidgetBase):
-    def __init__(self, dialog, definition):
-        super().__init__(dialog, definition)
-        self.color = definition.get("color", pyxel.COLOR_BLACK)
-        # 自動サイズ調整機能
-        if self.width == 0:
-            self.width = len(self.text) * pyxel.FONT_WIDTH
-```
-
-**JSON定義**:
-```json
-{
-  "type": "label",
-  "id": "IDC_LABEL",
-  "text": "Display Text",
-  "x": 10,
-  "y": 20,
-  "color": 7  // オプション: 色指定
-}
-```
-
-#### 2. **ButtonWidget** - クリック可能ボタン
-
-```python
-class ButtonWidget(WidgetBase):
-    def __init__(self, dialog, definition):
-        super().__init__(dialog, definition)
-        self.is_hover = False
-        self.is_pressed = False
-        
-    def update(self):
-        # マウスホバー・クリック検出
-        mx, my = pyxel.mouse_x, pyxel.mouse_y
-        self.is_hover = (self.dialog.x + self.x <= mx < self.dialog.x + self.x + self.width)
-        
-        if self.is_hover and pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
-            self.is_pressed = True
-```
-
-**JSON定義**:
-```json
-{
-  "type": "button",
-  "id": "IDOK",
-  "text": "OK",
-  "x": 75,
-  "y": 110,
-  "width": 50,
-  "height": 20,
-  "bg_color": 11,
-  "text_color": 0,
-  "hover_color": 3,
-  "pressed_color": 1,
-  "border_color": 5
-}
-```
-
-**カラープロパティ（すべてオプション）**:
-- `bg_color`: ボタンの背景色（デフォルト: pyxel.COLOR_WHITE）
-- `text_color`: テキストの色（デフォルト: pyxel.COLOR_BLACK）
-- `hover_color`: マウスホバー時の背景色（デフォルト: pyxel.COLOR_GRAY）
-- `pressed_color`: クリック時の背景色（デフォルト: pyxel.COLOR_DARK_BLUE）
-- `border_color`: 枠線の色（デフォルト: pyxel.COLOR_BLACK）
-
-**Pyxel色番号リファレンス**:
-```
-0: BLACK    1: NAVY     2: PURPLE   3: GREEN
-4: BROWN    5: DARK_BLUE 6: LIGHT_BLUE 7: WHITE
-8: RED      9: ORANGE   10: YELLOW  11: LIME
-12: CYAN    13: GRAY    14: PINK    15: PEACH
-```
-
-#### 3. **TextBoxWidget** - テキスト入力
-
-```python
-class TextBoxWidget(WidgetBase):
-    def __init__(self, dialog, definition):
-        super().__init__(dialog, definition)
-        self.has_focus = False
-        self.cursor_pos = len(self.text)
-        self.max_length = definition.get("max_length", 50)
-        self.readonly = definition.get("readonly", False)
-        
-    def handle_text_input(self):
-        # キーボード入力処理
-        # バックスペース、文字入力、カーソル移動等
-```
-
-**JSON定義**:
-```json
-{
-  "type": "textbox",
-  "id": "IDC_INPUT",
-  "text": "初期値",
-  "x": 10,
-  "y": 30,
-  "width": 200,
-  "height": 20,
-  "max_length": 100,
-  "readonly": false
-}
-```
-
-#### 4. **ListBoxWidget** - スクロール可能リスト
-
-```python
-class ListBoxWidget(WidgetBase):
-    def __init__(self, dialog, definition):
-        super().__init__(dialog, definition)
-        self.items = []
-        self.selected_index = -1
-        self.scroll_offset = 0
-        self.item_height = definition.get("item_height", 10)
-        
-    def set_items(self, items):
-        """リストアイテムを設定"""
-        self.items = items
-        self.selected_index = -1
-        self.scroll_offset = 0
-```
-
-**動的イベントハンドラー**:
-```python
-# コントローラー側でイベントハンドラーを設定
-listbox.on_item_activated = self.handle_file_activation
-listbox.on_selection_changed = self.handle_file_selection
-
-# ウィジェット側でイベント発火
-if hasattr(self, 'on_item_activated'):
-    self.on_item_activated(self.selected_index)
-```
-
-#### 5. **DropdownWidget** - ドロップダウン選択
-
-```python
-class DropdownWidget(WidgetBase):
-    def __init__(self, dialog, definition):
-        super().__init__(dialog, definition)
-        self.items = definition.get("items", [])
-        self.selected_index = definition.get("selected_index", 0)
-        self.is_expanded = False
-        
-    def toggle_dropdown(self):
-        """ドロップダウンの展開/折りたたみ"""
-        self.is_expanded = not self.is_expanded
-```
-
-#### 6. **CheckboxWidget** - チェックボックス
-
-```python
-class CheckboxWidget(WidgetBase):
-    def __init__(self, dialog, definition):
-        super().__init__(dialog, definition)
-        self.checked = definition.get("checked", False)
-        
-    def toggle_checked(self):
-        """チェック状態の切り替え"""
-        self.checked = not self.checked
-        if hasattr(self, 'on_checked_changed'):
-            self.on_checked_changed(self.checked)
-```
-
----
-
-## 🎮 **使用方法とサンプルコード**
-
-### 1. カスタムダイアログコントローラーの実装
-
-```python
-from pyDialogManager.dialog_manager import DialogManager
-from config import DeviceType
-
-class CustomDialogController:
-    def __init__(self, dialog_manager: DialogManager):
-        self.dialog_manager = dialog_manager
-        self.active_dialog = None
-        self.result = None
-
-    def show_dialog(self, device_type: DeviceType, initial_value: str = ""):
-        """カスタムダイアログを表示"""
-        self.result = None
-        self.device_type = device_type
-        self.dialog_manager.show("IDD_CUSTOM_DIALOG")
-        self.active_dialog = self.dialog_manager.active_dialog
-        
-        # 初期値設定
-        if self.active_dialog:
-            input_widget = self._find_widget("IDC_INPUT_TEXT")
-            if input_widget:
-                input_widget.text = initial_value
-
-    def update(self):
-        """フレームごとの更新処理"""
-        if not self.active_dialog:
-            return
-            
-        # ボタンクリックの処理
-        ok_button = self._find_widget("IDOK")
-        cancel_button = self._find_widget("IDCANCEL")
-        
-        if ok_button and ok_button.is_pressed:
-            self._handle_ok()
-        elif cancel_button and cancel_button.is_pressed:
-            self._handle_cancel()
-
-    def _handle_ok(self):
-        """OKボタンが押されたときの処理"""
-        input_widget = self._find_widget("IDC_INPUT_TEXT")
-        if input_widget:
-            user_input = input_widget.text.strip()
-            if self._validate_input(user_input):
-                self.result = (True, user_input)
-                self.dialog_manager.close()
-            else:
-                self._show_error("Invalid input")
-
-    def _handle_cancel(self):
-        """Cancelボタンが押されたときの処理"""
-        self.result = (False, None)
-        self.dialog_manager.close()
-
-    def _validate_input(self, input_text: str) -> bool:
-        """入力値のバリデーション"""
-        return bool(input_text and len(input_text) <= 50)
-
-    def _find_widget(self, widget_id: str):
-        """ウィジェットIDでウィジェットを検索"""
-        if not self.active_dialog:
-            return None
-        for widget in self.active_dialog.widgets:
-            if hasattr(widget, 'id') and widget.id == widget_id:
-                return widget
-        return None
-
-    def get_result(self):
-        """結果を取得してクリア"""
-        result = self.result
-        self.result = None
-        return result
-        
-    def is_active(self) -> bool:
-        """ダイアログがアクティブかどうかを返す（DialogSystem用）"""
-        return self.dialog_manager.active_dialog is not None and self.active_dialog is not None
-```
-
-### 2. メインアプリケーションでの統合例
-
-```python
-import pyxel
-from pyDialogManager.dialog_manager import DialogManager
-from pyDialogManager.dialog_system import DialogSystem
-from pyDialogManager.file_save_dialog import FileSaveDialogController
-from custom_dialog_controller import CustomDialogController
-
-class MainApplication:
-    def __init__(self):
-        pyxel.init(384, 384, title="My Application with Dialogs")
-        
-        # ダイアログシステム初期化
-        self.py_dialog_manager = DialogManager("pyDialogManager/dialogs.json")
-        self.dialog_system = DialogSystem()
-        
-        # コントローラー作成
-        self.file_save_controller = FileSaveDialogController(self.py_dialog_manager)
-        self.custom_controller = CustomDialogController(self.py_dialog_manager)
-        
-        # DialogSystemに登録
-        self.dialog_system.register_controller(self.file_save_controller)
-        self.dialog_system.register_controller(self.custom_controller)
-        
-        # ステータス管理
-        self.status_message = ""
-        self.status_timer = 0
-        
-        pyxel.mouse(True)
-        pyxel.run(self.update, self.draw)
-
-    def update(self):
-        """フレーム更新処理"""
-        # ダイアログシステム更新
-        self.py_dialog_manager.update()
-        
-        if self.dialog_system.has_active_dialogs:
-            # ダイアログ表示中は全コントローラーを更新
-            self.dialog_system.update()
-            self._handle_dialog_results()
-            return
-            
-        # メインアプリケーション処理
-        self._handle_keyboard_input()
-        self._update_status_message()
-
-    def _handle_keyboard_input(self):
-        """キーボード入力処理"""
-        if pyxel.btnp(pyxel.KEY_S) and pyxel.btn(pyxel.KEY_CTRL):
-            # Ctrl+S: ファイル保存ダイアログ
+        # Ctrl+S で保存ダイアログ
+        if pyxel.btnp(pyxel.KEY_S, True, True) and pyxel.btn(pyxel.KEY_CTRL):
             self.file_save_controller.show_save_dialog("document", ".txt")
-            
-        elif pyxel.btnp(pyxel.KEY_D) and pyxel.btn(pyxel.KEY_CTRL):
-            # Ctrl+D: カスタムダイアログ
-            self.custom_controller.show_dialog(None, "default_value")
-
-    def _handle_dialog_results(self):
-        """ダイアログ結果処理"""
-        # ファイル保存結果
-        save_result = self.file_save_controller.get_result()
-        if save_result:
-            try:
-                # ここで実際のファイル保存処理
-                with open(save_result, 'w') as f:
-                    f.write("Sample content")
-                self._show_status(f"Saved: {os.path.basename(save_result)}", 3.0)
-            except Exception as e:
-                self._show_status(f"Save error: {str(e)}", 3.0)
-        
-        # カスタムダイアログ結果
-        custom_result = self.custom_controller.get_result()
-        if custom_result:
-            success, value = custom_result
-            if success:
-                self._show_status(f"Input received: {value}", 2.0)
-            else:
-                self._show_status("Dialog cancelled", 2.0)
-
-    def _show_status(self, message: str, duration: float):
-        """ステータスメッセージ表示"""
-        self.status_message = message
-        self.status_timer = int(duration * 30)  # 30FPS換算
-
-    def _update_status_message(self):
-        """ステータスメッセージの更新"""
-        if self.status_timer > 0:
-            self.status_timer -= 1
-            if self.status_timer <= 0:
-                self.status_message = ""
-
+    
     def draw(self):
-        """描画処理"""
-        pyxel.cls(pyxel.COLOR_NAVY)
+        pyxel.cls(0)
         
-        # メインアプリケーション描画
-        pyxel.text(10, 10, "Dialog Demo Application", pyxel.COLOR_WHITE)
-        pyxel.text(10, 25, "Ctrl+S: Save Dialog", pyxel.COLOR_GRAY)
-        pyxel.text(10, 35, "Ctrl+D: Custom Dialog", pyxel.COLOR_GRAY)
-        
-        # ステータスメッセージ
-        if self.status_message:
-            pyxel.text(10, 360, self.status_message, pyxel.COLOR_YELLOW)
-        
-        # ダイアログシステム描画（最前面）
+        # ダイアログ描画
         self.py_dialog_manager.draw()
-
-if __name__ == "__main__":
-    MainApplication()
-```
-
----
-
-## 🔧 **高度な機能**
-
-### 動的属性システム（hasattrパターン）
-
-pyDialogManagerの核心技術である動的イベントハンドリング：
-
-```python
-# ウィジェット側（widgets.py）
-class ListBoxWidget(WidgetBase):
-    def handle_mouse_click(self, clicked_index):
-        # 選択変更イベント
-        if hasattr(self, 'on_selection_changed'):
-            self.on_selection_changed(clicked_index)
-            
-        # ダブルクリック時のアクティベートイベント
-        if self.is_double_click and hasattr(self, 'on_item_activated'):
-            self.on_item_activated(clicked_index)
-
-# コントローラー側（file_open_dialog.py）
-class FileOpenDialogController:
-    def _setup_event_handlers(self):
-        file_list = self._find_widget("IDC_FILE_LIST")
-        if file_list:
-            # 動的にイベントハンドラーを追加
-            file_list.on_selection_changed = self.handle_file_selection
-            file_list.on_item_activated = self.handle_file_activation
-```
-
-**利点**:
-- **疎結合**: ウィジェットとコントローラーが独立
-- **再利用性**: 同じウィジェットを異なる用途で使用可能
-- **柔軟性**: 実行時にイベントハンドラーを変更可能
-
-### ファイルシステム統合
-
-リアルタイムディレクトリブラウジング機能：
-
-```python
-# file_utils.py - ファイルシステム抽象化
-class FileManager:
-    def list_directory(self) -> List[FileItem]:
-        """現在ディレクトリの内容を取得"""
-        items = []
-        try:
-            for entry in os.listdir(self.current_path):
-                full_path = os.path.join(self.current_path, entry)
-                is_directory = os.path.isdir(full_path)
-                
-                # ファイルフィルターの適用
-                if not is_directory and not self._matches_filter(entry):
-                    continue
-                    
-                items.append(FileItem(entry, full_path, is_directory))
-        except PermissionError:
-            items.append(FileItem("Access denied", "", False))
-        return sorted(items, key=lambda x: (not x.is_directory, x.name))
-
-    def set_file_filter(self, patterns: List[str]):
-        """ファイルフィルターを設定（例: ["*.txt", "*.csv"]）"""
-        self.file_filters = patterns
-```
-
-### 拡張子自動管理
-
-保存時の拡張子自動付与システム：
-
-```python
-class FileSaveDialogController:
-    def set_default_extension(self, extension: str):
-        """デフォルト拡張子を設定"""
-        if extension and not extension.startswith('.'):
-            extension = '.' + extension
-        self.default_extension = extension
         
-    def _get_final_filename(self, input_filename: str) -> str:
-        """最終的な保存ファイル名を取得（拡張子処理込み）"""
-        filename = input_filename.strip()
-        
-        # デフォルト拡張子が設定されていて、まだ拡張子がついていない場合
-        if self.default_extension and not os.path.splitext(filename)[1]:
-            filename += self.default_extension
-            
-        return filename
+        # UI情報表示
+        if self.dialog_system.has_active_dialogs():
+            pyxel.text(10, 10, "Dialog Active", 14)
+        else:
+            pyxel.text(10, 10, "Press Ctrl+O/S for dialogs", 7)
+
+# 実行
+MyApp()
 ```
 
----
-
-## 🎯 **実際の使用例（PyPlcプロジェクト統合）**
-
-### PyPlcでの統合実装例
-
-```python
-# PyPlcのmain.py での統合方法
-class PyPlcVer3:
-    def __init__(self):
-        # 既存の初期化処理...
-        
-        # pyDialogManager統合
-        self.py_dialog_manager = PyDialogManager("pyDialogManager/dialogs.json")
-        self.dialog_system = DialogSystem()
-        
-        # 各種コントローラーの初期化
-        self.file_open_controller = FileOpenDialogController(self.py_dialog_manager)
-        self.file_save_controller = FileSaveDialogController(self.py_dialog_manager)
-        self.device_id_controller = DeviceIdDialogController(self.py_dialog_manager)
-        self.timer_counter_controller = TimerCounterDialogController(self.py_dialog_manager)
-        
-        # DialogSystemに一括登録
-        self.dialog_system.register_controller(self.file_open_controller)
-        self.dialog_system.register_controller(self.file_save_controller)
-        self.dialog_system.register_controller(self.device_id_controller)
-        self.dialog_system.register_controller(self.timer_counter_controller)
-
-    def update(self):
-        # pyDialogManager更新
-        self.py_dialog_manager.update()
-        
-        if self.dialog_system.has_active_dialogs:
-            # ダイアログ表示中はDialogSystemで一括処理
-            self.dialog_system.update()
-            self._handle_dialog_results()
-            return
-            
-        # 通常のPyPlc処理
-        self.mouse_state = self.input_handler.update_mouse_state()
-        # ... その他の処理
-
-    def _handle_dialog_results(self):
-        """ダイアログからの結果処理（エラーハンドリング強化版）"""
-        # ファイル保存処理
-        save_path = self.file_save_controller.get_result()
-        if save_path:
-            try:
-                if self.csv_manager.save_circuit_to_csv(save_path):
-                    self._show_status_message(f"Saved to {os.path.basename(save_path)}", 3.0, "success")
-            except FileNotFoundError:
-                self._show_status_message(f"Directory not found", 3.0, "error")
-            except PermissionError:
-                self._show_status_message(f"Access denied", 3.0, "error")
-            except Exception as e:
-                self._show_status_message(f"Save error: {str(e)}", 3.0, "error")
-
-        # デバイスID編集処理
-        id_result = self.device_id_controller.get_result()
-        if id_result and self.editing_device_pos:
-            success, new_id = id_result
-            if success:
-                device = self.grid_system.get_device(*self.editing_device_pos)
-                if device:
-                    device.address = new_id
-                    self.circuit_analyzer.solve_ladder()
-```
-
----
-
-## 🐛 **トラブルシューティング**
-
-### よくある問題と解決方法
-
-#### 1. **ダイアログが表示されない**
-```python
-# 確認事項
-- dialogs.json の記述が正しいか
-- ダイアログIDが存在するか
-- DialogManager の初期化が完了しているか
-
-# デバッグ方法
-print(f"Available dialogs: {list(self.dialog_manager.definitions.keys())}")
-```
-
-#### 2. **ボタンクリックが反応しない**
-```python
-# 確認事項
-- update()メソッドが呼ばれているか
-- pyxel.mouse(True) が実行されているか
-- ダイアログのz-orderが正しいか
-
-# デバッグ方法
-def update(self):
-    if self.active_dialog:
-        for widget in self.active_dialog.widgets:
-            if hasattr(widget, 'is_pressed') and widget.is_pressed:
-                print(f"Button {widget.id} pressed!")
-```
-
-#### 3. **is_active()メソッドでAttributeError**
-```python
-# 原因: dialog_manager の属性名間違い
-# ❌ 間違い
-return self.dialog_manager.current_dialog is not None
-
-# ✅ 正しい
-return self.dialog_manager.active_dialog is not None
-```
-
-#### 4. **ファイル保存・読み込みエラー**
-```python
-# エラーハンドリングの実装例
-try:
-    # ファイル操作
-    with open(file_path, 'w') as f:
-        f.write(content)
-except FileNotFoundError:
-    self._show_error(f"Directory not found: {os.path.dirname(file_path)}")
-except PermissionError:
-    self._show_error(f"Access denied: {file_path}")
-except Exception as e:
-    self._show_error(f"File operation failed: {str(e)}")
-```
-
----
-
-## 🎨 **デザイン制約事項**
-
-### 表示文字制限
-- **ASCII文字のみ**: Pyxelの制限により2バイト文字（日本語、絵文字）は表示不可
-- **コメント**: ソースコード内のコメントは日本語推奨
-
-### 色定数の使用
-```python
-# ❌ 悪い例: 再定義によるバグリスク
-BLACK = pyxel.COLOR_BLACK
-
-# ✅ 良い例: 直接使用
-pyxel.cls(pyxel.COLOR_BLACK)
-pyxel.text(x, y, "text", pyxel.COLOR_WHITE)
-```
-
-### パフォーマンス考慮事項
-- **30FPS安定動作**: 重い処理は分散実行
-- **メモリ効率**: 不要なオブジェクトの適切な解放
-- **描画最適化**: 変更のあった領域のみ再描画
-
----
-
-## 📚 **API リファレンス**
-
-### DialogManager
-
-```python
-class DialogManager:
-    def __init__(self, json_path: str)
-    def show(self, dialog_id: str) -> None
-    def close(self) -> None
-    def update(self) -> None
-    def draw(self) -> None
-    
-    @property
-    def active_dialog(self) -> Optional[Dialog]
-```
-
-### DialogSystem
-
-```python
-class DialogSystem:
-    def __init__(self)
-    def register_controller(self, controller) -> controller
-    def update(self) -> None
-    def get_active_dialog_count(self) -> int
-    
-    @property 
-    def has_active_dialogs(self) -> bool
-```
-
-### WidgetBase（全ウィジェットの基底クラス）
-
-```python
-class WidgetBase:
-    def __init__(self, dialog, definition)
-    def update(self) -> None
-    def draw(self) -> None
-    
-    # 共通プロパティ
-    @property
-    def id(self) -> str
-    @property  
-    def x(self) -> int
-    @property
-    def y(self) -> int
-    @property
-    def width(self) -> int
-    @property
-    def height(self) -> int
-    @property
-    def text(self) -> str
-```
-
----
-
-## 🚀 **次のステップ**
-
-### 学習段階
-
-1. **基本統合**: シンプルなダイアログから統合開始
-2. **ファイル操作**: ファイル保存・読み込み機能の統合
-3. **カスタムダイアログ**: プロジェクト固有のダイアログ追加
-4. **高度機能**: 動的属性システムの活用
-5. **UI/UX改善**: ユーザー体験の向上
-
-### 拡張可能性
-
-- **新しいウィジェット**: カスタムウィジェットの追加
-- **テーマシステム**: 外観のカスタマイズ
-- **国際化対応**: 多言語サポート（ASCII制限内）
-- **アニメーション**: ダイアログ表示アニメーション
-
----
-
-## 🎯 **プロジェクト評価**
-
-### 技術的優位性
-
-- ⭐⭐⭐⭐⭐ **設計品質**: 疎結合・再利用可能なアーキテクチャ
-- ⭐⭐⭐⭐⭐ **保守性**: JSON駆動設計による柔軟性
-- ⭐⭐⭐⭐⭐ **拡張性**: 新機能追加の容易さ
-- ⭐⭐⭐⭐⭐ **統合性**: 既存プロジェクトとの親和性
-
-### 実用性評価
-
-- ✅ **大規模プロジェクト対応**: PyPlc等の複雑なアプリケーションで実証済み
-- ✅ **エラーハンドリング**: 堅牢なファイル操作・例外処理
-- ✅ **ユーザビリティ**: 直感的なファイルダイアログUI
-- ✅ **パフォーマンス**: 30FPS安定動作確認済み
-
----
-
-## 📄 **ライセンス**
-
-MIT License - 自由に使用・改変・配布可能
-
----
-
-## 🤝 **コントリビューション**
-
-プロジェクトへの貢献を歓迎します：
-
-1. **バグレポート**: Issues での報告
-2. **機能提案**: Enhancement requests
-3. **コード改善**: Pull requests
-4. **ドキュメント改善**: README・コメントの充実
-
----
-
-**pyDialogManager は、Pyxel アプリケーションにプロフェッショナルなダイアログ機能を提供する、実用性と技術的優位性を兼ね備えたライブラリです。**
-
-*PyPlc Ver3 での実装実績により、大規模プロジェクトでの堅牢性と実用性が証明されています。* 🚀
+**注意: この旧版のコードではStale参照問題が発生する可能性があります。最新版の推奨パターンを使用してください。**
