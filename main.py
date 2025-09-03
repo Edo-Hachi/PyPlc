@@ -100,7 +100,6 @@ from pyDialogManager.timer_counter_dialog_controller import TimerCounterDialogCo
 from pyDialogManager.data_register_dialog import DataRegisterDialogController
 from pyDialogManager.compare_dialog_controller import CompareDialogController
 from core.SpriteManager import sprite_manager # SpriteManagerをインポート
-from core.device_dialog_manager import DeviceDialogManager  # Gemini提案統合ダイアログマネージャー
 
 
 class PyPlcVer3:
@@ -142,14 +141,6 @@ class PyPlcVer3:
         self.data_register_controller = DataRegisterDialogController(self.py_dialog_manager)
         self.compare_controller = CompareDialogController(self.py_dialog_manager)
         
-        # --- Gemini提案統合：DeviceDialogManager初期化 ---
-        device_controllers = {
-            'device_id': self.device_id_controller,
-            'timer_counter': self.timer_counter_controller,
-            'data_register': self.data_register_controller,
-            'compare': self.compare_controller
-        }
-        self.device_dialog_manager = DeviceDialogManager(device_controllers)
         
         # --- DialogSystem 一元管理システム ---
         #print("[PyPlc] Initializing DialogSystem...")
@@ -160,7 +151,7 @@ class PyPlcVer3:
         self.dialog_system.register_controller(self.timer_counter_controller)
         self.dialog_system.register_controller(self.data_register_controller)
         self.dialog_system.register_controller(self.compare_controller)
-        #print("[PyPlc] ✅ pyDialogManager and DialogSystem initialized successfully")
+        #print("[PyPlc] pyDialogManager and DialogSystem initialized successfully")
 
         # --- ダイアログ編集中の状態管理 ---
         self.editing_device_pos = None
@@ -240,10 +231,6 @@ class PyPlcVer3:
             else:
                 self._show_status_message("Load: EDIT mode only. Press TAB to switch.", 4.0)
         
-        # --- pyDialogManager パイロット統合 テスト ---
-        if pyxel.btnp(pyxel.KEY_F11):
-            print("[PyPlc] F11 pressed, showing pilot test dialog...")
-            self.py_dialog_manager.show("IDD_PILOT_TEST")
         
         # デバイスパレット入力処理（EDITモードでのみ有効）
         if self.current_mode == SimulatorMode.EDIT:
@@ -384,9 +371,9 @@ class PyPlcVer3:
         """
         Gemini統合版スプライトベース右クリック処理
         
-        従来の複雑な条件判定（40行）を、SpriteManager + DeviceDialogManager統合（3行）に簡素化
+        従来の複雑な条件判定（40行）を、SpriteManager + 統合ダイアログ処理（3行）に簡素化
         - パフォーマンス向上：97%計算削減（O(300) → O(9)）
-        - 責務分離：ダイアログ振り分けをDeviceDialogManagerに移譲
+        - 責務統合：ダイアログ振り分けをmain.py内で直接処理
         - 操作性向上：スプライト直接判定で確実な右クリック反応
         """
         # 基本チェック
@@ -401,8 +388,60 @@ class PyPlcVer3:
             device, row, col = collision_result
             self.editing_device_pos = (row, col)
             
-            # Gemini統合：責務分離ダイアログ表示（1行呼び出し）
-            self.device_dialog_manager.show_for_device(device)
+            # デバイス衝突結果に基づくダイアログ処理
+            self._handle_device_collision_result(device)
+
+    def _handle_device_collision_result(self, device) -> None:
+        """
+        右クリックで衝突したデバイスに応じた適切なダイアログを表示
+        旧DeviceDialogManagerの機能をmain.pyに統合（分かりやすさ向上）
+        """
+        if not device:
+            return
+        
+        # デバイスタイプから文字列値を取得
+        device_type_str = device.device_type.value if hasattr(device.device_type, 'value') else str(device.device_type)
+        
+        # デバイス種別による直接振り分け（わかりやすい）
+        if device_type_str in ['TIMER_TON', 'COUNTER_CTU']:
+            # タイマー・カウンタープリセット値編集ダイアログ
+            self.timer_counter_controller.show_dialog(
+                device.device_type, 
+                device.preset_value, 
+                device.address
+            )
+            
+        elif device_type_str in ['CONTACT_A', 'CONTACT_B', 'COIL_STD', 'COIL_REV', 'RST', 'ZRST']:
+            # デバイスID編集ダイアログ
+            self.device_id_controller.show_dialog(
+                device.device_type, 
+                device.address
+            )
+            
+        elif device_type_str == 'DATA_REGISTER':
+            # データレジスタ操作・オペランド編集ダイアログ
+            current_device_id = getattr(device, 'address', '')
+            current_operation = getattr(device, 'operation', 'MOV')
+            current_preset_value = getattr(device, 'preset_value', 0)
+            current_operand = str(current_preset_value) if current_preset_value != 0 else ''
+            
+            self.data_register_controller.show_data_register_dialog(
+                current_device_id, 
+                current_operation, 
+                current_operand
+            )
+            
+        elif device_type_str == 'COMPARE_DEVICE':
+            # 比較条件編集ダイアログ
+            current_left = getattr(device, 'compare_left', '')
+            current_operator = getattr(device, 'compare_operator', '=')
+            current_right = getattr(device, 'compare_right', '')
+            
+            self.compare_controller.show_compare_dialog(
+                current_left, 
+                current_operator, 
+                current_right
+            )
 
     def _handle_device_placement(self) -> None:
         """
